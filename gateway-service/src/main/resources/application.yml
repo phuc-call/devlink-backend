@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      discovery:
+        enabled: true
+        lower-case-service-id: true
+      routes:
+        - id: user-service-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: LoggingFilter
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: JwtAuthFilter
+            - name: LoggingFilter
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path= /api/products/**
+          filters:
+            - name: JwtAuthFilter
+            - name: LoggingFilter
+        #Order Service
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**       # /api/orders/** ? C?N JWT
+          filters:
+            - name: JwtAuthFilter
+            - name: LoggingFilter
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:mySecretKey12345678901234567890123456789012}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+logging:
+  level:
+    com.demo: INFO
+    org.springframework.cloud.gateway: INFO
+

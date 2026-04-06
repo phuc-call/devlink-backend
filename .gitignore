@@ -1,0 +1,12 @@
+# File build
+target/
+*.class
+
+# File cấu hình nhạy cảm (QUAN TRỌNG)
+src/main/resources/application.properties
+src/main/resources/application.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
