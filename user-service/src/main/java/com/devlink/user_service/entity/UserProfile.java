@@ -1,5 +1,7 @@
 package com.devlink.user_service.entity;
 
+import com.devlink.user_service.config.ProgrammingLanguageConverter;
+import com.devlink.user_service.entity.enums.ProgrammingLanguage;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,6 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
@@ -20,6 +23,8 @@ public class UserProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+    @Column(name = "profile_views_count", nullable = false)
+    private Integer profileViewsCount = 0;
     @Column(name = "full_name", length = 100)
     private String fullName;
 
@@ -36,8 +41,22 @@ public class UserProfile {
     private String school;
     @Column(name = "major", length = 150)
     private String major;
-    @Column(name = "favorite_subjects", columnDefinition = "TEXT")
-    private String favoriteLanguage;
+    @Column(name = "language")
+    @Convert(converter = ProgrammingLanguageConverter.class)
+    private List<ProgrammingLanguage> favoriteLanguage;
+
+
+    @Column(name = "completion_percent", nullable = false)
+    private Integer completionPercent = 0;
+
+    @Column(name = "next_nudge_at")
+    private LocalDateTime nextNudgeAt;
+    @Column(name = "nudge_dismissed_forever", nullable = false)
+    private Boolean nudgeDismissedForever = false;
+    @Column(name = "nudge_sent_count", nullable = false)
+    private Integer nudgeSentCount = 0;
+    @Column(name = "last_profile_updated_at")
+    private LocalDateTime lastProfileUpdatedAt;
 
     @Column(name = "follower_count", nullable = false)
     private Integer followerCount=0;

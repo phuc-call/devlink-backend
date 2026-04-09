@@ -44,7 +44,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     private ProfileVisibility profileVisibility= ProfileVisibility.PUBLIC;
 
-    // Chế độ duyệt follow request
     @Column(name = "follow_request_mode", nullable = false)
     private Boolean followRequestMode = false;
 

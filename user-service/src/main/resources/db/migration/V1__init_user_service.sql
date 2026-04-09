@@ -1,11 +1,11 @@
--- 1. TABLE: user
--- Entity: User.java
+
 CREATE TABLE `user`
 (
     id                  BIGINT          NOT NULL AUTO_INCREMENT,
     username            VARCHAR(50)     NOT NULL,
     email               VARCHAR(150)    NOT NULL,
     password_hash       VARCHAR(255)    NOT NULL,
+
     status              VARCHAR(20)     NOT NULL,
     email_verified      BOOLEAN         NOT NULL DEFAULT FALSE,
     profile_visibility  VARCHAR(20)              DEFAULT 'PUBLIC',
@@ -22,8 +22,8 @@ CREATE TABLE `user`
     INDEX idx_user_email (email),
     INDEX idx_user_username (username)
 );
--- 2. TABLE: UserProfile
-CREATE TABLE `UserProfile`
+
+CREATE TABLE `user_profile`
 (
     id               BIGINT       NOT NULL AUTO_INCREMENT,
     user_id          BIGINT                DEFAULT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE `UserProfile`
     PRIMARY KEY (id),
     CONSTRAINT fk_userprofile_user FOREIGN KEY (user_id) REFERENCES `user` (id)
 );
--- 3. TABLE: permissions
+
 CREATE TABLE permissions
 (
     id             BIGINT       NOT NULL AUTO_INCREMENT,
@@ -53,7 +53,7 @@ CREATE TABLE permissions
     PRIMARY KEY (id),
     UNIQUE KEY uq_permission_name (name)
 );
--- 4. TABLE: roles
+
 CREATE TABLE roles
 (
     id         BIGINT      NOT NULL AUTO_INCREMENT,
@@ -63,7 +63,7 @@ CREATE TABLE roles
     PRIMARY KEY (id),
     UNIQUE KEY uq_role_name (name)
 );
--- 5. TABLE: role_permission
+
 CREATE TABLE role_permission
 (
     role_id       BIGINT NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE role_permission
     CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES roles (id),
     CONSTRAINT fk_rp_permission FOREIGN KEY (permission_id) REFERENCES permissions (id)
 );
--- 6. TABLE: user_role
+
 CREATE TABLE user_role
 (
     id         BIGINT NOT NULL AUTO_INCREMENT,
@@ -86,7 +86,7 @@ CREATE TABLE user_role
 CONSTRAINT fk_user_role_user FOREIGN KEY (user_id) REFERENCES `user` (id),
 CONSTRAINT fk_user_role_role FOREIGN KEY (role_id) REFERENCES roles (id)
 );
--- 7. TABLE: auth_token
+
 CREATE TABLE auth_token
 (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
@@ -106,7 +106,7 @@ CREATE TABLE auth_token
     INDEX idx_token_user (user_id),
     CONSTRAINT fk_auth_token_user FOREIGN KEY (user_id) REFERENCES `user` (id)
 );
--- 8. TABLE: email_verifications
+
 CREATE TABLE email_verifications
 (
     id                BIGINT       NOT NULL AUTO_INCREMENT,
@@ -120,7 +120,7 @@ CREATE TABLE email_verifications
 
     PRIMARY KEY (id)
 );
--- 9. TABLE: follows
+
 CREATE TABLE follows
 (
     id           BIGINT      NOT NULL AUTO_INCREMENT,
@@ -137,7 +137,7 @@ CREATE TABLE follows
     CONSTRAINT fk_follow_follower FOREIGN KEY (follower_id) REFERENCES `user` (id),
     CONSTRAINT fk_follow_following FOREIGN KEY (following_id) REFERENCES `user` (id)
 );
--- 10. TABLE: user_blocks
+
 CREATE TABLE user_blocks
 (
     id         BIGINT NOT NULL AUTO_INCREMENT,
@@ -149,7 +149,7 @@ CREATE TABLE user_blocks
     UNIQUE KEY uq_block (blocker_id, blocked_id),
     CONSTRAINT fk_user_block_blocker FOREIGN KEY (blocker_id) REFERENCES `user` (id)
 );
--- 11. TABLE: user_activity_logs
+
 CREATE TABLE user_activity_logs
 (
     id            BIGINT      NOT NULL AUTO_INCREMENT,
@@ -162,7 +162,7 @@ CREATE TABLE user_activity_logs
     INDEX idx_activity_user (user_id),
     INDEX idx_activity_type (activity_type)
 );
- -- 12. TABLE: user_streaks
+
  CREATE TABLE user_streaks
  (
      id               BIGINT NOT NULL AUTO_INCREMENT,
@@ -179,7 +179,7 @@ CREATE TABLE user_activity_logs
      UNIQUE KEY uq_user_streak_user (user_id),
      CONSTRAINT fk_user_streak_user FOREIGN KEY (user_id) REFERENCES `user` (id)
  );
- -- 13. TABLE: user_suggestions
+
  CREATE TABLE user_suggestions
  (
      id                   BIGINT         NOT NULL AUTO_INCREMENT,

@@ -3,7 +3,6 @@ package com.devlink.user_service.entity;
 import com.devlink.user_service.entity.enums.DeviceType;
 import jakarta.persistence.*;
 import lombok.*;
-import com.devlink.user_service.entity.enums.TokenType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -24,9 +23,7 @@ public class AuthToken {
     @JoinColumn(name ="user_id",nullable = false)
     private User user;
 
-    @Column(name ="token_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private TokenType tokenType;
+
 
     @Column(name = "token_value", nullable = false)
     private String tokenValue;

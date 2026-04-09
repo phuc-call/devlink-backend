@@ -1,5 +1,6 @@
 package com.devlink.user_service.sercurity;
 
+import com.devlink.user_service.config.AppProperties;
 import com.devlink.user_service.entity.*;
 import com.devlink.user_service.entity.enums.*;
 import com.devlink.user_service.exception.AppException;
@@ -13,7 +14,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -41,13 +41,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final JWTUtil jwtUtil;
     private final Parser uaParser;
     private final PasswordEncoder passwordEncoder;
+    private final AppProperties appProperties;
 
-    @Value("${app.frontend-url}")
-    private String frontendUrl;
-    @Value("${app.default-role-id}")
-    private Long defaultRoleId;
-    @Value("${app.refresh-token-expiry-days}")
-    private int refreshTokenExpiryDays;
+    private String buildCookie(String name, String value, int maxAge){
+        return name + "=" + value
+                + "; Max-Age=" + maxAge
+                + "; Path=/"
+                + "; HttpOnly"
+                + "; SameSite=Lax";
+    }
+
+
+
 
     @Override
     @Transactional
@@ -64,7 +69,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         Boolean emailVerified = oAuth2User.getAttribute("email_verified");
 
         if (!Boolean.TRUE.equals(emailVerified)) {
-            response.sendRedirect(frontendUrl + "/login?error=EMAIL_NOT_VERIFIED");
+            response.sendRedirect(appProperties.getFrontendUrl() + "/login?error=EMAIL_NOT_VERIFIED");
             return;
         }
 
@@ -79,29 +84,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             clearCookie(response, MODE_OAUTH);
 
-            response.addHeader(SET_COOKIE,
-                    "accessToken=" + result.accessToken()
-                            + "; Max-Age=900"
-                            + "; Path=/"
-                            + "; HttpOnly"
-                            + "; SameSite=Lax"
-            );
+            response.addHeader(SET_COOKIE, buildCookie("accessToken", result.accessToken(), 900));
+            response.addHeader(SET_COOKIE, buildCookie("refreshToken", result.refreshToken(), 2592000));
 
-
-            response.addHeader(SET_COOKIE,
-                    "refreshToken=" + result.refreshToken()
-                            + "; Max-Age=2592000"
-                            + "; Path=/"
-                            + "; HttpOnly"
-                            + "; SameSite=Lax"
-            );
 
             // Redirect frontend
-            response.sendRedirect(frontendUrl + "/oauth2-success");
+            response.sendRedirect(appProperties.getFrontendUrl() + "/oauth2-success");
 
         } catch (AppException e) {
             clearCookie(response, MODE_OAUTH);
-            response.sendRedirect(frontendUrl + "/login?error=" + e.getErrorCode().name());
+            response.sendRedirect(appProperties.getFrontendUrl() + "/login?error=" + e.getErrorCode().name());
         }
     }
 
@@ -118,7 +110,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         User user = User.builder()
                 .username(generateUsername(name))
                 .email(email)
-                .passwordHash("")
+                .passwordHash(null)
                 .status(UserStatus.ACTIVE)
                 .birthDay(null)
                 .emailVerified(true)
@@ -191,7 +183,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         return AuthToken.builder()
                 .user(user)
                 .tokenValue(hashedToken)
-                .expiresAt(LocalDateTime.now().plusDays(refreshTokenExpiryDays))
+                .expiresAt(LocalDateTime.now().plusDays(appProperties.getRefreshTokenExpiryDays()))
                 .driveName(deviceName.trim())
                 .deviceType(resolveDeviceType(client.device.family))
                 .userAgent(rawUA)
@@ -222,6 +214,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         return ip.split(",")[0].trim();
     }
 
+    @SuppressWarnings("SameParameterValue")
     private String extractCookie(HttpServletRequest request, String name) {
         if (request.getCookies() == null) return null;
         for (var cookie : request.getCookies())
@@ -229,6 +222,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         return null;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void clearCookie(HttpServletResponse response, String name) {
         response.addHeader(SET_COOKIE,
                 name + "=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");

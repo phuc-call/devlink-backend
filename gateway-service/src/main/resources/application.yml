@@ -7,12 +7,19 @@ spring:
         enabled: true
         lower-case-service-id: true
       routes:
+        # Auth - không cần JWT, rate limit theo IP
         - id: user-service-auth
           uri: lb://user-service
           predicates:
             - Path=/api/auth/**
           filters:
             - name: LoggingFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -20,6 +27,18 @@ spring:
           filters:
             - name: JwtAuthFilter
             - name: LoggingFilter
+            - name: RequestRateLimiter
+              args:
+                edis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+        #Swagger UI
+        - id: user-service-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/v3/api-docs
+          filters:
+            - RewritePath=/user-service/v3/api-docs, /v3/api-docs
         - id: product-service
           uri: lb://product-service
           predicates:
@@ -47,7 +66,8 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:mySecretKey12345678901234567890123456789012}
+  secret: ${JWT_SECRET:5ZVnyGvacZRrCczj+xnOJxKQlR1xIxeb52erVLM169U=}
+  expiration: 900000
 
 management:
   endpoints:
@@ -59,4 +79,12 @@ logging:
   level:
     com.demo: INFO
     org.springframework.cloud.gateway: INFO
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: user-service
+        url: /user-service/v3/api-docs
+
+
 

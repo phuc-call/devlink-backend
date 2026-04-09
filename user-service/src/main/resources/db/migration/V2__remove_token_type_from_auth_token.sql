@@ -1,1 +1,2 @@
-ALTER TABLE auth_token DROP COLUMN token_type
+
+ALTER TABLE auth_token DROP COLUMN token_type;
