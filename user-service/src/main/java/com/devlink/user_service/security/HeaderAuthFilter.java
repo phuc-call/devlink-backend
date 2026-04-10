@@ -1,4 +1,4 @@
-package com.devlink.user_service.sercurity;
+package com.devlink.user_service.security;
 
 import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.FilterChain;
@@ -6,13 +6,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 public class HeaderAuthFilter extends OncePerRequestFilter {
@@ -26,13 +24,16 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
         String id    = request.getHeader("X-User-Id");
         String email = request.getHeader("X-User-Email");
         String role  = request.getHeader("X-User-Role");
-
         if (id != null && role != null) {
+            AuthUserDetails principal = new AuthUserDetails(
+                    Long.parseLong(id), email, role
+            );
+
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
-                            id,
-                            email,
-                            List.of(new SimpleGrantedAuthority(role))
+                            principal,
+                            null,
+                            principal.getAuthorities()
                     );
 
             SecurityContextHolder.getContext().setAuthentication(auth);

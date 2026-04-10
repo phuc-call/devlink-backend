@@ -44,11 +44,9 @@ public class UserProfile {
     @Column(name = "language")
     @Convert(converter = ProgrammingLanguageConverter.class)
     private List<ProgrammingLanguage> favoriteLanguage;
-
-
+    //personal profile configuration
     @Column(name = "completion_percent", nullable = false)
     private Integer completionPercent = 0;
-
     @Column(name = "next_nudge_at")
     private LocalDateTime nextNudgeAt;
     @Column(name = "nudge_dismissed_forever", nullable = false)

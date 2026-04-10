@@ -1,4 +1,4 @@
-package com.devlink.user_service.sercurity;
+package com.devlink.user_service.security;
 
 
 import io.jsonwebtoken.Jwts;

@@ -1,7 +1,7 @@
 package com.devlink.user_service.config;
 
-import com.devlink.user_service.sercurity.HeaderAuthFilter;
-import com.devlink.user_service.sercurity.OAuth2LoginSuccessHandler;
+import com.devlink.user_service.security.HeaderAuthFilter;
+import com.devlink.user_service.security.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,27 +1,27 @@
 package com.devlink.user_service.dto.reponse;
 
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Setter
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserProfileResponse {
-    private Long userId;
+    private Long id;
     private String fullName;
-    private String avatarUrl;
-    private String coverImageUrl;
     private String bio;
     private String school;
     private String major;
-    private List<ProgrammingLanguage> favoriteLanguages;
+    private List<ProgrammingLanguage> favoriteLanguage;
+    private String avatarUrl;
+    private String coverImageUrl;
+    private Integer completionPercent;
     private Integer followerCount;
     private Integer followingCount;
-    private Integer completionPercent;
 }

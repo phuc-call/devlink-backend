@@ -28,8 +28,7 @@ public class ProfileNudgeConfig {
     private Boolean featureEnabled = true;
 
     //Reminder interval (unit: days).
-    @Column(name = "nudge_interval_days", nullable = false)
-    private Integer nudgeIntervalDays = 7;
+
 
 
     //Default: 70 (meaning a warning will be given if it's less than 70%).
@@ -39,13 +38,14 @@ public class ProfileNudgeConfig {
     //Default: 30( meaning language accounts for 30%)
     @Column(name = "language_weight", nullable = false)
     private Integer languageWeight = 30;
-    @Column(name = "first_nudge_days)", nullable = false)
+
+    //Default: There will be 3 reminders.
+    @Column(name = "first_nudge_days", nullable = false)
     private Integer firstNudgeDays=7;   // 7
     @Column(name = "second_nudge_days", nullable = false)
     private Integer secondNudgeDays=21;  // 21
     @Column(name = "third_nudge_days", nullable = false)
     private Integer thirdNudgeDays=180;
-
 
     @Column(name = "updated_by")
     private Long updatedBy;
