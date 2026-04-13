@@ -5,7 +5,6 @@ networks:
 volumes:
   user-db-data:
 services:
-
   # ─── DATABASES ───────────────────────────────────────────────
   user-db:
     image: mysql:8.0
@@ -24,6 +23,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - microservice-net
   #SERVICE
   eureka-server:
     build: ./eureka-server

@@ -36,7 +36,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 
     @Override
-    public UpdateProfileRequest updateUserProfile(UpdateProfileRequest request) {
+    public UserProfileResponse updateUserProfile(UpdateProfileRequest request) {
         User user=userHelper.getCurrentUser();
         UserProfile userProfile = user.getProfile();
         if (userProfile == null) {
@@ -56,7 +56,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
         log.info("User {} updated profile. Completion: {}%", user.getId(), percent);
         UserProfile savedProfile = userProfileRepository.save(userProfile);
-        return modelMapper.map(savedProfile, UpdateProfileRequest.class);
+        return modelMapper.map(savedProfile, UserProfileResponse.class);
     }
 
     private void scheduleNudge(UserProfile userProfile, int percent, ProfileNudgeConfig profileNudgeConfig) {
@@ -170,8 +170,4 @@ public class UserProfileServiceImpl implements UserProfileService {
         profileNudgeConfigRepository.save(config);
         log.info("Admin {} updated nudge config: {}", SecurityUtils.getCurrentUserId(), request);
     }
-
-
-
-
 }

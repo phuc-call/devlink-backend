@@ -6,7 +6,7 @@ import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 
 public interface UserProfileService {
-    UpdateProfileRequest updateUserProfile (UpdateProfileRequest request);
+    public UserProfileResponse updateUserProfile(UpdateProfileRequest request);
 
     void clearProfileFields(ClearProfileFieldsRequest request);
     UserProfileResponse getProfile();

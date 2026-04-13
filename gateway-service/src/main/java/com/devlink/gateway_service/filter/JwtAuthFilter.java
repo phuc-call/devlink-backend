@@ -4,7 +4,6 @@ import com.devlink.gateway_service.util.GatewayErrorCode;
 import com.devlink.gateway_service.util.HeaderConstants;
 import com.devlink.gateway_service.util.JwtUtil;
 import com.devlink.gateway_service.util.ResponseUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -13,12 +12,17 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j@RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Config> {
 
     private final JwtUtil jwtUtil;
     private final ResponseUtil responseUtil;
 
+    public JwtAuthFilter(JwtUtil jwtUtil,ResponseUtil responseUtil){
+        super(Config.class);
+        this.jwtUtil = jwtUtil;
+        this.responseUtil = responseUtil;
+    }
 
     @Override
     public GatewayFilter apply(Config config) {

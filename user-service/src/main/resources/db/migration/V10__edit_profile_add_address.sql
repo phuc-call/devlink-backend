@@ -1,0 +1,4 @@
+ALTER TABLE UserProfile
+    ADD COLUMN city VARCHAR(100) NULL,
+    ADD COLUMN country_code VARCHAR(5) NULL,
+    ADD COLUMN timezone VARCHAR(50) NULL;

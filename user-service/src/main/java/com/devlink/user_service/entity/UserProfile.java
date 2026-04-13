@@ -21,7 +21,7 @@ public class UserProfile {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id",unique = true,nullable = false)
     private User user;
     @Column(name = "profile_views_count", nullable = false)
     private Integer profileViewsCount = 0;
@@ -56,6 +56,13 @@ public class UserProfile {
     @Column(name = "last_profile_updated_at")
     private LocalDateTime lastProfileUpdatedAt;
 
+    @Column(name = "city", length = 100)
+    private String city;
+    @Column(name = "country_code", length = 5)
+    private String countryCode;
+    @Column(name = "timezone", length = 50)
+    private String timezone;
+
     @Column(name = "follower_count", nullable = false)
     private Integer followerCount=0;
     @Column(name = "following_count",nullable = false)
@@ -64,4 +71,5 @@ public class UserProfile {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
 }
