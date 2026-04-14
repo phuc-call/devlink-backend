@@ -46,8 +46,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
         modelMapper.map(request, userProfile);
         //total completed of profile
-        ProfileNudgeConfig config = profileNudgeConfigRepository.findById(1L).
-                orElseGet(ProfileNudgeConfig::new);
+        ProfileNudgeConfig config = getNudgeConfig();
         int percent = calculateCompletion(userProfile, config);
         userProfile.setCompletionPercent(percent);
 
@@ -120,8 +119,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 case FAVORITE_LANGUAGE -> profile.setFavoriteLanguage(null);
             }
         }
-        ProfileNudgeConfig profileNudgeConfig = profileNudgeConfigRepository.findById(1L)
-                .orElseGet(ProfileNudgeConfig::new);
+        ProfileNudgeConfig profileNudgeConfig = getNudgeConfig();
         profile.setCompletionPercent(calculateCompletion(profile, profileNudgeConfig));
         profile.setLastProfileUpdatedAt(LocalDateTime.now());
         log.info("User {} cleared profile fields: {}. New completion: {}%",
@@ -149,8 +147,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             userProfile.setNudgeDismissedForever(true);
             userProfile.setNextNudgeAt(null);
         }else {
-            ProfileNudgeConfig config = profileNudgeConfigRepository.findById(1L)
-                    .orElseGet(ProfileNudgeConfig::new);
+            ProfileNudgeConfig config = getNudgeConfig();
             scheduleNudge(userProfile, userProfile.getCompletionPercent(), config);
             userProfile.setNudgeSentCount(userProfile.getNudgeSentCount() + 1);
         }
@@ -162,12 +159,15 @@ public class UserProfileServiceImpl implements UserProfileService {
     //ADMIN
     @Override
     public void updateNudgeConfig(UpdateNudgeConfigRequest request) {
-        ProfileNudgeConfig config = profileNudgeConfigRepository.findById(1L)
-                .orElseGet(ProfileNudgeConfig::new);
+        ProfileNudgeConfig config = getNudgeConfig();
 
         modelMapper.map(request, config);
         config.setUpdatedBy(SecurityUtils.getCurrentUserId());
         profileNudgeConfigRepository.save(config);
         log.info("Admin {} updated nudge config: {}", SecurityUtils.getCurrentUserId(), request);
+    }
+    private ProfileNudgeConfig getNudgeConfig() {
+        return profileNudgeConfigRepository.findById(1L)
+                .orElseGet(ProfileNudgeConfig::new);
     }
 }

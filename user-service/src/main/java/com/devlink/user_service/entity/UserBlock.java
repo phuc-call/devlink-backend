@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
         uniqueConstraints = @UniqueConstraint(columnNames = {"blocker_id", "blocked_id"})
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-class UserBlock {
+ public class UserBlock {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

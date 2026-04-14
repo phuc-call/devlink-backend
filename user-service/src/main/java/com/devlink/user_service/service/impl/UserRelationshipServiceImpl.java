@@ -13,20 +13,17 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+
 public class UserRelationshipServiceImpl implements UserRelationshipService {
     private final FollowRepository followRepository;
-    private UserProfileRepository userProfileRepository;
+    private final UserProfileRepository userProfileRepository;
     private final UserHelper userHelper;
     //config
     private static final int NORMAL_LIMIT = 20;
@@ -39,7 +36,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
     private static final int FEATURED_EXPIRE_MAX_HOURS = 48;
     //number of mutual friends
     private static final int MAX_MUTUAL_FRIENDS = 5;
-    private static final int W_MUTUAL_PER_FRIEND = 5;
+    private static final int SCORE_PER_MUTUAL_FRIEND  = 5;
 
     private enum Weight {
         SCHOOL(35), CITY(25), LANGUAGE(25), MAJOR(15);
@@ -50,14 +47,14 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         }
     }
 
-    //100%
+    //max 125%
     private static final int MAX_SCORE =
             Weight.SCHOOL.value
                     + Weight.CITY.value
                     + Weight.LANGUAGE.value
                     + Weight.MAJOR.value
-                    + (W_MUTUAL_PER_FRIEND * MAX_MUTUAL_FRIENDS);
-    private final Random RANDOM = new Random();
+                    + (SCORE_PER_MUTUAL_FRIEND  * MAX_MUTUAL_FRIENDS);
+    private final Random random = new Random();
 
     // Always return 20 people, refresh each time it loads
     @Override
@@ -76,6 +73,16 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
     }
     //Only return 3 people highlighted
 
+    @Override
+    public List<UserRecommendationResponse>getSpecialRecommendations(){
+        User user=userHelper.getCurrentUser();
+        Long userId=user.getId();
+        UserProfile profile=user.getProfile();
+        if(!isActiveMode(userId))return List.of();
+        List<CandidateProfileDTO>candidate=userProfileRepository.findCandidateProfiles(
+                userId,profile.getCity(),profile.getSchool(),profile.getMajor());
+        return findFeaturedRecommendations(profile,candidate,userId);
+    }
     private List<UserRecommendationResponse> getNormalRecommendations(
             UserProfile currentProfile,
             List<CandidateProfileDTO> candidateProfiles,
@@ -106,12 +113,12 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
                 .id(candidate.getUserId())
                 .major(candidate.getMajor())
                 .school(candidate.getSchool())
-                .similarityScore((double) score)
+                .similarityScore(score)
                 .avatar(candidate.getAvatarUrl())
                 .isFeatured(isFeatured)
                 .city(candidate.getCity())
                 .fullName(candidate.getFullName())
-                .isFeatured(isFeatured)
+
 
                 .build();
     }
@@ -129,20 +136,28 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
 
         if(userRecommendations.isEmpty()) return List.of();
         Collections.shuffle(userRecommendations);
-        int limit=FEATURED_LIMIT_MIN+RANDOM.nextInt(FEATURED_LIMIT_MAX-FEATURED_LIMIT_MIN+1);
+        int limit=FEATURED_LIMIT_MIN+random.nextInt(FEATURED_LIMIT_MAX-FEATURED_LIMIT_MIN+1);
         return userRecommendations.stream().limit(limit).toList();
 
     }
+
     public boolean isActiveMode(Long userId){
         LocalDateTime oneHourAgo =LocalDateTime.now().minusHours(ACTIVE_WINDOW_HOURS);
         int recentFollow=followRepository.countTodayFollows(userId, oneHourAgo );
         if(recentFollow<ACTIVE_FOLLOW_MIN) return false;
-
+        Optional<LocalDateTime>findFirstFollowWindow=followRepository.findFollowAfter(userId,oneHourAgo);
+        if(findFirstFollowWindow.isEmpty()) return false;
+        int expireHours=FEATURED_EXPIRE_MIN_HOURS+new Random(userId).nextInt(
+                FEATURED_EXPIRE_MAX_HOURS-FEATURED_EXPIRE_MIN_HOURS+1
+        );
+       LocalDateTime expireTime=findFirstFollowWindow.get().plusHours(expireHours);
+       return expireTime.isBefore(LocalDateTime.now());
     }
+
     private int calculateScore(UserProfile current, CandidateProfileDTO candidate, int mutualFriends) {
         int result = 0;
-        if (isMatch(current.getCity(), candidate.getCity())) {
-            result += Weight.CITY.value;
+        if (isMatch(current.getSchool(), candidate.getSchool())) {
+            result += Weight.SCHOOL.value;
         }
         if (isMatch(current.getMajor(), candidate.getMajor())) {
             result += Weight.MAJOR.value;
@@ -152,7 +167,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         }
         if (hasCommonLanguage(current.getFavoriteLanguage(), candidate.getLanguage()))
             result += Weight.LANGUAGE.value;
-        result += Math.min(mutualFriends, MAX_MUTUAL_FRIENDS) * W_MUTUAL_PER_FRIEND;
+        result += Math.min(mutualFriends, MAX_MUTUAL_FRIENDS) * SCORE_PER_MUTUAL_FRIEND ;
 
         double ratio = result / (double) MAX_SCORE; //50 / 125.0
         double percentage = ratio * 100; //0.4 * 100=40.0
@@ -168,6 +183,5 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         if (a == null || b == null) return false;
         return !Collections.disjoint(a, b);
     }
-
 
 }

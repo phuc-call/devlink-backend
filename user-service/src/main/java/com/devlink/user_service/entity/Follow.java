@@ -35,6 +35,7 @@ public class Follow {
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private FollowStatus status = FollowStatus.ACCEPTED;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -42,6 +43,4 @@ public class Follow {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-
 }
