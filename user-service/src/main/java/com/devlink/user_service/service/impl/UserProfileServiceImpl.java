@@ -1,6 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
 import com.devlink.user_service.dto.reponse.UserProfileResponse;
 import com.devlink.user_service.dto.request.ClearProfileFieldsRequest;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
@@ -9,6 +10,7 @@ import com.devlink.user_service.entity.ProfileNudgeConfig;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.ProfileField;
+import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.ProfileNudgeConfigRepository;
 import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.repository.UserRepository;
@@ -33,6 +35,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
     private final ModelMapper modelMapper;
     private final UserHelper userHelper;
+    private final FollowRepository followRepository;
 
 
     @Override
@@ -56,6 +59,21 @@ public class UserProfileServiceImpl implements UserProfileService {
         log.info("User {} updated profile. Completion: {}%", user.getId(), percent);
         UserProfile savedProfile = userProfileRepository.save(userProfile);
         return modelMapper.map(savedProfile, UserProfileResponse.class);
+    }
+
+    @Override
+    public FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode){
+        User user=userHelper.getCurrentUser();
+        int pendingRequestsAccepted=0;
+        if(Boolean.FALSE.equals(followRequestMode)){
+            pendingRequestsAccepted=followRepository.acceptFollowRequest(user.getId());
+        }
+        user.setFollowRequestMode(followRequestMode);
+        userRepository.save(user);
+        return FollowRequestModeResponse.builder()
+                .followRequestMode(followRequestMode)
+                .pendingRequestsAccepted(pendingRequestsAccepted)
+                .build();
     }
 
     private void scheduleNudge(UserProfile userProfile, int percent, ProfileNudgeConfig profileNudgeConfig) {

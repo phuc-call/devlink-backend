@@ -12,4 +12,5 @@ public interface UserBlockRepository extends JpaRepository<UserBlock,Long> {
                                             WHERE b.blocker.id=:blockerId AND b.blockedId=:blockedId
            """)
    boolean isBlocked(Long blockerId, Long blockedId);
+
 }

@@ -1,0 +1,3 @@
+ALTER TABLE follows
+    ADD COLUMN view_count BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN last_interacted_at TIMESTAMP NULL;
