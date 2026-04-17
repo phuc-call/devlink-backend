@@ -36,7 +36,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             )
             AND up.user.id NOT IN (
                     SELECT b.blocker.id FROM UserBlock b
-                            WHERE b.blocker.id = :currentUserId
+                            WHERE b.blockedId = :currentUserId
             )
             """)
     List<CandidateProfileDTO> findCandidateProfiles(

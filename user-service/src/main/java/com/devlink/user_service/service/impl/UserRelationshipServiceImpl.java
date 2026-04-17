@@ -174,7 +174,6 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         return (int) percentage;//40
     }
 
-
     private boolean isMatch(String a, String b) {
         return a != null && a.equalsIgnoreCase(b);
     }

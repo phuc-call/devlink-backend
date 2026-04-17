@@ -10,6 +10,8 @@ import com.devlink.user_service.entity.ProfileNudgeConfig;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.ProfileField;
+import com.devlink.user_service.exception.AppException;
+import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.ProfileNudgeConfigRepository;
 import com.devlink.user_service.repository.UserProfileRepository;
@@ -41,12 +43,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public UserProfileResponse updateUserProfile(UpdateProfileRequest request) {
         User user=userHelper.getCurrentUser();
-        UserProfile userProfile = user.getProfile();
-        if (userProfile == null) {
-            userProfile = new UserProfile();
-            userProfile.setUser(user);
-            userProfileRepository.save(userProfile);
-        }
+        UserProfile userProfile = getOrCreateProfile(user);
         modelMapper.map(request, userProfile);
         //total completed of profile
         ProfileNudgeConfig config = getNudgeConfig();
@@ -148,13 +145,20 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public UserProfileResponse getProfile(){
         User user=userHelper.getCurrentUser();
-        UserProfile profile=user.getProfile();
-        if(profile==null){
-            profile=new UserProfile();
-            profile.setUser(user);
-            userProfileRepository.save(profile);}
+        UserProfile profile=getOrCreateProfile(user);
         return modelMapper.map(profile,UserProfileResponse.class);
     }
+
+    //get profile of another person
+    @Override
+     public UserProfileResponse getUserProfile(Long userId){
+        User user=userRepository.findById(userId).orElseThrow(()->
+                new AppException(ErrorCode.USER_NOT_FOUND)
+                );
+        UserProfile profile=getOrCreateProfile(user);
+        return modelMapper.map(profile,UserProfileResponse.class);
+    }
+
 
     @Override
     public void dismissNudge(boolean dismissForever){
@@ -187,5 +191,13 @@ public class UserProfileServiceImpl implements UserProfileService {
     private ProfileNudgeConfig getNudgeConfig() {
         return profileNudgeConfigRepository.findById(1L)
                 .orElseGet(ProfileNudgeConfig::new);
+    }
+    private UserProfile getOrCreateProfile(User user){
+        UserProfile profile=user.getProfile();
+        if(profile==null){
+            profile=new UserProfile();
+            profile.setUser(user);
+            userProfileRepository.save(profile);}
+        return profile;
     }
 }

@@ -14,4 +14,5 @@ public interface UserProfileService {
     public void updateNudgeConfig(UpdateNudgeConfigRequest request);
     public void dismissNudge(boolean dismissForever);
     FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode);
+    public UserProfileResponse getUserProfile(Long userId);
 }
