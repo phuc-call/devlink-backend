@@ -61,6 +61,7 @@ public class FollowServiceImpl implements FollowService {
         FollowStatus status;
         if (isFollowBack) {
             status = FollowStatus.ACCEPTED;
+
         } else {
             status = Boolean.TRUE.equals(targetUser.getFollowRequestMode()) ?
                     FollowStatus.PENDING : FollowStatus.ACCEPTED;

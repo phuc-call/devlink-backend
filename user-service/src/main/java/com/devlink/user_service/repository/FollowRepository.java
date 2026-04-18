@@ -4,14 +4,15 @@ import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import feign.Param;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -99,5 +100,13 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
             UPDATE Follow f SET f.status=FollowStatus.ACCEPTED
             WHERE f.following.id=:followingId AND f.status=FollowStatus.PENDING""")
     int acceptFollowRequest(@Param("followingId") Long followingId);
+
+    @Query("""
+            SELECT f FROM Follow f
+                         JOIN FETCH f.following
+                                     WHERE f.follower.id=:followerId""")
+    List<Follow> findFollowingListByFollowerId(@Param("followerId") Long followerId);
+
+
 
 }

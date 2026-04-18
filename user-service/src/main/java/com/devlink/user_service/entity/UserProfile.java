@@ -63,6 +63,10 @@ public class UserProfile {
     @Column(name = "timezone", length = 50)
     private String timezone;
 
+
+    @Column(name = "profile_view_count")
+    private Long profileViewCount = 0L;
+
     @Column(name = "follower_count", nullable = false)
     private Integer followerCount=0;
     @Column(name = "following_count",nullable = false)
