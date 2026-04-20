@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Transactional
@@ -40,6 +41,7 @@ public class BadgeServiceImpl implements BadgeService {
 
     @Override
     public void evaluateUser(Long userId) {
+
         User user = userHelper.getUser(userId);
         BadgeConfig badgeConfig = badgeConfigRepository.findById(1L).
                 orElseGet(BadgeConfig::new);
@@ -71,17 +73,41 @@ public class BadgeServiceImpl implements BadgeService {
 
         log.debug("[BADGE] userId={} totalReal={} pendingReal={} pendingRatio={}%",
                 userId, totalFollowing, totalPending, pendingRatio);
+
+        if (currentBadType.equals(BadgeType.POPULAR) && totalFollowing > badgeConfig.getPopularThreshold()
+                && isOverGracePeriod(userId, BadgeType.POPULAR)) {
+            doAutoGrantBadge(user, BadgeType.NONE, totalFollowing);
+            return;
+        }
+        if (currentBadType.equals(BadgeType.BLUE_TICK) &&
+                (totalFollowing > badgeConfig.getBleuTickThreshold() || badgeConfig.getBleuTickThreshold() > pendingRatio)
+                && isOverGracePeriod(userId, BadgeType.BLUE_TICK)) {
+            doAutoGrantBadge(user, BadgeType.POPULAR, totalFollowing);
+            return;
+        }
         if (totalFollowing >= badgeConfig.getPopularThreshold()
                 && currentBadType.equals(BadgeType.NONE)) {
             doAutoGrantBadge(user, BadgeType.POPULAR, totalFollowing);
             return;
         }
+
         if (totalFollowing >= badgeConfig.getBleuTickThreshold()
                 && pendingRatio >= badgeConfig.getBlueTickPendingRatio()
                 && !currentBadType.equals(BadgeType.BLUE_TICK)) {
             doAutoGrantBadge(user, BadgeType.BLUE_TICK, totalFollowing);
         }
+    }
 
+    private void evaluatePopular(User user, Long userId, BadgeType current, BadgeConfig config, Long total) {
+        if(total<config.getPopularThreshold()&&
+        current.equals(BadgeType.POPULAR)&&
+        isOverGracePeriod(userId,BadgeType.POPULAR)){
+            doAutoGrantBadge(user,BadgeType.POPULAR,total);
+            return;
+        }
+        if(total>config.getPopularThreshold()&&current.equals(BadgeType.NONE)){
+            doAutoGrantBadge(user,BadgeType.POPULAR,total);
+        }
     }
 
     @Override
@@ -91,8 +117,8 @@ public class BadgeServiceImpl implements BadgeService {
         if (isRedTick) {
             throw new AppException(ErrorCode.BADGE_ALREADY_GRANTED);
         }
-        boolean isRole=user.getRoles().stream().anyMatch(r->r.getRole().getName().equals(RoleName.SCANNER));
-        if(isRole){
+        boolean isRole = user.getRoles().stream().anyMatch(r -> r.getRole().getName().equals(RoleName.SCANNER));
+        if (isRole) {
             throw new AppException(ErrorCode.INSUFFICIENT_ROLE_FOR_BADGE);
         }
         doManualGrantBadge(user, adminUsername, reason);
@@ -133,6 +159,14 @@ public class BadgeServiceImpl implements BadgeService {
                         .followerCountSnapshot(null)
                         .build());
         publishBadgeGrantedEvent(user, BadgeType.RED_TICK, adminUsername, reason);
+    }
+
+    private boolean isOverGracePeriod(Long userId, BadgeType badgeType) {
+        BadgeConfig badgeConfig = badgeConfigRepository.findById(1L).orElseGet(BadgeConfig::new);
+        Optional<BadgeHistory> lastBadge = badgeHistoryRepository.
+                findTopByUserIdAndBadgeTypeOrderByCreatedAtDesc(userId, badgeType);
+        return lastBadge.map(h -> h.getCreatedAt().plusDays(badgeConfig.getGracePeriodDays())
+                .isBefore(LocalDateTime.now())).orElse(false);
     }
 
     private void publishBadgeGrantedEvent(User user, BadgeType badgeType,

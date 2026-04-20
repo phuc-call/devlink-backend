@@ -31,7 +31,8 @@ public class BadgeConfig {
     private Integer minCompletionPercent = 30;
     @Column(name = "blue_tick_pending_ratio", nullable = false)
     private Integer blueTickPendingRatio = 70;
-
+    @Column(name = "grace_period_days", nullable = false)
+    private Integer gracePeriodDays = 7;
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

@@ -5,8 +5,10 @@ import com.devlink.user_service.entity.enums.BadgeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BadgeHistoryRepository extends JpaRepository<BadgeHistory,Long> {
     List<BadgeHistory> findByUserIdOrderByCreatedAtDesc(Long userId);
     boolean existsByUserIdAndBadgeType(Long userId, BadgeType badgeType);
+    Optional<BadgeHistory>findTopByUserIdAndBadgeTypeOrderByCreatedAtDesc(Long userId, BadgeType badgeType);
 }
