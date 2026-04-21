@@ -1,3 +1,4 @@
+-- V12
 CREATE TABLE badge_history
 (
     id                      BIGINT AUTO_INCREMENT PRIMARY KEY,

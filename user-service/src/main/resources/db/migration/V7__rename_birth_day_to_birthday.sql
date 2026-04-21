@@ -1,2 +1,3 @@
+-- V7
 ALTER TABLE `user`
     CHANGE COLUMN birth_day birthday DATETIME DEFAULT NULL;

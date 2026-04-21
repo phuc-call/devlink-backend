@@ -1,4 +1,4 @@
-
+-- V5
 ALTER TABLE user_profile
 
     ADD COLUMN last_profile_updated_at DATETIME NULL COMMENT 'The last time user edited profile',

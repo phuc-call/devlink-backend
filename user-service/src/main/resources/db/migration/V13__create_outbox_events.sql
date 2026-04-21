@@ -1,3 +1,4 @@
+-- V13
 CREATE TABLE outbox_events
 (
     event_id      VARCHAR(36) PRIMARY KEY,

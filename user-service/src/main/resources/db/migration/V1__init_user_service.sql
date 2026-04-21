@@ -1,4 +1,4 @@
-
+-- V1
 CREATE TABLE `user`
 (
     id                  BIGINT          NOT NULL AUTO_INCREMENT,

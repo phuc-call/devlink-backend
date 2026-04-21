@@ -1,2 +1,3 @@
+-- V9
 ALTER TABLE profile_nudge_config
 DROP COLUMN nudge_interval_days;

@@ -74,39 +74,32 @@ public class BadgeServiceImpl implements BadgeService {
         log.debug("[BADGE] userId={} totalReal={} pendingReal={} pendingRatio={}%",
                 userId, totalFollowing, totalPending, pendingRatio);
 
-        if (currentBadType.equals(BadgeType.POPULAR) && totalFollowing > badgeConfig.getPopularThreshold()
-                && isOverGracePeriod(userId, BadgeType.POPULAR)) {
-            doAutoGrantBadge(user, BadgeType.NONE, totalFollowing);
-            return;
-        }
-        if (currentBadType.equals(BadgeType.BLUE_TICK) &&
-                (totalFollowing > badgeConfig.getBleuTickThreshold() || badgeConfig.getBleuTickThreshold() > pendingRatio)
-                && isOverGracePeriod(userId, BadgeType.BLUE_TICK)) {
-            doAutoGrantBadge(user, BadgeType.POPULAR, totalFollowing);
-            return;
-        }
-        if (totalFollowing >= badgeConfig.getPopularThreshold()
-                && currentBadType.equals(BadgeType.NONE)) {
-            doAutoGrantBadge(user, BadgeType.POPULAR, totalFollowing);
-            return;
-        }
-
-        if (totalFollowing >= badgeConfig.getBleuTickThreshold()
-                && pendingRatio >= badgeConfig.getBlueTickPendingRatio()
-                && !currentBadType.equals(BadgeType.BLUE_TICK)) {
-            doAutoGrantBadge(user, BadgeType.BLUE_TICK, totalFollowing);
-        }
+        evaluatePopular(user, userId, currentBadType, badgeConfig, totalFollowing);
+       evaluateBlueTick(user, userId, currentBadType, badgeConfig, totalFollowing, pendingRatio);
     }
 
     private void evaluatePopular(User user, Long userId, BadgeType current, BadgeConfig config, Long total) {
-        if(total<config.getPopularThreshold()&&
-        current.equals(BadgeType.POPULAR)&&
-        isOverGracePeriod(userId,BadgeType.POPULAR)){
-            doAutoGrantBadge(user,BadgeType.POPULAR,total);
+        if (total < config.getPopularThreshold() &&
+                current.equals(BadgeType.POPULAR) &&
+                isOverGracePeriod(userId, BadgeType.POPULAR)) {
+            doAutoGrantBadge(user, BadgeType.NONE, total);
             return;
         }
-        if(total>config.getPopularThreshold()&&current.equals(BadgeType.NONE)){
-            doAutoGrantBadge(user,BadgeType.POPULAR,total);
+        if (total >= config.getPopularThreshold() && current.equals(BadgeType.NONE)) {
+            doAutoGrantBadge(user, BadgeType.POPULAR, total);
+        }
+    }
+
+    private void evaluateBlueTick(User user, Long userId, BadgeType current,
+                                  BadgeConfig config, Long total, double pendingRatio) {
+        if (total < config.getBleuTickThreshold() &&
+                current.equals(BadgeType.BLUE_TICK) &&
+                isOverGracePeriod(userId, BadgeType.BLUE_TICK)) {
+            doAutoGrantBadge(user, BadgeType.POPULAR, total);
+        }
+        if (total >= config.getBleuTickThreshold() && pendingRatio > config.getBlueTickPendingRatio()&&
+                current.equals(BadgeType.NONE)) {
+            doAutoGrantBadge(user, BadgeType.BLUE_TICK, total);
         }
     }
 
