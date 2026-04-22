@@ -8,7 +8,7 @@ import lombok.*;
 
 @Getter @Setter @AllArgsConstructor
 @NoArgsConstructor @Builder
-public class RegisterCompleteRequest {
+public class  RegisterCompleteRequest {
     @Email @NotBlank
     private String email;
     @NotBlank(message = "Password is required")
@@ -18,7 +18,7 @@ public class RegisterCompleteRequest {
             message = "Password must contain uppercase, lowercase, number and special character"
     )
     private String password;
-    @NotBlank
+    @NotBlank(message = "Username is required")
     private String username;
 
 }

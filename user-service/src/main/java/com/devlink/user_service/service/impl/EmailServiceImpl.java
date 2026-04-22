@@ -1,7 +1,6 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.entity.EmailTemplate;
-import com.devlink.user_service.entity.enums.EmailTemplateType;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.EmailTemplateRepository;
@@ -26,8 +25,9 @@ public class EmailServiceImpl implements EmailService {
 
     @Async
     @Override
-    public void sendEmailDTO(String toEmail, EmailTemplateType type, Map<String, String> variables){
-        EmailTemplate emailTemplate=emailTemplateRepository.findByTypeAndLanguage(type,"vi").orElseThrow(()->
+    public void sendEmailDTO(String toEmail, String type, Map<String, String> variables){
+        String normalizedEmail=type.toUpperCase().trim();
+        EmailTemplate emailTemplate=emailTemplateRepository.findByTypeAndLanguage(normalizedEmail,"vi").orElseThrow(()->
                 new AppException(ErrorCode.EMAIL_TEMPLATE_NOT_FOUND));
 
         String subject=replacePlaceholders(emailTemplate.getSubject(),variables);

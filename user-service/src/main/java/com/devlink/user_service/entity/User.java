@@ -44,6 +44,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private ProfileVisibility profileVisibility= ProfileVisibility.PUBLIC;
 
+
+    // if false auto PENDING → ACCEPTED
     @Column(name = "follow_request_mode", nullable = false)
     private Boolean followRequestMode = false;
 
@@ -82,4 +84,6 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
 }

@@ -1,6 +1,5 @@
 package com.devlink.user_service.entity;
 
-import com.devlink.user_service.entity.enums.EmailTemplateType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -22,8 +21,7 @@ public class EmailTemplate {
     private Long id;
 
     @Column(name = "type", nullable = false, length = 50)
-    @Enumerated(EnumType.STRING)
-    private EmailTemplateType type;
+    private String type;
 
     @Column(name = "subject", nullable = false, length = 200)
     private String subject;
@@ -34,6 +32,8 @@ public class EmailTemplate {
 
     @Column(name = "language", nullable = false, length = 5)
     private String language = "vi";
+    @Column(name = "is_system", nullable = false)
+    private Boolean isSystem = false;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

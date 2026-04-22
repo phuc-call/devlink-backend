@@ -11,4 +11,7 @@ import java.util.Optional;
 public interface EmailVerificationRepository extends JpaRepository<EmailVerification,Long> {
     Optional<EmailVerification> findByEmailAndVerificationTypeAndUsed(String email, VerificationType verificationType, boolean userId);
     void deleteByEmailAndVerificationType(String email, VerificationType verificationType);
+    Optional<EmailVerification> findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc(String email, VerificationType verificationType, Boolean used);
+    boolean existsByEmailAndVerificationTypeAndUsed(String email, VerificationType verificationType, boolean used);
+
 }

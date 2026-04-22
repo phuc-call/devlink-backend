@@ -14,7 +14,8 @@ src/main/resources/application.yml
 =======
 # Compiled class file
 *.class
-
+.env
+*.env
 # Log file
 *.log
 
