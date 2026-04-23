@@ -17,5 +17,8 @@ public final class Constants {
     public static final String SORT_DIR = "asc";
     public static final int OPS_EXPIRATION_MINUTES = 5;
 
-
+    public static final String MSG_LOGOUT_SUCCESS        = "Logout successful";
+    public static final String MSG_LOGOUT_ALL_SUCCESS    = "Logged out %d devices";
+    public static final String MSG_LOGOUT_TOKEN_INVALID  = "Token does not exist or has expired";
+    public static final String MSG_LOGOUT_NO_SESSION     = "No devices are logged in";
 }

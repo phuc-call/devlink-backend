@@ -161,6 +161,8 @@ public class FollowServiceImpl implements FollowService {
         return response;
     }
 
+
+    //TODO: có thể bug logic chỗ này
     private void updateFollowCount(User follower, User following) {
         UserProfile currentUser = follower.getProfile();
         UserProfile targetUser = following.getProfile();

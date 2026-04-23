@@ -1,8 +1,11 @@
 package com.devlink.user_service.service.impl;
 
+import com.devlink.user_service.common.TokenHashUtil;
+import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.AppProperties;
 import com.devlink.user_service.config.Constants;
 import com.devlink.user_service.dto.reponse.AuthResponse;
+import com.devlink.user_service.dto.reponse.LogoutResponse;
 import com.devlink.user_service.dto.request.*;
 import com.devlink.user_service.entity.*;
 import com.devlink.user_service.entity.enums.*;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import ua_parser.Parser;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -38,10 +42,12 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
     private final AuthTokeRepository authTokeRepository;
+    private final RedisTokenService redisTokenService;
     private final Parser uaParser;
     private final AppProperties appProperties;
 
     private final UserProfileRepository userProfileRepository;
+    private final UserHelper userHelper;
 
     @Override
     public void registerInit(RegisterInitRequest request) {
@@ -90,9 +96,47 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout(RefreshTokenRequest request){
+    public LogoutResponse logout(RefreshTokenRequest request, String accessToken){
+        String hash=TokenHashUtil.hash(request.getRefreshToken());
+        boolean isToken=authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
+                .map(toke->{authTokeRepository.delete(toke);return true;}).orElse(false);
+        redisTokenService.blackList(accessToken,jwtUtil.extractExpiration(accessToken));
+        if(!isToken){
+           LogoutResponse.builder()
+                   .success(false)
+                   .message(Constants.MSG_LOGOUT_SUCCESS)
+                   .build();
+        }
+        return LogoutResponse.builder().build();
+    }
+
+    @Override
+    public LogoutResponse logoutAll(String accessToken){
+        Long userId=userHelper.getCurrentUser().getId();
+        List<AuthToken>tokens=authTokeRepository.findAllByUserId(userId);
+        if(tokens.isEmpty()){
+            return LogoutResponse.builder()
+                    .success(false)
+                    .message(Constants.MSG_LOGOUT_NO_SESSION)
+                    .build();
+        }
+        int deleted = authTokeRepository.deleteAllByUserId(userId);
+        redisTokenService.blackList(accessToken,jwtUtil.extractExpiration(accessToken));
+        if(deleted==0){
+            return LogoutResponse.builder()
+                    .success(false)
+                    .message(Constants.MSG_LOGOUT_NO_SESSION)
+                    .build();
+        }
+        log.info("[AUTH] LogoutAll userId={} — {} sessions revoked",
+                userId, tokens.size());
+        return LogoutResponse.builder()
+                .success(true)
+                .message(String.format(Constants.MSG_LOGOUT_ALL_SUCCESS, tokens.size()))
+                .build();
 
     }
+
 
     @Override
     public AuthResponse registerComplete(RegisterCompleteRequest request, HttpServletRequest httpRequest) {
@@ -140,7 +184,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken=jwtUtil.generateToken(user.getEmail(),user.getId(),roleName);
 
         String rawRefresh = UUID.randomUUID().toString().replace("-", "");
-        String hashedRefresh = passwordEncoder.encode(rawRefresh);
+        String hashedRefresh = TokenHashUtil.hash(rawRefresh);
         authTokeRepository.save(buildAuthToken(user,httpRequest,hashedRefresh));
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -155,7 +199,7 @@ public class AuthServiceImpl implements AuthService {
                 + " on " + client.os.family;
         return AuthToken.builder()
                 .user(user)
-                .tokenValue(hasToken)
+                .tokenHash(hasToken)
                 .expiresAt(LocalDateTime.now().plusDays(appProperties.getRefreshTokenExpiryDays()))
                 .driveName(deviceName.trim())
                 .deviceType(resolveDeviceType(client.device.family))
@@ -195,6 +239,25 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user,userRole,httpRequest);
     }
 
+    @Override
+   public AuthResponse refresh(RefreshTokenRequest request){
+        AuthToken authToken = authTokeRepository
+                .findByTokenHashAndExpiresAtAfter(
+                        TokenHashUtil.hash(request.getRefreshToken()),
+                        LocalDateTime.now())
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        User user=authToken.getUser();
+        String newAccessToken=jwtUtil.generateToken(user.getEmail(),user.getId(),extractRole(user));
+
+        log.info("[AUTH] Token refreshed userId={}", user.getId());
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(request.getRefreshToken())
+                .build();
+    }
+
     private String extractRole(User user){
         return user.getRoles().stream()
                 .map(ur->ur.getRole().getName().name()).findFirst().orElse(RoleName.USER.name());
@@ -208,6 +271,5 @@ public class AuthServiceImpl implements AuthService {
         }
         userRepository.save(user);
     }
-
 
 }

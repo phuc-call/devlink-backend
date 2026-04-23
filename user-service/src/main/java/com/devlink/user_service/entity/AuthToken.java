@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @AllArgsConstructor @NoArgsConstructor @Getter @Setter @Builder
 @Table(name = "auth_token", indexes = {
-        @Index(name ="idx_token_value",columnList = "token_value"),
+        @Index(name = "idx_token_hash", columnList = "token_hash"),
 @Index(name = "idx_token_user", columnList = "user_id")})
 public class AuthToken {
     @Id
@@ -23,12 +23,10 @@ public class AuthToken {
     @JoinColumn(name ="user_id",nullable = false)
     private User user;
 
+    @Column(name = "token_hash", nullable = false)
+    private String tokenHash;
 
-
-    @Column(name = "token_value", nullable = false)
-    private String tokenValue;
-
-    @Column(name = "expires_at",nullable = false)
+    @Column(name = "expires_at",nullable = false, length = 64)
     private LocalDateTime expiresAt;
 
     @Column(name = "drive_name",nullable = false)

@@ -1,5 +1,6 @@
 package com.devlink.user_service.security;
 
+import com.devlink.user_service.common.TokenHashUtil;
 import com.devlink.user_service.config.AppProperties;
 import com.devlink.user_service.entity.*;
 import com.devlink.user_service.entity.enums.*;
@@ -159,7 +160,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 user.getEmail(), user.getId(), roleName);
 
         String rawRefreshToken = UUID.randomUUID().toString().replace("-", "");
-        String hashedRefreshToken = passwordEncoder.encode(rawRefreshToken);
+        String hashedRefreshToken =  TokenHashUtil.hash(rawRefreshToken);
 
         AuthToken refreshToken = buildRefreshToken(user, request, hashedRefreshToken);
         authTokeRepository.save(refreshToken);
@@ -182,7 +183,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         return AuthToken.builder()
                 .user(user)
-                .tokenValue(hashedToken)
+                .tokenHash(hashedToken)
                 .expiresAt(LocalDateTime.now().plusDays(appProperties.getRefreshTokenExpiryDays()))
                 .driveName(deviceName.trim())
                 .deviceType(resolveDeviceType(client.device.family))

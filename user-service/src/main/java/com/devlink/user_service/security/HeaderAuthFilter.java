@@ -40,4 +40,5 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
         }
         chain.doFilter(request, response);
     }
+
 }
