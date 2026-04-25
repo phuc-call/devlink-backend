@@ -75,54 +75,61 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void registerVerify(RegisterVerifyRequest request) {
-        verifyOtp(request.getEmail(), request.getOtp(), true);
+        verifyOtp(request.getEmail(), request.getOtp());
     }
 
-    private void verifyOtp(String email, String code, boolean markUser) {
+    private void verifyOtp(String email, String code) {
         EmailVerification ev = emailVerificationRepository.
                 findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc
                         (email, VerificationType.EMAIL_OTP, false).orElseThrow(() ->
                         new AppException(ErrorCode.INVALID_OTP));
         if (ev.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new AppException(ErrorCode.OTP_EXPIRED);
+
         }
         if (!ev.getCode().equals(code)) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
-        if (markUser) {
-            ev.setUsed(true);
-            emailVerificationRepository.save(ev);
-        }
+
+        ev.setUsed(true);
+        emailVerificationRepository.save(ev);
+
     }
 
     @Override
-    public LogoutResponse logout(RefreshTokenRequest request, String accessToken){
-        String hash=TokenHashUtil.hash(request.getRefreshToken());
-        boolean isToken=authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
-                .map(toke->{authTokeRepository.delete(toke);return true;}).orElse(false);
-        redisTokenService.blackList(accessToken,jwtUtil.extractExpiration(accessToken));
-        if(!isToken){
-           LogoutResponse.builder()
-                   .success(false)
-                   .message(Constants.MSG_LOGOUT_SUCCESS)
-                   .build();
+    public LogoutResponse logout(RefreshTokenRequest request, String accessToken) {
+        String hash = TokenHashUtil.hash(request.getRefreshToken());
+        boolean isToken = authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
+                .map(toke -> {
+                    authTokeRepository.delete(toke);
+                    return true;
+                }).orElse(false);
+        redisTokenService.blackList(accessToken, jwtUtil.extractExpiration(accessToken));
+        if (!isToken) {
+            return LogoutResponse.builder()
+                    .success(false)
+                    .message(Constants.MSG_LOGOUT_TOKEN_INVALID)
+                    .build();
         }
-        return LogoutResponse.builder().build();
+        return LogoutResponse.builder()
+                .success(true)
+                .message(Constants.MSG_LOGOUT_SUCCESS)
+                .build();
     }
 
     @Override
-    public LogoutResponse logoutAll(String accessToken){
-        Long userId=userHelper.getCurrentUser().getId();
-        List<AuthToken>tokens=authTokeRepository.findAllByUserId(userId);
-        if(tokens.isEmpty()){
+    public LogoutResponse logoutAll(String accessToken) {
+        Long userId = userHelper.getCurrentUser().getId();
+        List<AuthToken> tokens = authTokeRepository.findAllByUserId(userId);
+        if (tokens.isEmpty()) {
             return LogoutResponse.builder()
                     .success(false)
                     .message(Constants.MSG_LOGOUT_NO_SESSION)
                     .build();
         }
         int deleted = authTokeRepository.deleteAllByUserId(userId);
-        redisTokenService.blackList(accessToken,jwtUtil.extractExpiration(accessToken));
-        if(deleted==0){
+        redisTokenService.blackList(accessToken, jwtUtil.extractExpiration(accessToken));
+        if (deleted == 0) {
             return LogoutResponse.builder()
                     .success(false)
                     .message(Constants.MSG_LOGOUT_NO_SESSION)
@@ -134,22 +141,21 @@ public class AuthServiceImpl implements AuthService {
                 .success(true)
                 .message(String.format(Constants.MSG_LOGOUT_ALL_SUCCESS, tokens.size()))
                 .build();
-
     }
 
 
     @Override
     public AuthResponse registerComplete(RegisterCompleteRequest request, HttpServletRequest httpRequest) {
-        if(userRepository.existsByEmail(request.getEmail())){
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
-        boolean iseVerify=emailVerificationRepository.
-                existsByEmailAndVerificationTypeAndUsed(request.getEmail(),VerificationType.EMAIL_OTP,true);
-        if(!iseVerify){
+        boolean iseVerify = emailVerificationRepository.
+                existsByEmailAndVerificationTypeAndUsed(request.getEmail(), VerificationType.EMAIL_OTP, true);
+        if (!iseVerify) {
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
-        Role role=roleRepository.findByName(RoleName.USER).orElseThrow(()->new AppException(ErrorCode.ROLE_NOT_FOUND));
-        User user=User.builder()
+        Role role = roleRepository.findByName(RoleName.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -162,37 +168,38 @@ public class AuthServiceImpl implements AuthService {
                 .badge(BadgeType.NONE)
                 .build();
 
-        UserRole userRole=UserRole.builder()
+        UserRole userRole = UserRole.builder()
                 .role(role)
                 .user(user)
                 .grantedBy(null)
                 .build();
         user.getRoles().add(userRole);
-        User savedUser=userRepository.save(user);
-        UserProfile userProfile=new UserProfile();
+        User savedUser = userRepository.save(user);
+        UserProfile userProfile = new UserProfile();
         userProfile.setUser(savedUser);
         userProfileRepository.save(userProfile);
 
         log.info("[AUTH] User registered: {}", savedUser.getEmail());
 
         //Login after success
-        return buildAuthResponse(savedUser,RoleName.USER.name(),httpRequest);
+        return buildAuthResponse(savedUser, RoleName.USER.name(), httpRequest);
 
     }
 
-    private AuthResponse buildAuthResponse(User user,String roleName,HttpServletRequest httpRequest){
-        String accessToken=jwtUtil.generateToken(user.getEmail(),user.getId(),roleName);
+    private AuthResponse buildAuthResponse(User user, String roleName, HttpServletRequest httpRequest) {
+        String accessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), roleName);
 
         String rawRefresh = UUID.randomUUID().toString().replace("-", "");
         String hashedRefresh = TokenHashUtil.hash(rawRefresh);
-        authTokeRepository.save(buildAuthToken(user,httpRequest,hashedRefresh));
+        authTokeRepository.save(buildAuthToken(user, httpRequest, hashedRefresh));
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(rawRefresh)
                 .build();
     }
-    private AuthToken buildAuthToken(User user,HttpServletRequest httpRequest,String hasToken){
-        String rawUA=httpRequest.getHeader("User-Agent");
+
+    private AuthToken buildAuthToken(User user, HttpServletRequest httpRequest, String hasToken) {
+        String rawUA = httpRequest.getHeader("User-Agent");
         ua_parser.Client client = uaParser.parse(rawUA);
         String deviceName = client.userAgent.family
                 + " " + client.userAgent.major
@@ -207,13 +214,15 @@ public class AuthServiceImpl implements AuthService {
                 .ipAddress(extractIp(httpRequest))
                 .build();
     }
+
     private String extractIp(HttpServletRequest request) {
-        String ip=request.getHeader("X-Forwarded-For");
-        if(ip==null||ip.isBlank()) return request.getRemoteAddr();
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) return request.getRemoteAddr();
         return ip.split(",")[0].trim();
     }
+
     private DeviceType resolveDeviceType(String deviceFamily) {
-        if(deviceFamily==null) return DeviceType.UNKNOW;
+        if (deviceFamily == null) return DeviceType.UNKNOW;
         return switch (deviceFamily.toLowerCase()) {
             case "ipad", "tablet" -> DeviceType.TABLET;
             case "other" -> DeviceType.DESKTOP;
@@ -222,25 +231,25 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest){
-        User user=userRepository.findByEmail(request.getEmail()).orElseThrow(()->
+    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() ->
                 new AppException(ErrorCode.USER_NOT_FOUND));
-        if(user.getLockedUntil()!=null && user.getLockedUntil().isAfter(LocalDateTime.now())){
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
             throw new AppException(ErrorCode.ACCOUNT_LOCKED);
         }
-        if(!passwordEncoder.matches(request.getPassword(),user.getPasswordHash())){
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             handleFailedLogin(user);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
         user.setFailedLoginCount(0);
         user.setLockedUntil(null);
         userRepository.save(user);
-        String userRole=extractRole(user);
-        return buildAuthResponse(user,userRole,httpRequest);
+        String userRole = extractRole(user);
+        return buildAuthResponse(user, userRole, httpRequest);
     }
 
     @Override
-   public AuthResponse refresh(RefreshTokenRequest request){
+    public AuthResponse refresh(RefreshTokenRequest request) {
         AuthToken authToken = authTokeRepository
                 .findByTokenHashAndExpiresAtAfter(
                         TokenHashUtil.hash(request.getRefreshToken()),
@@ -248,8 +257,8 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() ->
                         new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-        User user=authToken.getUser();
-        String newAccessToken=jwtUtil.generateToken(user.getEmail(),user.getId(),extractRole(user));
+        User user = authToken.getUser();
+        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), extractRole(user));
 
         log.info("[AUTH] Token refreshed userId={}", user.getId());
         return AuthResponse.builder()
@@ -258,14 +267,15 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    private String extractRole(User user){
+    private String extractRole(User user) {
         return user.getRoles().stream()
-                .map(ur->ur.getRole().getName().name()).findFirst().orElse(RoleName.USER.name());
+                .map(ur -> ur.getRole().getName().name()).findFirst().orElse(RoleName.USER.name());
     }
-    private void handleFailedLogin(User user){
-        int failed=user.getFailedLoginCount()+1;
+
+    private void handleFailedLogin(User user) {
+        int failed = user.getFailedLoginCount() + 1;
         user.setFailedLoginCount(failed);
-        if(failed>=5){
+        if (failed >= 5) {
             user.setLockedUntil(LocalDateTime.now().plusMinutes(5));
             log.warn("[AUTH] Account locked: {}", user.getEmail());
         }

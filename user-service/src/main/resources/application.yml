@@ -1,7 +1,7 @@
 spring:
   data:
     redis:
-      host: localhost
+      host: ${REDIS_HOST:redis}
       port: 6379
       password: ${REDIS_PASSWORD:}
       timeout: 10000ms
@@ -19,7 +19,7 @@ spring:
           starttls:
             enable: true
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -48,6 +48,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:580676986376-bfptgpk9qceiluber2edf8etjh53skr0.apps.googleusercontent.com}
             client-secret: ${GOOGLE_CLIENT_SECRET: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}
             scope: email, profile
+            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
   application:
     name: user-service
   datasource:
@@ -73,7 +74,7 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
 server:
-  port: 8081
+  port: 8080
 eureka:
   client:
     service-url:
@@ -93,6 +94,8 @@ management:
 logging:
   level:
     com.demo: INFO
+    com.devlink: DEBUG
+    org.springframework.web: DEBUG
 
 app:
   frontend-url: http://localhost:3000
@@ -101,3 +104,4 @@ app:
 springdoc:
   api-docs:
     path: /v3/api-docs
+

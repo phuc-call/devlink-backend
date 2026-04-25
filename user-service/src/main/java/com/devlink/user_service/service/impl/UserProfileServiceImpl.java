@@ -155,7 +155,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         User user=userRepository.findById(userId).orElseThrow(()->
                 new AppException(ErrorCode.USER_NOT_FOUND)
                 );
-        UserProfile profile=getOrCreateProfile(user);
+        UserProfile profile=user.getProfile();
+        if (profile == null)
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         return modelMapper.map(profile,UserProfileResponse.class);
     }
 

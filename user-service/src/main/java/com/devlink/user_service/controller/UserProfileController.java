@@ -1,6 +1,7 @@
 package com.devlink.user_service.controller;
 
 import com.devlink.user_service.dto.reponse.ApiResponse;
+import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
 import com.devlink.user_service.dto.reponse.UserProfileResponse;
 import com.devlink.user_service.dto.request.ClearProfileFieldsRequest;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
@@ -54,5 +55,14 @@ public class UserProfileController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Update nudge config success"));
     }
 
+    @PatchMapping("/me/follow-request-mode")
+    public ResponseEntity<ApiResponse<FollowRequestModeResponse>> updateFollowRequestMode(@RequestParam boolean enabled) {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.updateFollowRequestMode(enabled)));
+    }
+
+    @GetMapping("/profiles/{id}")
+    public ResponseEntity<ApiResponse<UserProfileResponse>>getUserProfile(@PathVariable Long id){
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getUserProfile(id)));
+    }
 
 }

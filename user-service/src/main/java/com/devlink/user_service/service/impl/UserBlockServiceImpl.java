@@ -33,7 +33,7 @@ public class UserBlockServiceImpl implements UserBlockService {
     public void blockUser(Long userId) {
         User user = userHelper.getCurrentUser();
         Long currentUserId = user.getId();
-        boolean isUser = userRepository.existsByUserId(userId);
+        boolean isUser = userRepository.existsById(userId);
         if (!isUser) throw new AppException(ErrorCode.USER_NOT_FOUND);
         if (currentUserId.equals(userId)) return;
         boolean isBlock = userBlockRepository.isBlocked(currentUserId, userId);
@@ -61,7 +61,7 @@ public class UserBlockServiceImpl implements UserBlockService {
     public void unBlockUser(Long userId) {
         User user = userHelper.getCurrentUser();
         Long currentUserId = user.getId();
-        boolean isUser = userRepository.existsByUserId(userId);
+        boolean isUser = userRepository.existsById(userId);
         if (!isUser) throw new AppException(ErrorCode.USER_NOT_FOUND);
         boolean isBlock = userBlockRepository.isBlocked(currentUserId, userId);
         if (!isBlock) throw new AppException(ErrorCode.NOT_BLOCKED);

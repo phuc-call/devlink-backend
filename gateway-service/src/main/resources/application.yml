@@ -15,11 +15,17 @@ spring:
             enabled: true
             lower-case-service-id: true
           routes:
-            # Auth
-            - id: user-service-auth
+            - id: user-service-oauth2
               uri: lb://user-service
               predicates:
-                - Path=/api/auth/**
+               - Path=/oauth2/**,/login/oauth2/**
+              filters:
+               - name: LoggingFilter
+
+            - id: user-service-auth-public
+              uri: lb://user-service
+              predicates:
+                - Path=/auth/register/**,/auth/login,/auth/refresh
               filters:
                 - name: LoggingFilter
                 - name: RequestRateLimiter
@@ -29,7 +35,15 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@ipKeyResolver}"
 
-            # User Service
+            - id: user-service-auth-private
+              uri: lb://user-service
+              predicates:
+                - Path=/api/auth/logout
+                - Path=/api/auth/logout/all
+              filters:
+                - name: JwtAuthFilter
+                - name: LoggingFilter
+
             - id: user-service
               uri: lb://user-service
               predicates:
@@ -43,20 +57,20 @@ spring:
                     redis-rate-limiter.burstCapacity: 20
                     key-resolver: "#{@userKeyResolver}"
 
-            # Product Service
-            - id: product-service
-              uri: lb://product-service
+            # x
+            - id: x
+              uri: lb://x
               predicates:
-                - Path=/api/products/**
+                - Path=/api/x/**
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
 
-            # Order Service
-            - id: order-service
-              uri: lb://order-service
+            # x
+            - id: x
+              uri: lb://x
               predicates:
-                - Path=/api/orders/**
+                - Path=/api/x/**
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
@@ -69,24 +83,27 @@ spring:
               filters:
                 - RewritePath=/user-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
-            - id: product-service-docs
-              uri: lb://product-service
+            - id: x-service-docs
+              uri: lb://x-service
               predicates:
-                - Path=/product-service/v3/api-docs/**
+                - Path=/x-service/v3/api-docs/**
               filters:
-                - RewritePath=/product-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
+                - RewritePath=/x-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
-            - id: order-service-docs
-              uri: lb://order-service
+            - id: x-service-docs
+              uri: lb://x-service
               predicates:
-                - Path=/order-service/v3/api-docs/**
+                - Path=/x-service/v3/api-docs/**
               filters:
-                - RewritePath=/order-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
+                - RewritePath=/x-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
 eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+      register-fetch-interval-seconds: 5
+      fetch-registry: true
+      register-with-eureka: true
   instance:
     prefer-ip-address: true
 
@@ -106,7 +123,8 @@ management:
 logging:
   level:
     com.demo: INFO
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty: DEBUG
 
 springdoc:
   api-docs:
@@ -120,3 +138,4 @@ springdoc:
         url: /product-service/v3/api-docs
       - name: order-service
         url: /order-service/v3/api-docs
+

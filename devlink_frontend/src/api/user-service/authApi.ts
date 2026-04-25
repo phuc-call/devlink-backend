@@ -1,0 +1,42 @@
+import axios from 'axios';
+import type {
+    RegisterInitRequest,
+    RegisterVerifyRequest,
+    RegisterCompleteRequest,
+    LoginRequest,
+    AuthResponse,
+    LogoutResponse,
+} from '../../types/auth.types.ts';
+
+const BASE_URL = import.meta.env.VITE_API_GATEWAY_URL ?? 'http://localhost:8080';
+
+const api = axios.create({
+    baseURL: BASE_URL,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+export const authApi = {
+    registerInit: (data: RegisterInitRequest) =>
+        api.post('/auth/register/init', data),
+
+    registerVerify: (data: RegisterVerifyRequest) =>
+        api.post('/auth/register/verify', data),
+
+    registerComplete: (data: RegisterCompleteRequest) =>
+        api.post<{ data: AuthResponse }>('/auth/register/complete', data),
+
+    login: (data: LoginRequest) =>
+        api.post<{ data: AuthResponse }>('/auth/login', data),
+
+    logout: (refreshToken: string) =>
+        api.post<{ data: LogoutResponse }>('/auth/logout', { refreshToken }),
+
+    refresh: (refreshToken: string) =>
+        api.post<{ data: AuthResponse }>('/auth/refresh', { refreshToken }),
+};
