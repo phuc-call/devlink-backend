@@ -45,7 +45,10 @@ services:
       timeout: 5s
       retries: 5
 
+
   user-service:
+    env_file:
+      - .env
     build: ./user-service
     container_name: user-service
     ports:

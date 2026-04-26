@@ -52,9 +52,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 + "; SameSite=Lax";
     }
 
-
-
-
     @Override
     @Transactional
 
@@ -111,7 +108,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         User user = User.builder()
                 .username(generateUsername(name))
                 .email(email)
-                .passwordHash(null)
+                .passwordHash(UUID.randomUUID().toString())
                 .status(UserStatus.ACTIVE)
                 .birthDay(null)
                 .emailVerified(true)

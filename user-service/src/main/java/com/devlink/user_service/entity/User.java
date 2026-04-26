@@ -67,6 +67,7 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private UserProfile profile;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL)
     private Set<UserRole>roles=new HashSet<>();
     @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
@@ -84,6 +85,4 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-
 }

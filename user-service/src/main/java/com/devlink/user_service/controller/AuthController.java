@@ -7,13 +7,15 @@ import com.devlink.user_service.dto.request.*;
 import com.devlink.user_service.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping( "auth")
+@RequiredArgsConstructor
 public class AuthController {
-    private AuthService authService;
+    private final AuthService authService;
     @PostMapping("/register/init")
     public ResponseEntity<ApiResponse<RegisterInitRequest>> registerInit(
             @RequestBody @Valid RegisterInitRequest request){

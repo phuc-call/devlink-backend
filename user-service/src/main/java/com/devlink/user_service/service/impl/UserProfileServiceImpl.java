@@ -83,7 +83,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         switch (count) {
             case 0 -> userProfile.setNextNudgeAt(now.plusDays(profileNudgeConfig.getFirstNudgeDays()));
             case 1 -> userProfile.setNextNudgeAt(now.plusDays(profileNudgeConfig.getSecondNudgeDays()));
-            case 3 -> userProfile.setNextNudgeAt(now.plusDays(profileNudgeConfig.getThirdNudgeDays()));
+            case 2 -> userProfile.setNextNudgeAt(now.plusDays(profileNudgeConfig.getThirdNudgeDays()));
             default -> userProfile.setNudgeDismissedForever(true);
         }
     }
