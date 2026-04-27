@@ -42,7 +42,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     public UserProfileResponse updateUserProfile(UpdateProfileRequest request) {
-        User user=userHelper.getCurrentUser();
+        User user = userHelper.getCurrentUser();
         UserProfile userProfile = getOrCreateProfile(user);
         modelMapper.map(request, userProfile);
         //total completed of profile
@@ -59,11 +59,11 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode){
-        User user=userHelper.getCurrentUser();
-        int pendingRequestsAccepted=0;
-        if(Boolean.FALSE.equals(followRequestMode)){
-            pendingRequestsAccepted=followRepository.acceptFollowRequest(user.getId());
+    public FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode) {
+        User user = userHelper.getCurrentUser();
+        int pendingRequestsAccepted = 0;
+        if (Boolean.FALSE.equals(followRequestMode)) {
+            pendingRequestsAccepted = followRepository.acceptFollowRequest(user.getId());
         }
         user.setFollowRequestMode(followRequestMode);
         userRepository.save(user);
@@ -76,6 +76,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private void scheduleNudge(UserProfile userProfile, int percent, ProfileNudgeConfig profileNudgeConfig) {
         if (percent > profileNudgeConfig.getCompletionThreshold()) {
             userProfile.setNextNudgeAt(null);
+            userProfile.setNudgeDismissedForever(true);
             return;
         }
         int count = userProfile.getNudgeSentCount();
@@ -122,7 +123,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     public void clearProfileFields(ClearProfileFieldsRequest request) {
-        User user=userHelper.getCurrentUser();
+        User user = userHelper.getCurrentUser();
         UserProfile profile = user.getProfile();
         if (profile == null) return;
         for (ProfileField field : request.getProfileFields()) {
@@ -143,37 +144,55 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public UserProfileResponse getProfile(){
-        User user=userHelper.getCurrentUser();
-        UserProfile profile=getOrCreateProfile(user);
-        return modelMapper.map(profile,UserProfileResponse.class);
+    public UserProfileResponse getProfile() {
+        User user = userHelper.getCurrentUser();
+        UserProfile profile = getOrCreateProfile(user);
+        ProfileNudgeConfig config = getNudgeConfig();
+        UserProfileResponse response = modelMapper.map(profile, UserProfileResponse.class);
+        response.setShouldShowNudge(shouldShowNudge(profile, config));
+        return response;
+    }
+
+    private boolean shouldShowNudge(UserProfile profile, ProfileNudgeConfig config) {
+        if (!Boolean.TRUE.equals(config.getFeatureEnabled())) return false;
+        if (Boolean.TRUE.equals(profile.getNudgeDismissedForever())) return false;
+        if (profile.getCompletionPercent() >= config.getCompletionThreshold()) return false;
+        LocalDateTime nextNudge = profile.getNextNudgeAt();
+        return nextNudge == null || !nextNudge.isAfter(LocalDateTime.now());
     }
 
     //get profile of another person
     @Override
-     public UserProfileResponse getUserProfile(Long userId){
-        User user=userRepository.findById(userId).orElseThrow(()->
+    public UserProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
                 new AppException(ErrorCode.USER_NOT_FOUND)
-                );
-        UserProfile profile=user.getProfile();
+        );
+        UserProfile profile = user.getProfile();
         if (profile == null)
             throw new AppException(ErrorCode.USER_NOT_FOUND);
-        return modelMapper.map(profile,UserProfileResponse.class);
+        return modelMapper.map(profile, UserProfileResponse.class);
     }
 
 
     @Override
-    public void dismissNudge(boolean dismissForever){
-        User user=userHelper.getCurrentUser();
-        UserProfile userProfile=user.getProfile();
-        if(userProfile==null) return;
-        if(dismissForever){
+    public void dismissNudge(boolean dismissForever) {
+        User user = userHelper.getCurrentUser();
+        UserProfile userProfile = user.getProfile();
+        if (userProfile == null) return;
+        if (dismissForever) {
             userProfile.setNudgeDismissedForever(true);
             userProfile.setNextNudgeAt(null);
-        }else {
+        } else {
+            int newCount= userProfile.getNudgeSentCount() + 1;
+            userProfile.setNudgeSentCount(newCount);
+
             ProfileNudgeConfig config = getNudgeConfig();
-            scheduleNudge(userProfile, userProfile.getCompletionPercent(), config);
-            userProfile.setNudgeSentCount(userProfile.getNudgeSentCount() + 1);
+            if(newCount >= 3){
+                userProfile.setNudgeDismissedForever(true);
+                userProfile.setNextNudgeAt(null);
+            }else {
+                scheduleNudge(userProfile, userProfile.getCompletionPercent(), config);
+            }
         }
         log.info("User {} dismissed nudge. Dismiss forever: {}. Next nudge at: {}",
                 user.getId(), dismissForever, userProfile.getNextNudgeAt());
@@ -190,16 +209,19 @@ public class UserProfileServiceImpl implements UserProfileService {
         profileNudgeConfigRepository.save(config);
         log.info("Admin {} updated nudge config: {}", SecurityUtils.getCurrentUserId(), request);
     }
+
     private ProfileNudgeConfig getNudgeConfig() {
         return profileNudgeConfigRepository.findById(1L)
                 .orElseGet(ProfileNudgeConfig::new);
     }
-    private UserProfile getOrCreateProfile(User user){
-        UserProfile profile=user.getProfile();
-        if(profile==null){
-            profile=new UserProfile();
+
+    private UserProfile getOrCreateProfile(User user) {
+        UserProfile profile = user.getProfile();
+        if (profile == null) {
+            profile = new UserProfile();
             profile.setUser(user);
-            userProfileRepository.save(profile);}
+            userProfileRepository.save(profile);
+        }
         return profile;
     }
 }

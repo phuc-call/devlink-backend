@@ -8,10 +8,9 @@ export function useProfileSetup() {
     useEffect(() => {
         userProfileApi.getProfile()
             .then(res => {
-                const {completionPercent, nudgeDismissedForever, nextNudgeAt} = res.data.data;
-                if (nudgeDismissedForever) return;
-                if (nextNudgeAt && new Date(nextNudgeAt) > new Date()) return;
-                if (completionPercent === 0) setShowModal(true);
+                if (res.data.data.shouldShowNudge) {
+                    setShowModal(true);
+                }
             })
             .catch(() => {})
             .finally(() => setChecked(true));

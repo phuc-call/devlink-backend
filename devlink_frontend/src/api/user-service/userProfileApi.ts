@@ -3,7 +3,7 @@ import type {UpdateProfileRequest, UserProfileResponse} from '../../types/profil
 
 export const userProfileApi = {
     getProfile: () =>
-        axiosInstance.get<{data: UserProfileResponse}>('/api/users/me/profile'),
+        axiosInstance.get<{data: UserProfileResponse & {shouldShowNudge: boolean}}>('/api/users/me/profile'),
 
     updateProfile: (data: UpdateProfileRequest) =>
         axiosInstance.put<{data: UserProfileResponse}>('/api/users/me/profile', data),

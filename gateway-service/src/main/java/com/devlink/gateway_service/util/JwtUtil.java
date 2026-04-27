@@ -14,7 +14,7 @@ public class JwtUtil {
     private Key getKey(){return Keys.hmacShaKeyFor(secret.getBytes());}
 
     private Claims getClaims(String token){
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .setSigningKey(getKey())
                 .build()
                 .parseClaimsJws(token)

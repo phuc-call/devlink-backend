@@ -24,4 +24,5 @@ public class UserProfileResponse {
     private Integer completionPercent;
     private Integer followerCount;
     private Integer followingCount;
+    private Boolean shouldShowNudge;
 }

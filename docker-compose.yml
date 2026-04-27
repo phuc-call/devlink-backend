@@ -82,9 +82,12 @@ services:
       JAVA_OPTS: "-Dio.netty.resolver.dns.defaultSearchDomains="
       EUREKA_URL: http://eureka-server:8761/eureka
       JWT_SECRET: 5ZVnyGvacZRrCczj+xnOJxKQlR1xIxeb52erVLM169U=
+      REDIS_HOST: redis
     depends_on:
       eureka-server:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - microservice-net
   #Kafla

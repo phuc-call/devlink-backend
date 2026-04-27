@@ -1,5 +1,7 @@
 package com.devlink.user_service.entity.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum ProgrammingLanguage {
     JAVA,
     CSHARP,
@@ -7,5 +9,15 @@ public enum ProgrammingLanguage {
     PYTHON,
     TYPESCRIPT,
     GO,
-    PHP
+    PHP;
+
+    public ProgrammingLanguage toString(String value){
+        if(value == null) return null;
+        return ProgrammingLanguage.valueOf(value.toUpperCase());
+    }
+
+    @JsonValue
+    public String toValue() {
+        return this.name();
+    }
 }
