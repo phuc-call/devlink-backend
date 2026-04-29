@@ -8,7 +8,7 @@ export default function RegisterPage() {
     const [step, setStep] = useState<AuthStep>('init');
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
-    const [username, setUsername] = useState('');
+    const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -53,7 +53,7 @@ export default function RegisterPage() {
         }
         setLoading(true);
         try {
-            const res = await authApi.registerComplete({email, password, username});
+            const res = await authApi.registerComplete({email, password, fullName});
             const {accessToken, refreshToken} = res.data.data;
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
@@ -164,12 +164,12 @@ export default function RegisterPage() {
                     {step === 'complete' && (
                         <form onSubmit={handleComplete}>
                             <div className="form-group">
-                                <label htmlFor="username">Tên người dùng</label>
+                                <label htmlFor="fullName">Tên người dùng</label>
                                 <input
-                                    id="username"
+                                    id="fullName"
                                     type="text"
-                                    value={username}
-                                    onChange={e => setUsername(e.target.value)}
+                                    value={fullName}
+                                    onChange={e => setFullName(e.target.value)}
                                     placeholder="devlink_user"
                                     required
                                 />

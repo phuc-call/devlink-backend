@@ -10,7 +10,7 @@ export interface RegisterVerifyRequest {
 export interface RegisterCompleteRequest {
     email: string;
     password: string;
-    username: string;
+    fullName: string;
 }
 
 export interface LoginRequest {

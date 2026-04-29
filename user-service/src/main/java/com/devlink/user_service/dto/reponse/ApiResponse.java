@@ -15,7 +15,7 @@ public class ApiResponse<T> {
 
     public static<T> ApiResponse<T> ok(T data){
         return ApiResponse.<T>builder()
-                .success(true)
+                 .success(true)
                 .data(data)
                 .build();
     }

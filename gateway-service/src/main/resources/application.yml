@@ -51,7 +51,7 @@ spring:
             - id: user-service
               uri: lb://user-service
               predicates:
-                - Path=/api/users/**
+                - Path=/api/users/**,/auth/logout
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter

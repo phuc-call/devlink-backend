@@ -16,7 +16,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -41,7 +40,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private static final String SET_COOKIE = "Set-Cookie";
     private final JWTUtil jwtUtil;
     private final Parser uaParser;
-    private final PasswordEncoder passwordEncoder;
+
     private final AppProperties appProperties;
 
     private String buildCookie(String name, String value, int maxAge){
