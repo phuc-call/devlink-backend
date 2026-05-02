@@ -44,8 +44,8 @@ public class UserProfileController {
     }
 
     @PatchMapping("/me/profile/nudge-dismiss")
-    public ResponseEntity<ApiResponse<Void>> dismissNudge(@RequestParam(defaultValue = "false") boolean dismissNudge) {
-        userProfileService.dismissNudge(dismissNudge);
+    public ResponseEntity<ApiResponse<Void>> dismissNudge(@RequestParam(defaultValue = "false") boolean forever) {
+        userProfileService.dismissNudge(forever);
         return ResponseEntity.ok(ApiResponse.ok(null, "Dismiss nudge success"));
     }
 

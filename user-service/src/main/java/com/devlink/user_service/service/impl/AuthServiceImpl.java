@@ -61,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
                 .userId(0L)
                 .email(request.getEmail())
                 .verificationType(VerificationType.EMAIL_OTP)
-                .code(otp)
+                .code(passwordEncoder.encode(otp))
                 .expiresAt(LocalDateTime.now().plusMinutes(Constants.OPS_EXPIRATION_MINUTES))
                 .used(false)
                 .build());
@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.OTP_EXPIRED);
 
         }
-        if (!ev.getCode().equals(code)) {
+        if (!passwordEncoder.matches(code, ev.getCode())){
             throw new AppException(ErrorCode.INVALID_OTP);
         }
 
@@ -154,6 +154,8 @@ public class AuthServiceImpl implements AuthService {
         if (!iseVerify) {
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
+
+        String avatarUrl=String.format("https://ui-avatars.com/api/?name=%s&background=random",request.getUsername());
         Role role = roleRepository.findByName(RoleName.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         User user = User.builder()
                 .username(request.getUsername())
@@ -175,9 +177,13 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         user.getRoles().add(userRole);
         User savedUser = userRepository.save(user);
+
         UserProfile userProfile = new UserProfile();
         userProfile.setUser(savedUser);
+        userProfile.setFullName(request.getUsername());
+        userProfile.setAvatarUrl(avatarUrl);
         userProfileRepository.save(userProfile);
+        emailVerificationRepository.deleteByEmailAndVerificationType(request.getEmail(), VerificationType.EMAIL_OTP);
 
         log.info("[AUTH] User registered: {}", savedUser.getEmail());
 
@@ -200,6 +206,7 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthToken buildAuthToken(User user, HttpServletRequest httpRequest, String hasToken) {
         String rawUA = httpRequest.getHeader("User-Agent");
+        if (rawUA == null) rawUA = "Unknown";
         ua_parser.Client client = uaParser.parse(rawUA);
         String deviceName = client.userAgent.family
                 + " " + client.userAgent.major

@@ -13,7 +13,9 @@ public final class Constants {
             "/auth/refresh",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+
+            "/user-service/v3/api-docs/**"
     };
 
     public static final String PAGE_NUMBER = "0";

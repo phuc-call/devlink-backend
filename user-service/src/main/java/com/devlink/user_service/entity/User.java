@@ -34,7 +34,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
-    @Column(name = "birthday", nullable = false)
+    @Column(name = "birthday")
     private LocalDateTime birthDay;
 
     @Column(name = "email_verified", nullable = false)

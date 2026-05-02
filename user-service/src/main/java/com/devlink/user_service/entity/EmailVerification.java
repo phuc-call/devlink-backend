@@ -25,7 +25,7 @@ public class EmailVerification {
     @Enumerated(EnumType.STRING)
     private VerificationType verificationType;
 
-    @Column(name = "code",nullable = false, length = 6)
+    @Column(name = "code",nullable = false)
     private String code;
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

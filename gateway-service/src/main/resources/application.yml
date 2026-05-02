@@ -26,6 +26,13 @@ spring:
               filters:
                - name: LoggingFilter
 
+            - id: user-service-docs
+              uri: lb://user-service
+              predicates:
+                - Path=/user-service/v3/api-docs/**
+              filters:
+                - RewritePath=/user-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
+
             - id: user-service-auth-public
               uri: lb://user-service
               predicates:
@@ -132,14 +139,14 @@ logging:
 
 springdoc:
   api-docs:
-    enabled: false
+    enabled: true
   swagger-ui:
     path: /swagger-ui.html
     urls:
       - name: user-service
         url: /user-service/v3/api-docs
-      - name: product-service
-        url: /product-service/v3/api-docs
-      - name: order-service
-        url: /order-service/v3/api-docs
+      - name: x
+        url: /x/v3/api-docs
+      - name: x
+        url: /x/v3/api-docs
 

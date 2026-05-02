@@ -1,5 +1,10 @@
 package com.devlink.user_service.config;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.SneakyThrows;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
@@ -11,13 +16,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ua_parser.Parser;
 
+import java.util.List;
+
 @Configuration
 public class AppConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
+    private static final String BEARER_AUTH  = "Bearer";
     @Bean
     @SneakyThrows
     public Parser parser() {
@@ -49,6 +56,23 @@ public class AppConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new StringRedisSerializer());
         return template;
+    }
+    @Bean
+    public OpenAPI openAPI() {
+        return new OpenAPI()
+                .servers(List.of(new io.swagger.v3.oas.models.servers.Server()
+                        .url("/")
+                        .description("Via Gateway")))
+                .info(new Info()
+                        .title("User Service API")
+                        .version("1.0.0"))
+                .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
+                .components(new Components()
+                        .addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
+                                .name(BEARER_AUTH)
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")));
     }
 
 }

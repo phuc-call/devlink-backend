@@ -18,7 +18,26 @@ public class  RegisterCompleteRequest {
             message = "Password must contain uppercase, lowercase, number and special character"
     )
     private String password;
-    @NotBlank(message = "Username is required")
+
+    @NotBlank @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
+
+    public void setUsername(String username) {
+        this.username = capitalizeName(username);
+    }
+
+    private String capitalizeName (String username) {
+        if(username==null||username.isEmpty()) return username;
+
+        String[] words = username.trim().toLowerCase().split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            result.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1))
+                    .append(" ");
+        }
+        return result.toString().trim();
+    }
 
 }

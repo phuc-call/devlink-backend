@@ -170,6 +170,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                                         HttpServletRequest request,
                                         String hashedToken) {
         String rawUA = request.getHeader("User-Agent");
+        if (rawUA == null) rawUA = "Unknown";
         ua_parser.Client client = uaParser.parse(rawUA);
 
         String deviceName = client.userAgent.family

@@ -22,6 +22,19 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    // Thêm vào GlobalExceptionHandler
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
+        log.warn("App exception: {}", ex.getMessage());
+        ErrorCode errorCode = ex.getErrorCode();
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ApiResponse.<Void>builder()
+                        .success(false)
+                        .code(errorCode.name())
+                        .message(errorCode.getMessage())
+                        .build());
+    }
+
     //404
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
