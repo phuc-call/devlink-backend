@@ -86,14 +86,6 @@ spring:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
 
-            # Swagger docs routes
-            - id: user-service-docs
-              uri: lb://user-service
-              predicates:
-                - Path=/user-service/v3/api-docs/**
-              filters:
-                - RewritePath=/user-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
-
             - id: x-service-docs
               uri: lb://x-service
               predicates:
@@ -112,7 +104,7 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
-    registry-fetch-interval-seconds: 5
+    registry-fetch-interval-seconds: 30
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -134,8 +126,12 @@ management:
 logging:
   level:
     com.demo: INFO
-    org.springframework.cloud.gateway: TRACE
-    reactor.netty: DEBUG
+    org.springframework.cloud.gateway: WARN
+    reactor.netty: WARN
+
+    org.springframework.cloud.netflix.eureka: WARN
+    com.netflix.discovery: WARN
+    com.netflix.eureka: WARN
 
 springdoc:
   api-docs:

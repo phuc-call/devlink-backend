@@ -14,7 +14,7 @@ import java.util.List;
 
 @Entity
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
-@Table(name = "UserProfile")
+@Table(name = "user_profile")
 public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,6 +71,9 @@ public class UserProfile {
     private Integer followerCount=0;
     @Column(name = "following_count",nullable = false)
     private Integer followingCount=0;
+
+    @Column(name = "cover_avatar", length = 225)
+    private String coverAvatar;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

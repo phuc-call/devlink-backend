@@ -1,0 +1,18 @@
+
+.root {
+    min-height: 100vh;
+    background: #F0F2F5;
+    font-family: 'Inter', sans-serif;
+}
+
+.body {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 60px;
+}
+
+@media (max-width: 640px) {
+    .body {
+        padding-top: 60px;
+    }
+}

@@ -1,7 +1,6 @@
 package com.devlink.user_service.dto.reponse;
 
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserProfileResponse {
     private Long id;
     private String fullName;
@@ -22,7 +20,13 @@ public class UserProfileResponse {
     private String avatarUrl;
     private String coverImageUrl;
     private Integer completionPercent;
+
     private Integer followerCount;
     private Integer followingCount;
     private Boolean shouldShowNudge;
+    private String coverAvatar;
+
+    private String city;
+    private String country;
+    private String timezone;
 }

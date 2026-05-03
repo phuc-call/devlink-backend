@@ -29,3 +29,4 @@ export interface LogoutResponse {
 }
 
 export type AuthStep = 'init' | 'verify' | 'complete';
+

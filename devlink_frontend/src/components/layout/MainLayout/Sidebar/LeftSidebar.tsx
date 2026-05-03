@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import styles from './LeftSidebar.module.css';
-
+import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
+import type { UserRecommendationResponse } from '../../../../types/profile.types.ts';
 /* ─── Nav chính — thêm feature sau ─── */
 const NAV_ITEMS = [
     {
@@ -76,19 +78,17 @@ const NAV_ITEMS = [
     },
 ];
 
-/* ─── Index data phía dưới — điền sau ─── */
-const INDEX_SECTIONS = [
-    {
-        title: 'Xu hướng',
-        items: ['#ReactJS', '#SpringBoot', '#TypeScript', '#DevOps', '#AI'],
-    },
-    {
-        title: 'Gợi ý theo dõi',
-        items: ['dev_user_1', 'dev_user_2', 'dev_user_3'],
-    },
-];
+
 
 export default function LeftSidebar() {
+    const [recommendations, setRecommendations] = useState<UserRecommendationResponse[]>([]);
+
+    useEffect(() => {
+        userProfileApi.getNormalRecommendations()
+            .then(res => setRecommendations(res.data.data))
+            .catch(() => setRecommendations([]));
+    }, []);
+
     return (
         <div className={styles.sidebar}>
             {/* ── PHẦN 1: Navigation ── */}
@@ -112,18 +112,47 @@ export default function LeftSidebar() {
 
             {/* ── PHẦN 2: Index dữ liệu ── */}
             <div className={styles.indexSection}>
-                {INDEX_SECTIONS.map(section => (
-                    <div key={section.title} className={styles.indexGroup}>
-                        <h4 className={styles.indexTitle}>{section.title}</h4>
-                        <ul className={styles.indexList}>
-                            {section.items.map(item => (
-                                <li key={item}>
-                                    <button className={styles.indexItem}>{item}</button>
+                {/* Xu hướng giữ nguyên */}
+                <div className={styles.indexGroup}>
+                    <h4 className={styles.indexTitle}>Xu hướng</h4>
+                    <ul className={styles.indexList}>
+                        {['#ReactJS', '#SpringBoot', '#TypeScript', '#DevOps', '#AI'].map(item => (
+                            <li key={item}>
+                                <button className={styles.indexItem}>{item}</button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* Gợi ý theo dõi — gọi API */}
+                <div className={styles.indexGroup}>
+                    <h4 className={styles.indexTitle}>Gợi ý theo dõi</h4>
+                    <ul className={styles.indexList}>
+                        {recommendations.length === 0 ? (
+                            <li className={styles.indexItem}>Không có gợi ý</li>
+                        ) : (
+                            recommendations.slice(0, 5).map(user => (
+                                <li key={user.id}>
+                                    <button className={styles.recommendItem}>
+                                        {user.avatar && (
+                                            <img
+                                                src={user.avatar}
+                                                alt={user.fullName}
+                                                className={styles.recommendAvatar}
+                                            />
+                                        )}
+                                        <div className={styles.recommendInfo}>
+                                            <span className={styles.recommendName}>{user.fullName}</span>
+                                            {user.school && (
+                                                <span className={styles.recommendSub}>{user.school}</span>
+                                            )}
+                                        </div>
+                                    </button>
                                 </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
+                            ))
+                        )}
+                    </ul>
+                </div>
             </div>
         </div>
     );

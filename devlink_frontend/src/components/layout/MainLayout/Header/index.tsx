@@ -142,7 +142,9 @@ export default function Header() {
                                     <path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" strokeLinecap="round"/>
                                     <path d="M3 18a7 7 0 0 1 14 0" strokeLinecap="round"/>
                                 </svg>
-                                Trang cá nhân
+                                <button className={styles.dropItem} onClick={() => { navigate('/profile/me'); setDropdownOpen(false); }}>
+                                    Trang cá nhân
+                                </button>
                             </button>
                             <button className={styles.dropItem}>
                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">

@@ -69,7 +69,15 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
                 userProfile.getCity(),
                 userProfile.getSchool(),
                 userProfile.getMajor());
-        return getNormalRecommendations(userProfile, candidateProfiles, userId);
+        if (!candidateProfiles.isEmpty()) {
+            return getNormalRecommendations(userProfile, candidateProfiles, userId);
+        }
+        List<CandidateProfileDTO>badgedProfiles=userProfileRepository.findBadgedCandidates(userId);
+        if(!badgedProfiles.isEmpty()) {
+            return getNormalRecommendations(userProfile,badgedProfiles,userId);
+        }
+        List<CandidateProfileDTO> randomProfiles = userProfileRepository.findRandomCandidates(userId, NORMAL_LIMIT * 2);
+        return getNormalRecommendations(userProfile, randomProfiles, userId);
     }
     //Only return 3 people highlighted
 

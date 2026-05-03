@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+
+
 @Slf4j
 @Service
 @Transactional
@@ -154,7 +156,7 @@ public class AuthServiceImpl implements AuthService {
         if (!iseVerify) {
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
-
+        long coverAvatarId = random.nextInt(9999) + 1;
         String avatarUrl=String.format("https://ui-avatars.com/api/?name=%s&background=random",request.getUsername());
         Role role = roleRepository.findByName(RoleName.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         User user = User.builder()
@@ -182,6 +184,7 @@ public class AuthServiceImpl implements AuthService {
         userProfile.setUser(savedUser);
         userProfile.setFullName(request.getUsername());
         userProfile.setAvatarUrl(avatarUrl);
+        userProfile.setCoverAvatar("https://picsum.photos/seed/cover" + coverAvatarId + "/1500/500");
         userProfileRepository.save(userProfile);
         emailVerificationRepository.deleteByEmailAndVerificationType(request.getEmail(), VerificationType.EMAIL_OTP);
 
@@ -256,21 +259,27 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse refresh(RefreshTokenRequest request) {
-        AuthToken authToken = authTokeRepository
-                .findByTokenHashAndExpiresAtAfter(
+    public AuthResponse refresh(RefreshTokenRequest request, HttpServletRequest httpRequest) {
+
+        AuthToken oldToken = authTokeRepository
+                .findByTokenHashAndExpiresAtAfterForUpdate(
                         TokenHashUtil.hash(request.getRefreshToken()),
                         LocalDateTime.now())
                 .orElseThrow(() ->
                         new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
+        authTokeRepository.delete(oldToken);
 
-        User user = authToken.getUser();
+        User user = oldToken.getUser();
+
         String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), extractRole(user));
 
+        String newRawRefresh = UUID.randomUUID().toString().replace("-", "");
+        String newHashedRefresh = TokenHashUtil.hash(newRawRefresh);
+        authTokeRepository.save(buildAuthToken(user, httpRequest, newHashedRefresh));
         log.info("[AUTH] Token refreshed userId={}", user.getId());
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
-                .refreshToken(request.getRefreshToken())
+                .refreshToken(newRawRefresh)
                 .build();
     }
 

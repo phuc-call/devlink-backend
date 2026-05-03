@@ -48,9 +48,9 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
-            @RequestBody @Valid RefreshTokenRequest request) {
+            @RequestBody @Valid RefreshTokenRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(ApiResponse.ok(
-                authService.refresh(request)));
+                authService.refresh(request, httpRequest)));
     }
 
     // need token

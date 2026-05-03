@@ -8,10 +8,9 @@ import FollowingPage from '../features/post/pages/FollowingPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
 import NotificationPage from '../features/notification/pages/NotificationPage';
 import ChatPage from '../features/chat/pages/ChatPage';
+import ProfilePage from '../features/profile/pages/ProfilePage';
+import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
 
-// ── Guards ──────────────────────────────────────────────────────────────────
-// Tách ra ngoài createBrowserRouter để React nhận diện stable component type
-// → không unmount/remount khi navigate
 
 function PrivateGuard() {
     const token = localStorage.getItem('accessToken');
@@ -33,10 +32,10 @@ const router = createBrowserRouter([
         ],
     },
 
-    // OAuth callback — không cần guard
+
     {path: '/oauth2/success', element: <OAuth2SuccessPage/>},
 
-    // Private routes — phải đăng nhập
+
     {
         element: <PrivateGuard/>,
         children: [
@@ -48,8 +47,17 @@ const router = createBrowserRouter([
                     {path: '/explore', element: <ExplorePage/>},
                     {path: '/notifications', element: <NotificationPage/>},
                     {path: '/chat', element: <ChatPage/>},
+
                 ],
             },
+
+            {
+                element: <ProfileLayout />,
+                children: [
+                    { path: '/profile/me', element: <ProfilePage /> },
+                ],
+            },
+
         ],
     },
 

@@ -1,9 +1,19 @@
+/* LeftSidebar.module.css */
+
 .sidebar {
     padding: 16px 12px;
     display: flex;
     flex-direction: column;
     gap: 0;
     font-family: 'Inter', sans-serif;
+
+    /* ── DESIGN TOKENS — chỉnh tại đây là xong tất cả ── */
+    --font-nav: 15px;
+    --font-index-title: 12px;
+    --font-index-item: 14px;
+    --font-recommend-name: 14px;
+    --font-recommend-sub: 12px;
+    --icon-size: 20px;
 }
 
 /* ── NAV ── */
@@ -20,7 +30,7 @@
     padding: 10px 12px;
     border-radius: 8px;
     color: #374151;
-    font-size: 14px;
+    font-size: var(--font-nav);
     font-weight: 400;
     text-decoration: none;
     transition: background 0.12s, color 0.12s;
@@ -43,8 +53,8 @@
 }
 
 .navIcon {
-    width: 20px;
-    height: 20px;
+    width: var(--icon-size);
+    height: var(--icon-size);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,8 +63,8 @@
 }
 
 .navIcon svg {
-    width: 20px;
-    height: 20px;
+    width: var(--icon-size);
+    height: var(--icon-size);
 }
 
 .navLabel {
@@ -83,7 +93,7 @@
 }
 
 .indexTitle {
-    font-size: 11px;
+    font-size: var(--font-index-title);
     font-weight: 600;
     color: #9CA3AF;
     letter-spacing: 0.06em;
@@ -105,7 +115,7 @@
     width: 100%;
     text-align: left;
     padding: 7px 12px;
-    font-size: 13px;
+    font-size: var(--font-index-item);
     color: #6B7280;
     background: transparent;
     border: none;
@@ -118,4 +128,56 @@
 .indexItem:hover {
     background: #F3F4F6;
     color: #111827;
+}
+
+/* ── RECOMMEND ITEM ── */
+.recommendItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 7px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.12s;
+}
+
+.recommendItem:hover {
+    background: #F3F4F6;
+}
+
+.recommendAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.recommendInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.recommendName {
+    font-size: var(--font-recommend-name);
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recommendSub {
+    font-size: var(--font-recommend-sub);
+    color: #9CA3AF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

@@ -28,3 +28,14 @@ export interface UserProfileResponse {
     followingCount: number;
     profileViewsCount: number;
 }
+
+export interface UserRecommendationResponse {
+    id: number;
+    fullName: string;
+    avatar?: string;
+    school?: string;
+    major?: string;
+    city?: string;
+    similarityScore: number;
+    isFeatured: boolean;
+}

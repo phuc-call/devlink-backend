@@ -11,6 +11,6 @@ public interface AuthService {
     AuthResponse registerComplete(RegisterCompleteRequest request, HttpServletRequest httpRequest);
     AuthResponse login(LoginRequest request, HttpServletRequest httpRequest);
     LogoutResponse logout(RefreshTokenRequest request, String accessToken);
-    AuthResponse refresh(RefreshTokenRequest request);
+    public AuthResponse refresh(RefreshTokenRequest request, HttpServletRequest httpRequest);
     LogoutResponse logoutAll(String accessToken);
 }
