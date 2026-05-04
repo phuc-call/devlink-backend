@@ -78,6 +78,7 @@ public class FollowServiceImpl implements FollowService {
         Follow follow = Follow.builder()
                 .follower(user)
                 .following(targetUser)
+                .viewCount(0)
                 .status(status)
                 .build();
         followRepository.save(follow);

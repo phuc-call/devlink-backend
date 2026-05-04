@@ -7,8 +7,10 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.SneakyThrows;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -30,24 +32,22 @@ public class AppConfig {
     public Parser parser() {
         return new Parser();
     }
+
     @Bean
+    @Primary
     public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
+
+    @Bean("skipNullMapper")
+    public ModelMapper skipNullMapper() {
         ModelMapper mapper = new ModelMapper();
-
-        mapper.getConfiguration().setPropertyCondition(context -> {
-            Object source = context.getSource();
-
-            if (source == null) return false;
-
-            if (source instanceof String str) {
-                return !str.isBlank();
-            }
-
-            return true;
-        });
-
+        mapper.getConfiguration()
+                .setSkipNullEnabled(true)
+                .setMatchingStrategy(MatchingStrategies.STRICT);
         return mapper;
     }
+
     @Bean
     public RedisTemplate<String, String> redisTemplate(
             RedisConnectionFactory factory) {

@@ -1,68 +1,65 @@
-/* ── Design tokens (chỉ cần sửa ở đây) ──────────────────────── */
+
 :root {
-    --font-profile-name: 22px;
-    --font-profile-sub: 14px;
-    --font-profile-stat-num: 18px;
-    --font-profile-stat-label: 12px;
-    --font-section-title: 16px;
-    --font-body: 14px;
-    --font-caption: 12px;
+    --font-profile-name:    20px;
+    --font-section-title:   14px;
+    --font-body:            13px;
+    --font-caption:         11px;
+    --font-badge:           11px;
 }
 
-/* ── Page wrapper ─────────────────────────────────────────────── */
 .page {
     width: 100%;
     background: #F0F2F5;
     min-height: calc(100vh - 60px);
 }
 
-/* ── Body layout 40/60 ──────────────────────────────────────── */
 .body {
     display: flex;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 16px 16px 40px;
     gap: 16px;
+    padding: 20px 0 48px;
     align-items: flex-start;
 }
 
-.left {
-    width: 40%;
+
+.sidebar {
+    width: 296px;
     flex-shrink: 0;
+    position: sticky;
+    top: 80px;
 }
 
-.right {
+
+.content {
     flex: 1;
     min-width: 0;
 }
 
-/* ── Loading ─────────────────────────────────────────────────── */
+
 .loadingWrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 200px;
+    height: 300px;
 }
 
 .spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid #E5E7EB;
-    border-top-color: #3B82F6;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #E5E7EB;
+    border-top-color: #374151;
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.65s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
     .body {
         flex-direction: column;
-        padding: 12px 8px;
+        padding: 12px 8px 40px;
     }
-    .left, .right {
+    .sidebar {
         width: 100%;
+        position: static;
     }
 }

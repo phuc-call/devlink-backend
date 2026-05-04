@@ -17,4 +17,10 @@ export const userProfileApi = {
 
     getSpecialRecommendations: () =>
         axiosInstance.get<{data: UserRecommendationResponse[]}>('/api/users/me/special/recommendation'),
+
+    clearProfileFields: (data: { profileFields: string[] }) =>
+        axiosInstance.patch('/api/users/me/profile/clear', data),
+
+    updateFollowRequestMode: (enabled: boolean) =>
+        axiosInstance.patch(`/api/users/me/follow-request-mode?enabled=${enabled}`),
 };

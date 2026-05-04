@@ -35,7 +35,7 @@ public class Follow {
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private FollowStatus status = FollowStatus.ACCEPTED;
-    @Column(name = "view_count", nullable = false)
+    @Column(name = "view_count")
     private Integer viewCount = 0;
     @Column(name = "last_interacted_at")
     private LocalDateTime lastInteractedAt;

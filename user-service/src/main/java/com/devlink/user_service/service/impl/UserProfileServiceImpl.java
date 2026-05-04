@@ -22,6 +22,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -35,7 +37,15 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
+
     private final ModelMapper modelMapper;
+
+    private ModelMapper skipNullMapper;
+
+    @Autowired
+    public void setSkipNullMapper(@Qualifier("skipNullMapper") ModelMapper skipNullMapper) {
+        this.skipNullMapper = skipNullMapper;
+    }
     private final UserHelper userHelper;
     private final FollowRepository followRepository;
 
@@ -44,7 +54,17 @@ public class UserProfileServiceImpl implements UserProfileService {
     public UserProfileResponse updateUserProfile(UpdateProfileRequest request) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = getOrCreateProfile(user);
-        modelMapper.map(request, userProfile);
+
+        if (request.getFullName() != null) userProfile.setFullName(request.getFullName());
+        if (request.getBio() != null) userProfile.setBio(request.getBio());
+        if (request.getSchool() != null) userProfile.setSchool(request.getSchool());
+        if (request.getMajor() != null) userProfile.setMajor(request.getMajor());
+        if (request.getCity() != null) userProfile.setCity(request.getCity());
+        if (request.getCountryCode() != null) userProfile.setCountryCode(request.getCountryCode());
+        if (request.getTimezone() != null) userProfile.setTimezone(request.getTimezone());
+        if (request.getFavoriteLanguage() != null && !request.getFavoriteLanguage().isEmpty()) {
+            userProfile.setFavoriteLanguage(request.getFavoriteLanguage());
+        }
         //total completed of profile
         ProfileNudgeConfig config = getNudgeConfig();
         int percent = calculateCompletion(userProfile, config);
@@ -183,14 +203,14 @@ public class UserProfileServiceImpl implements UserProfileService {
             userProfile.setNudgeDismissedForever(true);
             userProfile.setNextNudgeAt(null);
         } else {
-            int newCount= userProfile.getNudgeSentCount() + 1;
+            int newCount = userProfile.getNudgeSentCount() + 1;
             userProfile.setNudgeSentCount(newCount);
 
             ProfileNudgeConfig config = getNudgeConfig();
-            if(newCount >= 3){
+            if (newCount >= 3) {
                 userProfile.setNudgeDismissedForever(true);
                 userProfile.setNextNudgeAt(null);
-            }else {
+            } else {
                 scheduleNudge(userProfile, userProfile.getCompletionPercent(), config);
             }
         }

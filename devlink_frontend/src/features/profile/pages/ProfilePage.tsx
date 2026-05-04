@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { userProfileApi } from '../../../api/user-service/userProfileApi';
 import type { UserProfileResponse } from '../../../types/profile.types';
-import ProfileHeader from '../components/ProfileHeader/ProfileHeader';
-import ProfileLeft from '../components/ProfileLeft/ProfileLeft';
-import ProfileRight from '../components/ProfileRight/ProfileRight';
+import ProfileBanner from '../components/ProfileBanner/ProfileBanner.tsx';
+import ProfileSidebar from '../components/ProfileSidebar/ProfileSidebar.tsx';
+import ProfileContent from '../components/ProfileContent/ProfileContent.tsx';
 import styles from './ProfilePage.module.css';
+
+import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
+
 
 export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         userProfileApi.getProfile()
@@ -16,6 +20,11 @@ export default function ProfilePage() {
             .catch(() => setProfile(null))
             .finally(() => setLoading(false));
     }, []);
+
+    const handleEditDone = (updated: UserProfileResponse) => {
+        setProfile(updated);
+        setIsEditing(false);
+    };
 
     if (loading) {
         return (
@@ -27,17 +36,23 @@ export default function ProfilePage() {
 
     return (
         <div className={styles.page}>
-            {/* Cover + Avatar + Tên + Nav — full width */}
-            <ProfileHeader profile={profile} />
-
-            {/* 2 cột 40/60 */}
+            <ProfileBanner profile={profile} />
             <div className={styles.body}>
-                <div className={styles.left}>
-                    <ProfileLeft profile={profile} />
-                </div>
-                <div className={styles.right}>
-                    <ProfileRight />
-                </div>
+                <aside className={styles.sidebar}>
+                    {/* Truyền onEdit xuống ProfileSidebar */}
+                    <ProfileSidebar profile={profile} onEdit={() => setIsEditing(true)} />
+                </aside>
+                <main className={styles.content}>
+                    {isEditing ? (
+                        <EditProfilePanel
+                            profile={profile}
+                            onDone={handleEditDone}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    ) : (
+                        <ProfileContent />
+                    )}
+                </main>
             </div>
         </div>
     );
