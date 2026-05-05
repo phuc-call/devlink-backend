@@ -11,7 +11,8 @@ import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter @Setter
+@Getter
+@Setter
 public class UpdateProfileRequest {
 
 
@@ -35,6 +36,6 @@ public class UpdateProfileRequest {
 
     private String city;
     @Size(max = 5, message = "COUNTRY_CODE_TOO_MANY")
-private String countryCode;
+    private String countryCode;
     private String timezone;
 }

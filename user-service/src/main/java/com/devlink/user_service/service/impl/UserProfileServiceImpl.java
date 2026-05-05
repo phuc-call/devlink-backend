@@ -3,30 +3,32 @@ package com.devlink.user_service.service.impl;
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
 import com.devlink.user_service.dto.reponse.UserProfileResponse;
-import com.devlink.user_service.dto.request.ClearProfileFieldsRequest;
+import com.devlink.user_service.dto.reponse.VisibilitySettingResponse;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.entity.ProfileNudgeConfig;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
-import com.devlink.user_service.entity.enums.ProfileField;
+
+import com.devlink.user_service.entity.enums.FollowStatus;
+import com.devlink.user_service.entity.enums.ProfileVisibility;
+import com.devlink.user_service.entity.enums.ProgrammingLanguage;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
-import com.devlink.user_service.repository.FollowRepository;
-import com.devlink.user_service.repository.ProfileNudgeConfigRepository;
-import com.devlink.user_service.repository.UserProfileRepository;
-import com.devlink.user_service.repository.UserRepository;
+import com.devlink.user_service.repository.*;
 import com.devlink.user_service.security.SecurityUtils;
 import com.devlink.user_service.service.UserProfileService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cloud.client.loadbalancer.RetryLoadBalancerInterceptor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -37,15 +39,18 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
+    private final UserBlockRepository userBlockRepository;
 
     private final ModelMapper modelMapper;
 
     private ModelMapper skipNullMapper;
+    private RetryLoadBalancerInterceptor retryLoadBalancerInterceptor;
 
     @Autowired
     public void setSkipNullMapper(@Qualifier("skipNullMapper") ModelMapper skipNullMapper) {
         this.skipNullMapper = skipNullMapper;
     }
+
     private final UserHelper userHelper;
     private final FollowRepository followRepository;
 
@@ -93,6 +98,17 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .build();
     }
 
+    // Service
+    @Override
+    @Transactional(readOnly = true)
+    public FollowRequestModeResponse getFollowRequestMode() {
+        User user = userHelper.getCurrentUser();
+        return FollowRequestModeResponse.builder()
+                .followRequestMode(user.getFollowRequestMode())
+                .pendingRequestsAccepted(0)
+                .build();
+    }
+
     private void scheduleNudge(UserProfile userProfile, int percent, ProfileNudgeConfig profileNudgeConfig) {
         if (percent > profileNudgeConfig.getCompletionThreshold()) {
             userProfile.setNextNudgeAt(null);
@@ -114,10 +130,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         int baseWeight = 100 - languageWeight;
 
         List<String> fields = List.of(
-                profile.getFullName(),
-                profile.getBio(),
-                profile.getSchool(),
-                profile.getMajor()
+                profile.getFullName() != null ? profile.getFullName() : "",
+                profile.getBio() != null ? profile.getBio() : "",
+                profile.getSchool() != null ? profile.getSchool() : "",
+                profile.getMajor() != null ? profile.getMajor() : ""
         );
 
         double perField = baseWeight / (double) fields.size();
@@ -133,35 +149,14 @@ public class UserProfileServiceImpl implements UserProfileService {
         return (int) Math.min(percent, 100);
     }
 
-    private boolean hasLanguage(List<?> list) {
-        return list != null && !list.isEmpty();
+    private boolean hasLanguage(List<ProgrammingLanguage> languages) {
+        return languages != null && !languages.isEmpty();
     }
 
     private boolean hasValue(String value) {
         return value != null && !value.isBlank();
     }
 
-    @Override
-    public void clearProfileFields(ClearProfileFieldsRequest request) {
-        User user = userHelper.getCurrentUser();
-        UserProfile profile = user.getProfile();
-        if (profile == null) return;
-        for (ProfileField field : request.getProfileFields()) {
-            switch (field) {
-                case BIO -> profile.setBio(null);
-                case FULL_NAME -> profile.setFullName(null);
-                case SCHOOL -> profile.setSchool(null);
-                case MAJOR -> profile.setMajor(null);
-                case FAVORITE_LANGUAGE -> profile.setFavoriteLanguage(null);
-            }
-        }
-        ProfileNudgeConfig profileNudgeConfig = getNudgeConfig();
-        profile.setCompletionPercent(calculateCompletion(profile, profileNudgeConfig));
-        profile.setLastProfileUpdatedAt(LocalDateTime.now());
-        log.info("User {} cleared profile fields: {}. New completion: {}%",
-                user.getId(), request.getProfileFields(), profile.getCompletionPercent());
-        userProfileRepository.save(profile);
-    }
 
     @Override
     public UserProfileResponse getProfile() {
@@ -184,13 +179,71 @@ public class UserProfileServiceImpl implements UserProfileService {
     //get profile of another person
     @Override
     public UserProfileResponse getUserProfile(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new AppException(ErrorCode.USER_NOT_FOUND)
-        );
-        UserProfile profile = user.getProfile();
-        if (profile == null)
-            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        Long viewerId = userHelper.getCurrentUser().getId();
+
+        User owner = userHelper.getUser(userId);
+        UserProfile profile = owner.getProfile();
+
+        if (viewerId.equals(userId)) {
+            return modelMapper.map(profile, UserProfileResponse.class);
+        }
+        if (userBlockRepository.isBlocked(viewerId, userId)) {
+            return buildLimitedResponse(profile);
+        }
+        switch (owner.getProfileVisibility()) {
+            case PUBLIC -> {
+                return modelMapper.map(profile, UserProfileResponse.class);
+            }
+            case PROTECTED -> {
+                boolean isMutual =
+                        followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                                viewerId, owner.getId(), FollowStatus.ACCEPTED)
+                                &&
+                                followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                                        owner.getId(), viewerId, FollowStatus.ACCEPTED);
+                if (!isMutual) return buildLimitedResponse(owner.getProfile());
+                return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
+            }
+            case PRIVATE -> {
+                return buildLimitedResponse(owner.getProfile());
+            }
+
+        }
+
         return modelMapper.map(profile, UserProfileResponse.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VisibilitySettingResponse getVisibilitySetting() {
+        User user = userHelper.getCurrentUser();
+        return VisibilitySettingResponse.builder()
+                .current(user.getProfileVisibility())
+                .options(Arrays.asList(ProfileVisibility.values()))
+                .build();
+    }
+
+    @Override
+    public void updateVisibilitySetting(String visibility) {
+        User user = userHelper.getCurrentUser();
+        ProfileVisibility profileVisibility;
+        try {
+            profileVisibility = ProfileVisibility.fromString(visibility);
+        } catch (IllegalArgumentException e) {
+            throw new AppException(ErrorCode.VISIBILITY_NOT_FOUND);
+        }
+        user.setProfileVisibility(profileVisibility);
+        userRepository.save(user);
+    }
+
+
+    private UserProfileResponse buildLimitedResponse(UserProfile profile) {
+        if (profile == null) throw new AppException(ErrorCode.USER_NOT_FOUND);
+        return UserProfileResponse.builder()
+                .fullName(profile.getFullName())
+                .avatarUrl(profile.getAvatarUrl())
+                .coverImageUrl(profile.getCoverImageUrl())
+                .build();
     }
 
 
@@ -243,5 +296,10 @@ public class UserProfileServiceImpl implements UserProfileService {
             userProfileRepository.save(profile);
         }
         return profile;
+    }
+
+    @Autowired
+    public void setRetryLoadBalancerInterceptor(RetryLoadBalancerInterceptor retryLoadBalancerInterceptor) {
+        this.retryLoadBalancerInterceptor = retryLoadBalancerInterceptor;
     }
 }

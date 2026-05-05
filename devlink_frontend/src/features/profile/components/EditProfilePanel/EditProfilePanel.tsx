@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {userProfileApi} from '../../../../api/user-service/userProfileApi';
 import type {
     UserProfileResponse,
@@ -237,7 +237,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                 })}
             </div>
 
-            <p className={styles.langCount}>Đã chọn: {langs.length}/3</p>
+            <p className={styles.langCount}>Đã chọn: {langs.length}/2</p>
 
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>

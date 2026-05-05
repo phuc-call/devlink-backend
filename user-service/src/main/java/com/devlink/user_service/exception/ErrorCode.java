@@ -25,6 +25,7 @@ public enum ErrorCode {
     INVALID_CREDENTIALS("Invalid email or password", HttpStatus.UNAUTHORIZED),
     ACCOUNT_LOCKED("Account is temporarily locked, please try again later", HttpStatus.FORBIDDEN),
     NOT_BLOCKED("User is not blocked", HttpStatus.BAD_REQUEST),
+    VISIBILITY_NOT_FOUND("Not found visibility",HttpStatus.NOT_FOUND),
     USER_BLOCKED("You have been blocked by this user", HttpStatus.FORBIDDEN),
     INVALID_REFRESH_TOKEN("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED);
 

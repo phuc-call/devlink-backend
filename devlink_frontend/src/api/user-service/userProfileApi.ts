@@ -1,5 +1,10 @@
 import axiosInstance from '../axiosInstance';
-import type {UpdateProfileRequest, UserProfileResponse,UserRecommendationResponse} from '../../types/profile.types';
+import type {
+    UpdateProfileRequest,
+    UserProfileResponse,
+    UserRecommendationResponse,
+    VisibilitySettingResponse
+} from '../../types/profile.types';
 
 
 export const userProfileApi = {
@@ -18,8 +23,11 @@ export const userProfileApi = {
     getSpecialRecommendations: () =>
         axiosInstance.get<{data: UserRecommendationResponse[]}>('/api/users/me/special/recommendation'),
 
-    clearProfileFields: (data: { profileFields: string[] }) =>
-        axiosInstance.patch('/api/users/me/profile/clear', data),
+    getVisibilitySetting: () =>
+        axiosInstance.get<{data: VisibilitySettingResponse}>('/api/users/me/visibility-setting'),
+
+    updateVisibilitySetting: (visibility: string) =>
+        axiosInstance.patch(`/api/users/me/visibility-setting?visibility=${visibility}`),
 
     updateFollowRequestMode: (enabled: boolean) =>
         axiosInstance.patch(`/api/users/me/follow-request-mode?enabled=${enabled}`),

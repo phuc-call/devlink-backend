@@ -42,6 +42,7 @@ public class UserProfile {
     @Column(name = "major", length = 150)
     private String major;
     @Column(name = "language")
+
     @Convert(converter = ProgrammingLanguageConverter.class)
     private List<ProgrammingLanguage> favoriteLanguage;
     //personal profile configuration

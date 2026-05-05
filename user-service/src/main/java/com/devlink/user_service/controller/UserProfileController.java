@@ -3,7 +3,7 @@ package com.devlink.user_service.controller;
 import com.devlink.user_service.dto.reponse.ApiResponse;
 import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
 import com.devlink.user_service.dto.reponse.UserProfileResponse;
-import com.devlink.user_service.dto.request.ClearProfileFieldsRequest;
+import com.devlink.user_service.dto.reponse.VisibilitySettingResponse;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.service.UserProfileService;
@@ -32,17 +32,6 @@ public class UserProfileController {
                 "Update success"));
     }
 
-    @PatchMapping("/me/profile/clear")
-    public ResponseEntity<ApiResponse<Void>> clearProfileFields(
-            @RequestBody @Valid ClearProfileFieldsRequest request) {
-
-        userProfileService.clearProfileFields(request);
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(null, "Clear profile fields success")
-        );
-    }
-
     @PatchMapping("/me/profile/nudge-dismiss")
     public ResponseEntity<ApiResponse<Void>> dismissNudge(@RequestParam(defaultValue = "false") boolean forever) {
         userProfileService.dismissNudge(forever);
@@ -65,4 +54,14 @@ public class UserProfileController {
         return ResponseEntity.ok(ApiResponse.ok(userProfileService.getUserProfile(id)));
     }
 
+    @GetMapping("/me/visibility-setting")
+    public ResponseEntity<ApiResponse<VisibilitySettingResponse>> getVisibilitySetting() {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getVisibilitySetting()));
+    }
+
+    @PatchMapping("/me/visibility-setting")
+    public ResponseEntity<ApiResponse<Void>> updateVisibilitySetting(@RequestParam String visibility) {
+        userProfileService.updateVisibilitySetting(visibility);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Update visibility setting success"));
+    }
 }

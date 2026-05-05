@@ -61,3 +61,10 @@ export interface UserRecommendationResponse {
     similarityScore: number;
     isFeatured: boolean;
 }
+
+export type ProfileVisibility = 'PRIVATE' | 'PUBLIC' | 'PROTECTED';
+
+export interface VisibilitySettingResponse {
+    current: ProfileVisibility;
+    options: ProfileVisibility[];
+}
