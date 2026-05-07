@@ -5,6 +5,7 @@ import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -73,4 +74,36 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     """)
     List<CandidateProfileDTO> findRandomCandidates(@Param("userId") Long userId,
                                                    @Param("limit") int limit);
+    @Modifying
+    @Query("""
+            UPDATE UserProfile u
+            SET u.followerCount = u.followerCount + 1
+            WHERE u.user.id = :userId
+            """)
+    Integer increaseFollowerCount(Long userId);
+
+    @Modifying
+    @Query("""
+            UPDATE UserProfile u
+            SET u.followingCount = u.followingCount + 1
+            WHERE u.user.id = :userId
+            """)
+    Integer increaseFollowingCount(Long userId);
+
+
+    @Modifying
+    @Query("""
+        UPDATE UserProfile u
+        SET u.followerCount = u.followerCount - 1
+        WHERE u.user.id = :userId
+        """)
+    void decreaseFollowerCount(Long userId);
+
+    @Modifying
+    @Query("""
+        UPDATE UserProfile u
+        SET u.followingCount = u.followingCount - 1
+        WHERE u.user.id = :userId
+        """)
+    void decreaseFollowingCount(Long userId);
 }

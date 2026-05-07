@@ -70,6 +70,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (request.getFavoriteLanguage() != null && !request.getFavoriteLanguage().isEmpty()) {
             userProfile.setFavoriteLanguage(request.getFavoriteLanguage());
         }
+
         //total completed of profile
         ProfileNudgeConfig config = getNudgeConfig();
         int percent = calculateCompletion(userProfile, config);
@@ -180,19 +181,18 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public UserProfileResponse getUserProfile(Long userId) {
         Long viewerId = userHelper.getCurrentUser().getId();
-
         User owner = userHelper.getUser(userId);
         UserProfile profile = owner.getProfile();
 
         if (viewerId.equals(userId)) {
-            return modelMapper.map(profile, UserProfileResponse.class);
+            return toFullResponse(owner);
         }
         if (userBlockRepository.isBlocked(viewerId, userId)) {
-            return buildLimitedResponse(profile);
+            return buildLimitedResponse(profile,owner);
         }
         switch (owner.getProfileVisibility()) {
             case PUBLIC -> {
-                return modelMapper.map(profile, UserProfileResponse.class);
+                return toFullResponse(owner);
             }
             case PROTECTED -> {
                 boolean isMutual =
@@ -201,16 +201,16 @@ public class UserProfileServiceImpl implements UserProfileService {
                                 &&
                                 followRepository.existsByFollowerIdAndFollowingIdAndStatus(
                                         owner.getId(), viewerId, FollowStatus.ACCEPTED);
-                if (!isMutual) return buildLimitedResponse(owner.getProfile());
+                if (!isMutual) return buildLimitedResponse(owner.getProfile(),owner);
                 return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
             }
             case PRIVATE -> {
-                return buildLimitedResponse(owner.getProfile());
+                return buildLimitedResponse(owner.getProfile(),owner);
             }
 
         }
 
-        return modelMapper.map(profile, UserProfileResponse.class);
+        return toFullResponse(owner);
     }
 
     @Override
@@ -237,13 +237,20 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
 
-    private UserProfileResponse buildLimitedResponse(UserProfile profile) {
+    private UserProfileResponse buildLimitedResponse(UserProfile profile,User owner) {
         if (profile == null) throw new AppException(ErrorCode.USER_NOT_FOUND);
         return UserProfileResponse.builder()
                 .fullName(profile.getFullName())
+                .userId(owner.getId())
                 .avatarUrl(profile.getAvatarUrl())
                 .coverImageUrl(profile.getCoverImageUrl())
                 .build();
+    }
+
+    private UserProfileResponse toFullResponse(User owner) {
+        UserProfileResponse res = modelMapper.map(owner.getProfile(), UserProfileResponse.class);
+        res.setUserId(owner.getId());
+        return res;
     }
 
 

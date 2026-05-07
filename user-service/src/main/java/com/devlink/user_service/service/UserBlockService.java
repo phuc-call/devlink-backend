@@ -4,6 +4,4 @@ public interface UserBlockService {
      public boolean checkIfUserIsBlocked(Long a, Long b);
      void blockUser(Long userId);
      void unBlockUser(Long userId);
-
-
 }

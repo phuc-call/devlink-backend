@@ -1,9 +1,10 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import styles from './LeftSidebar.module.css';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
 import type { UserRecommendationResponse } from '../../../../types/profile.types.ts';
-/* ─── Nav chính — thêm feature sau ─── */
+
+/* ─── Nav chính ─── */
 const NAV_ITEMS = [
     {
         label: 'Trang chủ',
@@ -36,7 +37,7 @@ const NAV_ITEMS = [
         ),
     },
     {
-        label: 'Tin nhắn',
+        label: 'Nhắn tin',
         path: '/chat',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -78,10 +79,9 @@ const NAV_ITEMS = [
     },
 ];
 
-
-
 export default function LeftSidebar() {
     const [recommendations, setRecommendations] = useState<UserRecommendationResponse[]>([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         userProfileApi.getNormalRecommendations()
@@ -112,7 +112,7 @@ export default function LeftSidebar() {
 
             {/* ── PHẦN 2: Index dữ liệu ── */}
             <div className={styles.indexSection}>
-                {/* Xu hướng giữ nguyên */}
+                {/* Xu hướng */}
                 <div className={styles.indexGroup}>
                     <h4 className={styles.indexTitle}>Xu hướng</h4>
                     <ul className={styles.indexList}>
@@ -124,7 +124,7 @@ export default function LeftSidebar() {
                     </ul>
                 </div>
 
-                {/* Gợi ý theo dõi — gọi API */}
+                {/* Gợi ý theo dõi */}
                 <div className={styles.indexGroup}>
                     <h4 className={styles.indexTitle}>Gợi ý theo dõi</h4>
                     <ul className={styles.indexList}>
@@ -133,7 +133,10 @@ export default function LeftSidebar() {
                         ) : (
                             recommendations.slice(0, 5).map(user => (
                                 <li key={user.id}>
-                                    <button className={styles.recommendItem}>
+                                    <button
+                                        className={styles.recommendItem}
+                                        onClick={() => navigate(`/profile/${user.id}`)}
+                                    >
                                         {user.avatar && (
                                             <img
                                                 src={user.avatar}

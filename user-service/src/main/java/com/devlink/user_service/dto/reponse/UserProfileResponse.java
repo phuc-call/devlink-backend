@@ -30,4 +30,6 @@ public class UserProfileResponse {
     private String country;
     private String timezone;
 
+    private Long userId;
+
 }

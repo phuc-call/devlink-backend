@@ -23,6 +23,7 @@ export const userProfileApi = {
     getSpecialRecommendations: () =>
         axiosInstance.get<{data: UserRecommendationResponse[]}>('/api/users/me/special/recommendation'),
 
+
     getVisibilitySetting: () =>
         axiosInstance.get<{data: VisibilitySettingResponse}>('/api/users/me/visibility-setting'),
 
@@ -31,4 +32,9 @@ export const userProfileApi = {
 
     updateFollowRequestMode: (enabled: boolean) =>
         axiosInstance.patch(`/api/users/me/follow-request-mode?enabled=${enabled}`),
+    getFollowRequestMode: () =>
+        axiosInstance.get<{data: {followRequestMode: boolean}}>('/api/users/me/follow-request-mode'),
+
+    getUserProfile: (userId: number) =>
+        axiosInstance.get<{data: UserProfileResponse}>(`/api/users/profiles/${userId}`),
 };

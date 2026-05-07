@@ -110,6 +110,4 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     boolean existsByFollowerIdAndFollowingIdAndStatus(
             Long followerId, Long followingId, FollowStatus status);
-
-
 }

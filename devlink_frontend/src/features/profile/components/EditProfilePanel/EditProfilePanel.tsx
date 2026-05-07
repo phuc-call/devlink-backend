@@ -3,9 +3,9 @@ import {userProfileApi} from '../../../../api/user-service/userProfileApi';
 import type {
     UserProfileResponse,
     UpdateProfileRequest,
-    ClearProfileFieldsRequest,
-    ProfileField,
     ProgrammingLanguage,
+    ProfileVisibility,
+    VisibilitySettingResponse,
 } from '../../../../types/profile.types';
 import styles from './EditProfilePanel.module.css';
 
@@ -15,7 +15,7 @@ interface Props {
     onCancel: () => void;
 }
 
-type Section = 'basic' | 'language' | 'follow' | 'clear';
+type Section = 'basic' | 'language' | 'follow' | 'visibility';
 
 const PROGRAMMING_LANGUAGES: ProgrammingLanguage[] = [
     'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO',
@@ -35,19 +35,11 @@ const LANG_COLORS: Record<ProgrammingLanguage, string> = {
     PHP: '#4F5D95', RUBY: '#701516',
 };
 
-const PROFILE_FIELDS: { value: ProfileField; label: string }[] = [
-    {value: 'FULL_NAME', label: 'Họ và tên'},
-    {value: 'BIO', label: 'Giới thiệu'},
-    {value: 'SCHOOL', label: 'Trường học'},
-    {value: 'MAJOR', label: 'Chuyên ngành'},
-    {value: 'FAVORITE_LANGUAGE', label: 'Ngôn ngữ yêu thích'},
-];
-
 const MENU_ITEMS: { key: Section; label: string; icon: string; desc: string }[] = [
-    {key: 'basic', label: 'Thông tin cơ bản', icon: '👤', desc: 'Tên, bio, trường, ngành, vị trí'},
-    {key: 'language', label: 'Ngôn ngữ lập trình', icon: '💻', desc: 'Chọn tối đa 3 ngôn ngữ yêu thích'},
-    {key: 'follow', label: 'Chế độ theo dõi', icon: '🔒', desc: 'Duyệt follow thủ công hay tự động'},
-    {key: 'clear', label: 'Xóa thông tin', icon: '🗑️', desc: 'Xóa từng trường trong hồ sơ'},
+    {key: 'basic',      label: 'Thông tin cơ bản',   icon: '👤', desc: 'Tên, bio, trường, ngành, vị trí'},
+    {key: 'language',   label: 'Ngôn ngữ lập trình', icon: '💻', desc: 'Chọn tối đa 3 ngôn ngữ yêu thích'},
+    {key: 'follow',     label: 'Chế độ theo dõi',    icon: '🔒', desc: 'Duyệt follow thủ công hay tự động'},
+    {key: 'visibility', label: 'Chế độ hiển thị',    icon: '👁️', desc: 'Kiểm soát ai có thể xem hồ sơ của bạn'},
 ];
 
 export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
@@ -65,17 +57,54 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
         timezone: profile?.timezone ?? '',
     });
 
+    const [followLoading, setFollowLoading] = useState(false);
+    const [followMode, setFollowMode] = useState<boolean | null>(null);
+
     const [langs, setLangs] = useState<ProgrammingLanguage[]>(
         profile?.favoriteLanguage ?? []
     );
 
-    const [followMode, setFollowMode] = useState(false);
-    const [clearFields, setClearFields] = useState<ProfileField[]>([]);
+    const [visibilityLoading, setVisibilityLoading] = useState(false);
+    const [visibilitySetting, setVisibilitySetting] = useState<VisibilitySettingResponse | null>(null);
+    const [selectedVisibility, setSelectedVisibility] = useState<ProfileVisibility | null>(null);
 
     const showToast = (msg: string, type: 'success' | 'error') => {
         setToast({msg, type});
         setTimeout(() => setToast(null), 3000);
     };
+
+    useEffect(() => {
+        if (section !== 'follow') return;
+        const fetchFollow = async () => {
+            setFollowLoading(true);
+            try {
+                const res = await userProfileApi.getFollowRequestMode();
+                setFollowMode(res.data.data.followRequestMode);
+            } catch {
+                showToast('Không thể tải trạng thái follow', 'error');
+            } finally {
+                setFollowLoading(false);
+            }
+        };
+        fetchFollow();
+    }, [section]);
+
+    useEffect(() => {
+        if (section !== 'visibility') return;
+        const fetchVisibility = async () => {
+            setVisibilityLoading(true);
+            try {
+                const res = await userProfileApi.getVisibilitySetting();
+                setVisibilitySetting(res.data.data);
+                setSelectedVisibility(res.data.data.current);
+            } catch {
+                showToast('Không thể tải cài đặt hiển thị', 'error');
+            } finally {
+                setVisibilityLoading(false);
+            }
+        };
+        fetchVisibility();
+    }, [section]);
 
     const handleSaveBasic = async () => {
         setSaving(true);
@@ -115,7 +144,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
     const handleSaveFollow = async () => {
         setSaving(true);
         try {
-            await userProfileApi.updateFollowRequestMode(followMode);
+            await userProfileApi.updateFollowRequestMode(followMode ?? false);
             showToast('Cập nhật chế độ follow thành công!', 'success');
             setTimeout(() => onCancel(), 1200);
         } catch {
@@ -125,17 +154,16 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
         }
     };
 
-    const handleClearFields = async () => {
-        if (clearFields.length === 0) return;
+    const handleSaveVisibility = async () => {
+        if (!selectedVisibility) return;
         setSaving(true);
         try {
-            const payload: ClearProfileFieldsRequest = {profileFields: clearFields};
-            await userProfileApi.clearProfileFields(payload);
-            showToast('Đã xóa thông tin!', 'success');
-            setClearFields([]);
+            const res = await userProfileApi.updateVisibilitySetting(selectedVisibility);
+            showToast(res.data.message ?? 'Cập nhật thành công!', 'success');
             setTimeout(() => onCancel(), 1200);
-        } catch {
-            showToast('Có lỗi xảy ra, thử lại!', 'error');
+        } catch (error) {
+            const err = error as { response?: { data?: { message?: string } } };
+            showToast(err.response?.data?.message ?? 'Có lỗi xảy ra, thử lại!', 'error');
         } finally {
             setSaving(false);
         }
@@ -146,11 +174,6 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             prev.includes(lang)
                 ? prev.filter(l => l !== lang)
                 : prev.length < 3 ? [...prev, lang] : prev
-        );
-
-    const toggleClearField = (field: ProfileField) =>
-        setClearFields(prev =>
-            prev.includes(field) ? prev.filter(f => f !== field) : [...prev, field]
         );
 
     const setBasicField = (key: keyof UpdateProfileRequest, value: string) =>
@@ -164,18 +187,14 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             </div>
 
             {([
-                {key: 'fullName', label: 'Họ và tên', placeholder: 'Nguyễn Văn A'},
-                {key: 'bio', label: 'Giới thiệu', placeholder: 'Một vài câu về bạn...'},
-                {key: 'school', label: 'Trường học', placeholder: 'Đại học Bách Khoa'},
-                {key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin'},
-                {key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh'},
-                {key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN'},
-                {key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh'},
-            ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({
-                                                                                                     key,
-                                                                                                     label,
-                                                                                                     placeholder
-                                                                                                 }) => (
+                {key: 'fullName',     label: 'Họ và tên',    placeholder: 'Nguyễn Văn A'},
+                {key: 'bio',         label: 'Giới thiệu',   placeholder: 'Một vài câu về bạn...'},
+                {key: 'school',      label: 'Trường học',   placeholder: 'Đại học Bách Khoa'},
+                {key: 'major',       label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin'},
+                {key: 'city',        label: 'Thành phố',    placeholder: 'Hồ Chí Minh'},
+                {key: 'countryCode', label: 'Mã quốc gia',  placeholder: 'VN'},
+                {key: 'timezone',    label: 'Múi giờ',      placeholder: 'Asia/Ho_Chi_Minh'},
+            ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({key, label, placeholder}) => (
                 <div key={key} className={styles.field}>
                     <label className={styles.label}>{label}</label>
                     {key === 'bio' ? (
@@ -255,79 +274,87 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                 <p className={styles.formSub}>Kiểm soát ai có thể theo dõi bạn</p>
             </div>
 
-            <div className={styles.followCards}>
-                {([
-                    {
-                        value: false,
-                        icon: '🌍',
-                        title: 'Tự động chấp nhận',
-                        desc: 'Mọi người có thể follow bạn ngay lập tức, không cần duyệt'
-                    },
-                    {
-                        value: true,
-                        icon: '🔒',
-                        title: 'Duyệt thủ công',
-                        desc: 'Bạn sẽ xem xét và chấp nhận từng yêu cầu theo dõi'
-                    },
-                ] as { value: boolean; icon: string; title: string; desc: string }[]).map(opt => (
-                    <button
-                        key={String(opt.value)}
-                        className={`${styles.followCard} ${followMode === opt.value ? styles.followCardActive : ''}`}
-                        onClick={() => setFollowMode(opt.value)}
-                    >
-                        <div className={styles.followCardIcon}>{opt.icon}</div>
-                        <div className={styles.followCardContent}>
-                            <strong>{opt.title}</strong>
-                            <p>{opt.desc}</p>
-                        </div>
-                        {followMode === opt.value && <span className={styles.followCheck}>✓</span>}
-                    </button>
-                ))}
-            </div>
+            {followLoading || followMode === null ? (
+                <div className={styles.loadingWrap}>
+                    <span className={styles.spinner}/>
+                </div>
+            ) : (
+                <div className={styles.followCards}>
+                    {([
+                        {value: false, icon: '🌍', title: 'Tự động chấp nhận', desc: 'Mọi người có thể follow bạn ngay lập tức, không cần duyệt'},
+                        {value: true,  icon: '🔒', title: 'Duyệt thủ công',    desc: 'Bạn sẽ xem xét và chấp nhận từng yêu cầu theo dõi'},
+                    ] as { value: boolean; icon: string; title: string; desc: string }[]).map(opt => (
+                        <button
+                            key={String(opt.value)}
+                            className={`${styles.followCard} ${followMode === opt.value ? styles.followCardActive : ''}`}
+                            onClick={() => setFollowMode(opt.value)}
+                        >
+                            <div className={styles.followCardIcon}>{opt.icon}</div>
+                            <div className={styles.followCardContent}>
+                                <strong>{opt.title}</strong>
+                                <p>{opt.desc}</p>
+                            </div>
+                            {followMode === opt.value && <span className={styles.followCheck}>✓</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
-                <button className={styles.btnSave} onClick={handleSaveFollow} disabled={saving}>
+                <button className={styles.btnSave} onClick={handleSaveFollow}
+                        disabled={saving || followLoading || followMode === null}>
                     {saving ? <span className={styles.spinner}/> : 'Lưu cài đặt'}
                 </button>
             </div>
         </div>
     );
 
-    const renderClear = () => (
+    const renderVisibility = () => (
         <div className={styles.formWrap}>
             <div className={styles.formTitle}>
-                <span>Xóa thông tin hồ sơ</span>
-                <p className={styles.formSub}>Chọn các trường muốn xóa — thao tác không thể hoàn tác</p>
+                <span>Chế độ hiển thị hồ sơ</span>
+                <p className={styles.formSub}>Kiểm soát ai có thể xem thông tin của bạn</p>
             </div>
 
-            <div className={styles.clearList}>
-                {PROFILE_FIELDS.map(({value, label}) => (
-                    <label
-                        key={value}
-                        className={`${styles.clearItem} ${clearFields.includes(value) ? styles.clearItemSelected : ''}`}
-                    >
-                        <input
-                            type="checkbox"
-                            className={styles.clearCheck}
-                            checked={clearFields.includes(value)}
-                            onChange={() => toggleClearField(value)}
-                        />
-                        <span className={styles.clearLabel}>{label}</span>
-                        {clearFields.includes(value) && <span className={styles.clearBadge}>Sẽ xóa</span>}
-                    </label>
-                ))}
-            </div>
+            {visibilityLoading || !visibilitySetting ? (
+                <div className={styles.loadingWrap}>
+                    <span className={styles.spinner}/>
+                </div>
+            ) : (
+                <div className={styles.followCards}>
+                    {visibilitySetting.options.map(opt => (
+                        <button
+                            key={opt}
+                            className={`${styles.followCard} ${selectedVisibility === opt ? styles.followCardActive : ''}`}
+                            onClick={() => setSelectedVisibility(opt)}
+                        >
+                            <div className={styles.followCardIcon}>
+                                {opt === 'PUBLIC' ? '🌍' : opt === 'PROTECTED' ? '🤝' : '🔒'}
+                            </div>
+                            <div className={styles.followCardContent}>
+                                <strong>
+                                    {opt === 'PUBLIC' ? 'Công khai' : opt === 'PROTECTED' ? 'Bạn chung' : 'Riêng tư'}
+                                </strong>
+                                <p>
+                                    {opt === 'PUBLIC'
+                                        ? 'Tất cả mọi người đều có thể xem hồ sơ của bạn'
+                                        : opt === 'PROTECTED'
+                                            ? 'Chỉ những người follow nhau mới xem được'
+                                            : 'Chỉ bạn mới xem được hồ sơ của mình'}
+                                </p>
+                            </div>
+                            {selectedVisibility === opt && <span className={styles.followCheck}>✓</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
-                <button
-                    className={`${styles.btnSave} ${styles.btnDanger}`}
-                    onClick={handleClearFields}
-                    disabled={saving || clearFields.length === 0}
-                >
-                    {saving ? <span
-                        className={styles.spinner}/> : `Xóa${clearFields.length > 0 ? ` (${clearFields.length})` : ''}`}
+                <button className={styles.btnSave} onClick={handleSaveVisibility}
+                        disabled={saving || visibilityLoading || !selectedVisibility}>
+                    {saving ? <span className={styles.spinner}/> : 'Lưu cài đặt'}
                 </button>
             </div>
         </div>
@@ -335,14 +362,10 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
 
     const renderContent = () => {
         switch (section) {
-            case 'basic':
-                return renderBasic();
-            case 'language':
-                return renderLanguage();
-            case 'follow':
-                return renderFollow();
-            case 'clear':
-                return renderClear();
+            case 'basic':      return renderBasic();
+            case 'language':   return renderLanguage();
+            case 'follow':     return renderFollow();
+            case 'visibility': return renderVisibility();
         }
     };
 

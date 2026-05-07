@@ -46,6 +46,7 @@ export interface UserProfileResponse {
     city?: string;
     country?: string;
     timezone?: string;
+    userId: number;
 }
 export interface FollowRequestModeResponse {
     followRequestMode: boolean;

@@ -49,6 +49,11 @@ public class UserProfileController {
         return ResponseEntity.ok(ApiResponse.ok(userProfileService.updateFollowRequestMode(enabled)));
     }
 
+    @GetMapping("/me/follow-request-mode")
+    public ResponseEntity<ApiResponse<FollowRequestModeResponse>> getFollowRequestMode() {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getFollowRequestMode()));
+    }
+
     @GetMapping("/profiles/{id}")
     public ResponseEntity<ApiResponse<UserProfileResponse>>getUserProfile(@PathVariable Long id){
         return ResponseEntity.ok(ApiResponse.ok(userProfileService.getUserProfile(id)));

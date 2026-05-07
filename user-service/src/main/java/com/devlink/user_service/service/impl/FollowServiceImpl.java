@@ -5,7 +5,7 @@ import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.dto.reponse.PageResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.User;
-import com.devlink.user_service.entity.UserProfile;
+import com.devlink.user_service.entity.enums.FollowActionResult;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
@@ -44,7 +44,7 @@ public class FollowServiceImpl implements FollowService {
         User user = userHelper.getCurrentUser();
         Long currentUserId = user.getId();
         if (currentUserId.equals(userId)) {
-            throw new AppException(ErrorCode.CANNOT_FOLLOW_YOURSELF);
+            throw new  AppException(ErrorCode.CANNOT_FOLLOW_YOURSELF);
         }
 
 
@@ -70,10 +70,10 @@ public class FollowServiceImpl implements FollowService {
                     FollowStatus.PENDING : FollowStatus.ACCEPTED;
         }
         if (targetUser.getProfile() != null) {
-            targetUser.getProfile().setFollowerCount(targetUser.getProfile().getFollowerCount() + 1);
+            targetUser.getProfile().setFollowerCount(userProfileRepository.increaseFollowerCount(targetUser.getId()));
         }
         if (user.getProfile() != null) {
-            user.getProfile().setFollowingCount(user.getProfile().getFollowingCount() + 1);
+            user.getProfile().setFollowingCount(userProfileRepository.increaseFollowingCount(user.getId()));
         }
         Follow follow = Follow.builder()
                 .follower(user)
@@ -84,6 +84,7 @@ public class FollowServiceImpl implements FollowService {
         followRepository.save(follow);
     }
 
+
     @Override
     public void unFollowUser(Long userId) {
         User user = userHelper.getCurrentUser();
@@ -91,18 +92,35 @@ public class FollowServiceImpl implements FollowService {
         User targetUser = userHelper.getUser(userId);
 
         boolean alreadyFollowed = followRepository
-                .existsByFollowerIdAndFollowingId(currentUserId, userId);
+                .existsByFollowerIdAndFollowingId(currentUserId, targetUser.getId());
         if (!alreadyFollowed) throw new AppException(ErrorCode.NOT_FOLLOWED);
         boolean isFriend = followRepository
-                .existsByFollowerIdAndFollowingId(userId, currentUserId);
+                .existsByFollowerIdAndFollowingId( targetUser.getId(), currentUserId);
         if (isFriend) {
             followRepository.updateStatus(userId, currentUserId, FollowStatus.PENDING);
         }
 
         followRepository.deleteByFollowerIdAndFollowingId(currentUserId, userId);
 
-        updateFollowCount(user, targetUser);
+        userProfileRepository.decreaseFollowerCount(targetUser.getId());
+        userProfileRepository.decreaseFollowingCount(currentUserId);
+    }
 
+    @Override
+    public FollowActionResult getFollowStatus(Long userId) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        boolean iFollowAccepted = followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                currentUserId, userId, FollowStatus.ACCEPTED);
+        boolean theyFollowAccepted = followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                userId, currentUserId, FollowStatus.ACCEPTED);
+        boolean iFollowPending = followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                currentUserId, userId, FollowStatus.PENDING);
+
+        if (iFollowAccepted && theyFollowAccepted) return FollowActionResult.FRIEND;
+        if (iFollowAccepted) return FollowActionResult.FOLLOWING;
+        if (iFollowPending) return FollowActionResult.FOLLOWING;
+        return FollowActionResult.NOT_FOLLOWING;
     }
 
     @Override
@@ -135,8 +153,10 @@ public class FollowServiceImpl implements FollowService {
         User targetUser = userHelper.getUser(followingId);
         Follow follow = followRepository.findByFollowerIdAndFollowingId(currentUserId, followingId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        updateFollowCount(user, targetUser);
+
         followRepository.delete(follow);
+        userProfileRepository.decreaseFollowingCount(currentUserId);
+        userProfileRepository.decreaseFollowerCount(targetUser.getId());
     }
 
     // if true get getFollowers if false getFollowing
@@ -163,21 +183,6 @@ public class FollowServiceImpl implements FollowService {
     }
 
 
-    //TODO: có thể bug logic chỗ này
-    private void updateFollowCount(User follower, User following) {
-        UserProfile currentUser = follower.getProfile();
-        UserProfile targetUser = following.getProfile();
-
-        if (currentUser.getFollowerCount() != null && currentUser.getFollowerCount() > 0) {
-            currentUser.setFollowerCount(currentUser.getFollowerCount() - 1);
-        }
-        if (targetUser.getFollowingCount() != null && targetUser.getFollowingCount() > 0) {
-            targetUser.setFollowingCount(targetUser.getFollowingCount() - 1);
-        }
-        userProfileRepository.save(currentUser);
-        userProfileRepository.save(targetUser);
-
-    }
 
 
 }

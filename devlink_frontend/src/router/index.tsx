@@ -10,6 +10,7 @@ import NotificationPage from '../features/notification/pages/NotificationPage';
 import ChatPage from '../features/chat/pages/ChatPage';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
+import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
 
 
 function PrivateGuard() {
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
                 element: <ProfileLayout />,
                 children: [
                     { path: '/profile/me', element: <ProfilePage /> },
+                    { path: '/profile/:userId', element: <UserProfilePage /> },
                 ],
             },
 

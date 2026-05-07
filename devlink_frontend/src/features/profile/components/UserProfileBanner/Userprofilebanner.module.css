@@ -1,0 +1,63 @@
+.wrap {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    width: 100%;
+}
+
+.banner {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: #F3F4F6;
+}
+
+.bannerImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bannerGradient {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 40%, #EDE9FE 100%);
+}
+
+.navBar {
+    padding: 0 0 0 312px; /* 296px sidebar + 16px gap — giống ProfileBanner */
+    background: #FFFFFF;
+}
+
+.navTabs {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #F3F4F6;
+}
+
+.navTab {
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #9CA3AF;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: color 0.15s;
+    margin-bottom: -1px;
+}
+
+.navTab:hover { color: #374151; }
+
+.navActive {
+    color: #111827;
+    border-bottom-color: #111827;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .banner { height: 140px; }
+    .navBar { padding-left: 0; }
+}
