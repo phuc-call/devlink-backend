@@ -4,6 +4,7 @@ import com.devlink.user_service.dto.reponse.ApiResponse;
 import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.dto.reponse.PageResponse;
 import com.devlink.user_service.entity.enums.FollowActionResult;
+import com.devlink.user_service.entity.enums.FollowListType;
 import com.devlink.user_service.service.FollowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,19 +40,12 @@ public class FollowController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Success"));
     }
 
-    @GetMapping("/me/followers")
-    public ResponseEntity<ApiResponse<PageResponse<FollowResponse>>> getFollowers(
+    @GetMapping("/me/follows")
+    public ResponseEntity<ApiResponse<PageResponse<FollowResponse>>> getFollowList(
+            @RequestParam FollowListType type,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
-        return ResponseEntity.ok(ApiResponse.ok(followService.getFollowers(page, size), "Success"));
-    }
-
-
-    @GetMapping("/me/following")
-    public ResponseEntity<ApiResponse<PageResponse<FollowResponse>>> getFollowing(
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "20") Integer size) {
-        return ResponseEntity.ok(ApiResponse.ok(followService.getFollowing(page, size), "Success"));
+        return ResponseEntity.ok(ApiResponse.ok(followService.getFollowList(type, page, size), "Success"));
     }
 
 

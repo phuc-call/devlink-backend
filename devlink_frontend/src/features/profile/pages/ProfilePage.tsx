@@ -4,15 +4,15 @@ import type { UserProfileResponse } from '../../../types/profile.types';
 import ProfileBanner from '../components/ProfileBanner/ProfileBanner.tsx';
 import ProfileSidebar from '../components/ProfileSidebar/ProfileSidebar.tsx';
 import ProfileContent from '../components/ProfileContent/ProfileContent.tsx';
-import styles from './ProfilePage.module.css';
-
+import FollowListPanel from '../components/FollowListPanel/Followlistpanel.tsx';
 import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
-
+import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [activeTab, setActiveTab] = useState('Bài viết');
 
     useEffect(() => {
         userProfileApi.getProfile()
@@ -34,26 +34,39 @@ export default function ProfilePage() {
         );
     }
 
+    const isFollowTab = activeTab === 'Đang theo dõi';
+
     return (
         <div className={styles.page}>
-            <ProfileBanner profile={profile} />
-            <div className={styles.body}>
-                <aside className={styles.sidebar}>
-                    {/* Truyền onEdit xuống ProfileSidebar */}
-                    <ProfileSidebar profile={profile} onEdit={() => setIsEditing(true)} />
-                </aside>
-                <main className={styles.content}>
-                    {isEditing ? (
-                        <EditProfilePanel
-                            profile={profile}
-                            onDone={handleEditDone}
-                            onCancel={() => setIsEditing(false)}
-                        />
-                    ) : (
-                        <ProfileContent />
-                    )}
-                </main>
-            </div>
+            <ProfileBanner
+                profile={profile}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
+
+            {isFollowTab ? (
+                // Full width, no sidebar
+                <div className={styles.followWrap}>
+                    <FollowListPanel />
+                </div>
+            ) : (
+                <div className={styles.body}>
+                    <aside className={styles.sidebar}>
+                        <ProfileSidebar profile={profile} onEdit={() => setIsEditing(true)} />
+                    </aside>
+                    <main className={styles.content}>
+                        {isEditing ? (
+                            <EditProfilePanel
+                                profile={profile}
+                                onDone={handleEditDone}
+                                onCancel={() => setIsEditing(false)}
+                            />
+                        ) : (
+                            <ProfileContent />
+                        )}
+                    </main>
+                </div>
+            )}
         </div>
     );
 }

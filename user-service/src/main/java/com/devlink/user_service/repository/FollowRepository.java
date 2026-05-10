@@ -1,5 +1,6 @@
 package com.devlink.user_service.repository;
 
+import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import feign.Param;
@@ -63,33 +64,39 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     void incrementView(@Param("follower") Long follower, @Param("followingId") Long followingId, @Param("now") LocalDateTime now);
 
     @Query("""
-            SELECT f FROM Follow f JOIN FETCH  f.following u
-                        WHERE f.follower.id=:followerId
-                                    ORDER BY f.lastInteractedAt nulls last,
-                                                f.viewCount DESC,
-                                                            f.createdAt DESC
-            """)
-    Page<Follow> findFollowingList(
-            @Param("followerId") Long followerId,
-            Pageable pageable);
+    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+        f.following.id,
+        f.following.profile.fullName,
+        f.following.profile.avatarUrl,
+        f.status
+    )
+    FROM Follow f
+    WHERE f.follower.id = :followerId AND f.status=FollowStatus.PENDING
+    ORDER BY f.lastInteractedAt NULLS LAST,
+             f.viewCount DESC,
+             f.createdAt DESC
+    """)
+    Page<FollowResponse> findFollowingList(@Param("followerId") Long followerId, Pageable pageable);
 
     @Query("""
-                SELECT f FROM Follow f
-                JOIN FETCH f.follower u
-                WHERE f.following.id = :followingId
-                ORDER BY f.lastInteractedAt DESC NULLS LAST,
-                         f.viewCount DESC,
-                         f.createdAt DESC
-            """)
-    Page<Follow> findFollowerList(
-            @Param("followingId") Long followingId,
+    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+        f.follower.id,
+        f.follower.profile.fullName,
+        f.follower.profile.avatarUrl,
+        f.status
+    )
+    FROM Follow f
+    WHERE f.following.id = :followingId AND f.status=FollowStatus.PENDING
+    ORDER BY f.lastInteractedAt DESC NULLS LAST,
+             f.viewCount DESC,
+             f.createdAt DESC
+    """)
+    Page<FollowResponse> findFollowerList(@Param("followingId") Long followingId, Pageable pageable);
 
-            Pageable pageable
-    );
 
     @Query("""
             SELECT f FROM Follow f
-                        WHERE f.follower.id=:followerId AND f.following.id=:followingId""")
+                        WHERE f.follower.id=:followerId AND f.following.id=:followingId AND f.status=FollowStatus.ACCEPTED""")
     Optional<Follow> findByFollowerIdAndFollowingId(
             @Param("followerId") Long followerId,
             @Param("followingId") Long followingId);
@@ -110,4 +117,18 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     boolean existsByFollowerIdAndFollowingIdAndStatus(
             Long followerId, Long followingId, FollowStatus status);
+
+    @Query("""
+    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+        f.following.id,
+        f.following.profile.fullName,
+        f.following.profile.avatarUrl,
+        f.status
+    )
+    FROM Follow f
+    WHERE f.follower.id = :userId
+    AND f.status = FollowStatus.ACCEPTED
+    ORDER BY f.viewCount DESC
+    """)
+    Page<FollowResponse> findFriendsList(@Param("userId") Long userId, Pageable pageable);
 }

@@ -7,7 +7,6 @@
     flex-direction: column;
 }
 
-/* ── Avatar block ────────────────────────────────────────────── */
 .avatarBlock {
     padding: 20px 20px 16px;
     display: flex;
@@ -63,9 +62,8 @@
 }
 .avatarEditBtn:hover { background: #111827; }
 
-/* ── Name + bio ──────────────────────────────────────────────── */
 .name {
-    font-size: var(--font-profile-name, 20px);
+    font-size: 18px;
     font-weight: 700;
     color: #111827;
     margin: 0;
@@ -82,35 +80,52 @@
     line-height: 1.5;
 }
 
-/* ── Stats row ───────────────────────────────────────────────── */
 .statsRow {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
 }
 
-.statItem {
+.statBtn {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 4px;
-    font-size: 12px;
-    color: #6B7280;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
     font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+    text-decoration: none;
 }
+.statBtn:hover { background: #F3F4F6; }
 
-.statItem strong {
+/* ← BUG FIX: thiếu dấu chấm ở statNum */
+.statNum {
+    font-size: 14px;
     font-weight: 700;
     color: #111827;
+    font-family: 'Inter', sans-serif;
+    line-height: 1;
+}
+
+.statLabel {
     font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    line-height: 1;
 }
 
 .statDot {
     color: #D1D5DB;
-    font-size: 12px;
+    font-size: 14px;
+    line-height: 1;
+    user-select: none;
 }
 
-/* ── Edit button ─────────────────────────────────────────────── */
 .editBtn {
     display: flex;
     align-items: center;
@@ -134,14 +149,12 @@
     border-color: #D1D5DB;
 }
 
-/* ── Divider ─────────────────────────────────────────────────── */
 .divider {
     height: 1px;
     background: #F3F4F6;
     margin: 0;
 }
 
-/* ── Info list ───────────────────────────────────────────────── */
 .infoList {
     padding: 14px 20px;
     display: flex;
@@ -158,10 +171,7 @@
     font-family: 'Inter', sans-serif;
 }
 
-.infoRow svg {
-    color: #9CA3AF;
-    flex-shrink: 0;
-}
+.infoRow svg { color: #9CA3AF; flex-shrink: 0; }
 
 .addInfoBtn {
     display: block;
@@ -177,15 +187,9 @@
     text-align: center;
     transition: border-color 0.15s, color 0.15s;
 }
-.addInfoBtn:hover {
-    border-color: #9CA3AF;
-    color: #374151;
-}
+.addInfoBtn:hover { border-color: #9CA3AF; color: #374151; }
 
-/* ── Languages ───────────────────────────────────────────────── */
-.langSection {
-    padding: 14px 20px;
-}
+.langSection { padding: 14px 20px; }
 
 .langTitle {
     font-size: 11px;
@@ -197,17 +201,9 @@
     font-family: 'Inter', sans-serif;
 }
 
-.langList {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-}
+.langList { display: flex; flex-direction: column; gap: 7px; }
 
-.langRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+.langRow { display: flex; align-items: center; gap: 8px; }
 
 .langDot {
     width: 10px;
@@ -223,7 +219,6 @@
     font-weight: 500;
 }
 
-/* ── Completion ──────────────────────────────────────────────── */
 .completion {
     padding: 14px 20px;
     display: flex;

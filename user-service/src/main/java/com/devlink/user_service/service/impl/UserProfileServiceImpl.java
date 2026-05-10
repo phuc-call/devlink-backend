@@ -83,19 +83,14 @@ public class UserProfileServiceImpl implements UserProfileService {
         UserProfile savedProfile = userProfileRepository.save(userProfile);
         return modelMapper.map(savedProfile, UserProfileResponse.class);
     }
-
     @Override
     public FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode) {
         User user = userHelper.getCurrentUser();
-        int pendingRequestsAccepted = 0;
-        if (Boolean.FALSE.equals(followRequestMode)) {
-            pendingRequestsAccepted = followRepository.acceptFollowRequest(user.getId());
-        }
         user.setFollowRequestMode(followRequestMode);
         userRepository.save(user);
         return FollowRequestModeResponse.builder()
                 .followRequestMode(followRequestMode)
-                .pendingRequestsAccepted(pendingRequestsAccepted)
+                .pendingRequestsAccepted(0)
                 .build();
     }
 
@@ -190,6 +185,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (userBlockRepository.isBlocked(viewerId, userId)) {
             return buildLimitedResponse(profile,owner);
         }
+//        if(!owner.getId().equals(viewerId)){
+//            userProfileRepository.increaseFollowerCountBy(owner.getId());
+//        }
+        boolean isFollowing=followRepository.existsByFollowerIdAndFollowingId(viewerId,owner.getId());
+        if(isFollowing){
+            followRepository.incrementView(viewerId, owner.getId(), LocalDateTime.now());
+        }
         switch (owner.getProfileVisibility()) {
             case PUBLIC -> {
                 return toFullResponse(owner);
@@ -197,11 +199,10 @@ public class UserProfileServiceImpl implements UserProfileService {
             case PROTECTED -> {
                 boolean isMutual =
                         followRepository.existsByFollowerIdAndFollowingIdAndStatus(
-                                viewerId, owner.getId(), FollowStatus.ACCEPTED)
-                                &&
-                                followRepository.existsByFollowerIdAndFollowingIdAndStatus(
-                                        owner.getId(), viewerId, FollowStatus.ACCEPTED);
+                                viewerId, owner.getId(), FollowStatus.ACCEPTED);
+
                 if (!isMutual) return buildLimitedResponse(owner.getProfile(),owner);
+
                 return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
             }
             case PRIVATE -> {
@@ -212,6 +213,8 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         return toFullResponse(owner);
     }
+
+
 
     @Override
     @Transactional(readOnly = true)

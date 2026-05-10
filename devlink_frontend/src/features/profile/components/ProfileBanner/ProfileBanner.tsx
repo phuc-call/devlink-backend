@@ -1,18 +1,20 @@
+
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import styles from './ProfileBanner.module.css';
 
 interface Props {
     profile: UserProfileResponse | null;
+    activeTab: string;
+    onTabChange: (tab: string) => void;
 }
 
 const TABS = ['Bài viết', 'Giới thiệu', 'Đang theo dõi', 'Ảnh'];
 
-export default function ProfileBanner({ profile }: Props) {
+export default function ProfileBanner({ profile, activeTab, onTabChange }: Props) {
     const coverUrl = profile?.coverImageUrl || profile?.coverAvatar;
 
     return (
         <div className={styles.wrap}>
-            {/* Banner */}
             <div className={styles.banner}>
                 {coverUrl
                     ? <img src={coverUrl} alt="cover" className={styles.bannerImg} />
@@ -28,13 +30,13 @@ export default function ProfileBanner({ profile }: Props) {
                 </button>
             </div>
 
-
             <div className={styles.navBar}>
                 <div className={styles.navTabs}>
-                    {TABS.map((tab, i) => (
+                    {TABS.map((tab) => (
                         <button
                             key={tab}
-                            className={`${styles.navTab} ${i === 0 ? styles.navActive : ''}`}
+                            className={`${styles.navTab} ${activeTab === tab ? styles.navActive : ''}`}
+                            onClick={() => onTabChange(tab)}
                         >
                             {tab}
                         </button>

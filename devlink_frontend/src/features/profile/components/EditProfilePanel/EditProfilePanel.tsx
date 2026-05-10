@@ -380,7 +380,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             <nav className={styles.menu}>
                 <div className={styles.menuHeader}>
                     <button className={styles.backBtn} onClick={onCancel}>← Quay lại</button>
-                    <span className={styles.menuTitle}>Chỉnh sửa hồ sơ</span>
+                    <span className={styles.menuTitle}>sửa hồ sơ</span>
                 </div>
 
                 {MENU_ITEMS.map(item => (

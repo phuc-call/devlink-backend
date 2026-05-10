@@ -80,7 +80,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             SET u.followerCount = u.followerCount + 1
             WHERE u.user.id = :userId
             """)
-    Integer increaseFollowerCount(Long userId);
+    void increaseFollowerCount(Long userId);
 
     @Modifying
     @Query("""
@@ -88,7 +88,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             SET u.followingCount = u.followingCount + 1
             WHERE u.user.id = :userId
             """)
-    Integer increaseFollowingCount(Long userId);
+    void increaseFollowingCount(Long userId);
 
 
     @Modifying
@@ -106,4 +106,12 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
         WHERE u.user.id = :userId
         """)
     void decreaseFollowingCount(Long userId);
+
+    @Modifying
+    @Query("""
+    UPDATE UserProfile u
+    SET u.followerCount = u.followerCount + 1
+    WHERE u.user.id = :userId
+    """)
+    void increaseFollowerCountBy(@Param("userId") Long userId);
 }

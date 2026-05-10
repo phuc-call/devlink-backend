@@ -6,6 +6,7 @@ import com.devlink.user_service.dto.reponse.PageResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.enums.FollowActionResult;
+import com.devlink.user_service.entity.enums.FollowListType;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
@@ -24,7 +25,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @Transactional
@@ -46,8 +46,6 @@ public class FollowServiceImpl implements FollowService {
         if (currentUserId.equals(userId)) {
             throw new  AppException(ErrorCode.CANNOT_FOLLOW_YOURSELF);
         }
-
-
         User targetUser = userRepository.findById(userId).orElseThrow(() ->
                 new AppException(ErrorCode.USER_NOT_FOUND));
         boolean isBlocked = userBlockService.checkIfUserIsBlocked(currentUserId, userId);
@@ -58,30 +56,39 @@ public class FollowServiceImpl implements FollowService {
 
         boolean isFollowBack = followRepository
                 .existsByFollowerIdAndFollowingId(userId, currentUserId);
+
         if (isFollowBack) {
             followRepository.updateStatus(userId, currentUserId, FollowStatus.ACCEPTED);
-        }
-        FollowStatus status;
-        if (isFollowBack) {
-            status = FollowStatus.ACCEPTED;
+            followRepository.save(Follow.builder()
+                    .follower(user).following(targetUser)
+                    .viewCount(0).status(FollowStatus.ACCEPTED)
+                    .build());
+            userProfileRepository.increaseFollowerCount(targetUser.getId()); // B +1 follower
+            userProfileRepository.increaseFollowingCount(currentUserId);
+        } else if (Boolean.FALSE.equals(targetUser.getFollowRequestMode())) {
+            // Auto 2 A→B + B→A
+            followRepository.save(Follow.builder()
+                    .follower(user).following(targetUser)
+                    .viewCount(0).status(FollowStatus.ACCEPTED)
+                    .build());
+            followRepository.save(Follow.builder()
+                    .follower(targetUser).following(user)
+                    .viewCount(0).status(FollowStatus.ACCEPTED)
+                    .build());
+            userProfileRepository.increaseFollowerCount(targetUser.getId());
+            userProfileRepository.increaseFollowingCount(currentUserId);
+            userProfileRepository.increaseFollowerCount(currentUserId);       // A +1 follower
+            userProfileRepository.increaseFollowingCount(targetUser.getId()); // B +1 following
 
         } else {
-            status = Boolean.TRUE.equals(targetUser.getFollowRequestMode()) ?
-                    FollowStatus.PENDING : FollowStatus.ACCEPTED;
+
+            followRepository.save(Follow.builder()
+                    .follower(user).following(targetUser)
+                    .viewCount(0).status(FollowStatus.PENDING)
+                    .build());
+            userProfileRepository.increaseFollowerCount(targetUser.getId()); // B +1 follower
+            userProfileRepository.increaseFollowingCount(currentUserId);     // A +1 following
         }
-        if (targetUser.getProfile() != null) {
-            targetUser.getProfile().setFollowerCount(userProfileRepository.increaseFollowerCount(targetUser.getId()));
-        }
-        if (user.getProfile() != null) {
-            user.getProfile().setFollowingCount(userProfileRepository.increaseFollowingCount(user.getId()));
-        }
-        Follow follow = Follow.builder()
-                .follower(user)
-                .following(targetUser)
-                .viewCount(0)
-                .status(status)
-                .build();
-        followRepository.save(follow);
     }
 
 
@@ -131,19 +138,22 @@ public class FollowServiceImpl implements FollowService {
     }
 
     @Override
-    public PageResponse<FollowResponse> getFollowers(Integer pageNumber, Integer pageSize) {
+    public PageResponse<FollowResponse> getFollowList(FollowListType type, Integer pageNumber, Integer pageSize) {
         User user = userHelper.getCurrentUser();
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Follow> followPage = followRepository.findFollowerList(user.getId(), pageable);
-        return buildPageResponse(followPage, true);
-    }
 
-    @Override
-    public PageResponse<FollowResponse> getFollowing(Integer pageNumber, Integer pageSize) {
-        User user = userHelper.getCurrentUser();
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Follow> followPage = followRepository.findFollowingList(user.getId(), pageable);
-        return buildPageResponse(followPage, false);
+        switch (type) {
+            case FOLLOWING -> {
+                return buildPageResponse(followRepository.findFollowingList(user.getId(), pageable));
+            }
+            case FOLLOWERS -> {
+                return buildPageResponse(followRepository.findFollowerList(user.getId(), pageable));
+            }
+            case FRIENDS -> {
+                return buildPageResponse(followRepository.findFriendsList(user.getId(), pageable));
+            }
+        }
+        return null;
     }
 
     @Override
@@ -159,30 +169,14 @@ public class FollowServiceImpl implements FollowService {
         userProfileRepository.decreaseFollowerCount(targetUser.getId());
     }
 
-    // if true get getFollowers if false getFollowing
-    private PageResponse<FollowResponse> buildPageResponse(Page<Follow> followPage, boolean isFollower) {
-        List<FollowResponse> content = followPage.stream()
-                .map(f -> {
-                    User target = isFollower ? f.getFollower() : f.getFollowing();
-                    return FollowResponse.builder()
-                            .userId(target.getId())
-                            .fullName(target.getUsername())
-                            .avatar(target.getProfile().getAvatarUrl())
-                            .status(f.getStatus())
-                            .build();
-                }).toList();
-
+    private PageResponse<FollowResponse> buildPageResponse(Page<FollowResponse> page) {
         PageResponse<FollowResponse> response = new PageResponse<>();
-        response.setContent(content);
-        response.setPageNumber(followPage.getNumber());
-        response.setHasNext(followPage.hasNext());
-        response.setPageSize(followPage.getSize());
-        response.setTotalPage(followPage.getTotalPages());
-        response.setTotalElement(followPage.getTotalElements());
+        response.setContent(page.getContent());
+        response.setPageNumber(page.getNumber());
+        response.setHasNext(page.hasNext());
+        response.setPageSize(page.getSize());
+        response.setTotalPage(page.getTotalPages());
+        response.setTotalElement(page.getTotalElements());
         return response;
     }
-
-
-
-
 }
