@@ -1,5 +1,5 @@
 import axiosInstance from '../axiosInstance';
-import type { PageResponse } from '../../types/common.types';
+import type {BlockStatusResponse, PageResponse} from '../../types/common.types';
 
 export type FollowActionResult = 'FOLLOWING' | 'FRIEND' | 'NOT_FOLLOWING';
 
@@ -47,9 +47,11 @@ export const followApi = {
 
     // POST /api/users/me/block/{userId}
     blockUser: (userId: number) =>
-        axiosInstance.post<{ data: null }>(`/api/users/me/block/${userId}`),
+        axiosInstance.post<{ data: BlockStatusResponse }>(`/api/users/${userId}/block`),
+
 
     // DELETE /api/users/me/block/{userId}
-    unblockUser: (userId: number) =>
-        axiosInstance.delete<{ data: null }>(`/api/users/me/block/${userId}`),
+    getBlockStatus: (userId: number) =>
+        axiosInstance.get<{ data: BlockStatusResponse }>(`/api/users/${userId}/block-status`),
+
 };

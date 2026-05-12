@@ -10,6 +10,7 @@ public enum ErrorCode {
     ALREADY_FOLLOWED("You are already following this user", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_ROLE_FOR_BADGE("Insufficient role to grant this badge", HttpStatus.FORBIDDEN),
     CANNOT_FOLLOW_YOURSELF("You cannot follow yourself", HttpStatus.BAD_REQUEST),
+    CANNOT_BLOCK_YOURSELF("You cannot block yourself", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.CONFLICT),
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
     EMAIL_TEMPLATE_NOT_FOUND("Email template not found", HttpStatus.NOT_FOUND),

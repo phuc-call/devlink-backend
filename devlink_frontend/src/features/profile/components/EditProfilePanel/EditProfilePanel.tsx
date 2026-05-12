@@ -36,10 +36,10 @@ const LANG_COLORS: Record<ProgrammingLanguage, string> = {
 };
 
 const MENU_ITEMS: { key: Section; label: string; icon: string; desc: string }[] = [
-    {key: 'basic',      label: 'Thông tin cơ bản',   icon: '👤', desc: 'Tên, bio, trường, ngành, vị trí'},
-    {key: 'language',   label: 'Ngôn ngữ lập trình', icon: '💻', desc: 'Chọn tối đa 3 ngôn ngữ yêu thích'},
-    {key: 'follow',     label: 'Chế độ theo dõi',    icon: '🔒', desc: 'Duyệt follow thủ công hay tự động'},
-    {key: 'visibility', label: 'Chế độ hiển thị',    icon: '👁️', desc: 'Kiểm soát ai có thể xem hồ sơ của bạn'},
+    {key: 'basic', label: 'Thông tin cơ bản', icon: '👤', desc: 'Tên, bio, trường, ngành, vị trí'},
+    {key: 'language', label: 'Ngôn ngữ lập trình', icon: '💻', desc: 'Chọn tối đa 3 ngôn ngữ yêu thích'},
+    {key: 'follow', label: 'Chế độ theo dõi', icon: '🔒', desc: 'Duyệt follow thủ công hay tự động'},
+    {key: 'visibility', label: 'Chế độ hiển thị', icon: '👁️', desc: 'Kiểm soát ai có thể xem hồ sơ của bạn'},
 ];
 
 export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
@@ -187,14 +187,18 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             </div>
 
             {([
-                {key: 'fullName',     label: 'Họ và tên',    placeholder: 'Nguyễn Văn A'},
-                {key: 'bio',         label: 'Giới thiệu',   placeholder: 'Một vài câu về bạn...'},
-                {key: 'school',      label: 'Trường học',   placeholder: 'Đại học Bách Khoa'},
-                {key: 'major',       label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin'},
-                {key: 'city',        label: 'Thành phố',    placeholder: 'Hồ Chí Minh'},
-                {key: 'countryCode', label: 'Mã quốc gia',  placeholder: 'VN'},
-                {key: 'timezone',    label: 'Múi giờ',      placeholder: 'Asia/Ho_Chi_Minh'},
-            ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({key, label, placeholder}) => (
+                {key: 'fullName', label: 'Họ và tên', placeholder: 'Nguyễn Văn A'},
+                {key: 'bio', label: 'Giới thiệu', placeholder: 'Một vài câu về bạn...'},
+                {key: 'school', label: 'Trường học', placeholder: 'Đại học Bách Khoa'},
+                {key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin'},
+                {key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh'},
+                {key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN'},
+                {key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh'},
+            ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({
+                                                                                                     key,
+                                                                                                     label,
+                                                                                                     placeholder
+                                                                                                 }) => (
                 <div key={key} className={styles.field}>
                     <label className={styles.label}>{label}</label>
                     {key === 'bio' ? (
@@ -281,8 +285,18 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             ) : (
                 <div className={styles.followCards}>
                     {([
-                        {value: false, icon: '🌍', title: 'Tự động chấp nhận', desc: 'Mọi người có thể follow bạn ngay lập tức, không cần duyệt'},
-                        {value: true,  icon: '🔒', title: 'Duyệt thủ công',    desc: 'Bạn sẽ xem xét và chấp nhận từng yêu cầu theo dõi'},
+                        {
+                            value: false,
+                            icon: '🌍',
+                            title: 'Tự động chấp nhận',
+                            desc: 'Mọi người có thể follow bạn ngay lập tức, không cần duyệt'
+                        },
+                        {
+                            value: true,
+                            icon: '🔒',
+                            title: 'Duyệt thủ công',
+                            desc: 'Bạn sẽ xem xét và chấp nhận từng yêu cầu theo dõi'
+                        },
                     ] as { value: boolean; icon: string; title: string; desc: string }[]).map(opt => (
                         <button
                             key={String(opt.value)}
@@ -362,10 +376,14 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
 
     const renderContent = () => {
         switch (section) {
-            case 'basic':      return renderBasic();
-            case 'language':   return renderLanguage();
-            case 'follow':     return renderFollow();
-            case 'visibility': return renderVisibility();
+            case 'basic':
+                return renderBasic();
+            case 'language':
+                return renderLanguage();
+            case 'follow':
+                return renderFollow();
+            case 'visibility':
+                return renderVisibility();
         }
     };
 

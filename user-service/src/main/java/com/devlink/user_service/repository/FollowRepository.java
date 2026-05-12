@@ -1,6 +1,7 @@
 package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.reponse.FollowResponse;
+import com.devlink.user_service.dto.reponse.UserSearchResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import feign.Param;
@@ -131,4 +132,39 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     ORDER BY f.viewCount DESC
     """)
     Page<FollowResponse> findFriendsList(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("""
+            SELECT new com.devlink.user_service.dto.reponse.UserSearchResponse(
+                p.user.id, p.fullName, p.avatarUrl
+            )
+            FROM UserProfile p
+            WHERE LOWER(p.fullName) LIKE LOWER(CONCAT('%', :name, '%'))
+              AND p.user.id != :currentUserId
+              AND (:city IS NULL OR LOWER(p.city) LIKE LOWER(CONCAT('%', :city, '%')))
+              AND (:useFilter = false OR p.user.id IN :filterIds)
+            ORDER BY
+                CASE
+                    WHEN LOWER(p.fullName) = LOWER(:name)                      THEN 0
+                    WHEN LOWER(p.fullName) LIKE LOWER(CONCAT(:name, '%'))      THEN 1
+                    WHEN LOWER(p.fullName) LIKE LOWER(CONCAT('%', :name, '%')) THEN 2
+                    ELSE 3
+                END ASC,
+                p.fullName ASC
+            """)
+    Page<UserSearchResponse> search(
+            @Param("name") String name,
+            @Param("city") String city,
+            @Param("useFilter") boolean useFilter,
+            @Param("filterIds") List<Long> filterIds,
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable
+    );
+    @Query("SELECT f.following.id FROM Follow f WHERE f.follower.id = :id AND f.status = 'ACCEPTED'")
+    List<Long> findMutualFollowingIds(@Param("id") Long id);
+
+    @Query("SELECT f.follower.id FROM Follow f WHERE f.following.id = :id")
+    List<Long> findFollowerIds(@Param("id") Long id);
+
+    @Query("SELECT f.following.id FROM Follow f WHERE f.follower.id = :id")
+    List<Long> findFollowingIds(@Param("id") Long id);
 }

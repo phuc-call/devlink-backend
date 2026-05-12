@@ -1,16 +1,18 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
-import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
-import com.devlink.user_service.dto.reponse.UserProfileResponse;
-import com.devlink.user_service.dto.reponse.VisibilitySettingResponse;
+import com.devlink.user_service.dto.reponse.*;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.service.UserProfileService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/users")
@@ -68,5 +70,26 @@ public class UserProfileController {
     public ResponseEntity<ApiResponse<Void>> updateVisibilitySetting(@RequestParam String visibility) {
         userProfileService.updateVisibilitySetting(visibility);
         return ResponseEntity.ok(ApiResponse.ok(null, "Update visibility setting success"));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<UserSearchPageResponse>> search(
+            @RequestParam @NotBlank String name,
+            @RequestParam(required = false) String city,
+            @RequestParam(defaultValue = "false") Boolean friendsOnly,
+            @RequestParam(defaultValue = "false") Boolean followersOnly,
+            @RequestParam(defaultValue = "false") Boolean followingOnly,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size
+    ) {
+        UserSearchPageResponse result = userProfileService.search(
+                name, city, friendsOnly, followersOnly, followingOnly, page, size
+        );
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @GetMapping("/provinces")
+    public ResponseEntity<ApiResponse<List<String>>> getProvinces() {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getProvinces()));
     }
 }

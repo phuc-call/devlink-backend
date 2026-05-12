@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
-
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import styles from './Header.module.css';
-import {authApi} from "../../../../api/user-service/authApi.ts";
+import { authApi } from "../../../../api/user-service/authApi.ts";
 
 const NAV_TABS = [
     { label: 'Phổ biến', path: '/' },
@@ -17,16 +16,15 @@ export default function Header() {
 
     const [user, setUser] = useState<UserProfileResponse | null>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    /* Gọi API lấy thông tin user */
     useEffect(() => {
         userProfileApi.getProfile()
             .then(res => setUser(res.data.data))
             .catch(() => setUser(null));
     }, []);
 
-    /* Đóng dropdown khi click ngoài */
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -37,13 +35,10 @@ export default function Header() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    /* Logout: gọi API rồi xóa token */
     const handleLogout = async () => {
         try {
             const refreshToken = localStorage.getItem('refreshToken');
-            if (refreshToken) {
-                await authApi.logout(refreshToken);
-            }
+            if (refreshToken) await authApi.logout(refreshToken);
         } catch {
             // bỏ qua lỗi, vẫn logout
         } finally {
@@ -51,6 +46,16 @@ export default function Header() {
             localStorage.removeItem('refreshToken');
             navigate('/login');
         }
+    };
+
+    // Navigate sang trang khám phá kèm tên tìm kiếm
+    const handleSearch = () => {
+        if (!searchValue.trim()) return;
+        navigate(`/explore?name=${encodeURIComponent(searchValue.trim())}`);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleSearch();
     };
 
     const initials = user?.fullName
@@ -63,7 +68,13 @@ export default function Header() {
             <div className={styles.left}>
                 <Link to="/" className={styles.logo}>DevLink</Link>
                 <div className={styles.searchWrap}>
-                    <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
+                    <svg
+                        className={styles.searchIcon}
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        onClick={handleSearch}
+                        style={{ cursor: 'pointer' }}
+                    >
                         <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.6"/>
                         <path d="M13 13l3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
                     </svg>
@@ -71,6 +82,9 @@ export default function Header() {
                         className={styles.searchInput}
                         type="text"
                         placeholder="Tìm kiếm..."
+                        value={searchValue}
+                        onChange={e => setSearchValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
                     />
                 </div>
             </div>
@@ -90,7 +104,6 @@ export default function Header() {
 
             {/* ── RIGHT: Actions + Avatar ── */}
             <div className={styles.right}>
-                {/* Chuông thông báo */}
                 <button className={styles.iconBtn} title="Thông báo">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -98,14 +111,12 @@ export default function Header() {
                     </svg>
                 </button>
 
-                {/* Message */}
                 <button className={styles.iconBtn} title="Tin nhắn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
                 </button>
 
-                {/* Avatar + Dropdown */}
                 <div className={styles.avatarWrap} ref={dropdownRef}>
                     <button
                         className={styles.avatarBtn}
@@ -120,7 +131,6 @@ export default function Header() {
 
                     {dropdownOpen && (
                         <div className={styles.dropdown}>
-                            {/* User info */}
                             <div className={styles.dropUser}>
                                 <div className={styles.dropAvatar}>
                                     {user?.avatarUrl
@@ -130,21 +140,17 @@ export default function Header() {
                                 </div>
                                 <div className={styles.dropInfo}>
                                     <span className={styles.dropName}>{user?.fullName || 'Người dùng'}</span>
-                                    {/*<span className={styles.dropSub}>{user?.fullName ? `@${user.fullName}` : ''}</span>*/}
                                 </div>
                             </div>
 
                             <div className={styles.dropDivider} />
 
-                            {/* Feature items — bổ sung sau */}
-                            <button className={styles.dropItem}>
+                            <button className={styles.dropItem} onClick={() => { navigate('/profile/me'); setDropdownOpen(false); }}>
                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                     <path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" strokeLinecap="round"/>
                                     <path d="M3 18a7 7 0 0 1 14 0" strokeLinecap="round"/>
                                 </svg>
-                                <button className={styles.dropItem} onClick={() => { navigate('/profile/me'); setDropdownOpen(false); }}>
-                                    Trang cá nhân
-                                </button>
+                                Trang cá nhân
                             </button>
                             <button className={styles.dropItem}>
                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -163,14 +169,12 @@ export default function Header() {
 
                             <div className={styles.dropDivider} />
 
-                            {/* Logout */}
                             <button className={`${styles.dropItem} ${styles.dropLogout}`} onClick={handleLogout}>
                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                     <path d="M13 15l3-3m0 0l-3-3m3 3H8m5-9H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                                 Đăng xuất
                             </button>
-
                         </div>
                     )}
                 </div>

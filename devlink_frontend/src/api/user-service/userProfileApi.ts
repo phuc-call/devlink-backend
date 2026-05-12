@@ -37,4 +37,13 @@ export const userProfileApi = {
 
     getUserProfile: (userId: number) =>
         axiosInstance.get<{data: UserProfileResponse}>(`/api/users/profiles/${userId}`),
+
+
+    searchUsers: (params: UserSearchParams) =>
+        axiosInstance.get<{data: UserSearchPageResponse}>('/api/users/search', { params }),
+
+
+    getProvinces: () =>
+        axiosInstance.get<{data: string[]}>('/api/users/provinces'),
+
 };

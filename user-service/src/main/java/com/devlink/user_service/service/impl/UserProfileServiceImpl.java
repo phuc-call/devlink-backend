@@ -1,15 +1,12 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
-import com.devlink.user_service.dto.reponse.UserProfileResponse;
-import com.devlink.user_service.dto.reponse.VisibilitySettingResponse;
+import com.devlink.user_service.dto.reponse.*;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.entity.ProfileNudgeConfig;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
-
 import com.devlink.user_service.entity.enums.FollowStatus;
 import com.devlink.user_service.entity.enums.ProfileVisibility;
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;
@@ -18,18 +15,28 @@ import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
 import com.devlink.user_service.security.SecurityUtils;
 import com.devlink.user_service.service.UserProfileService;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.loadbalancer.RetryLoadBalancerInterceptor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +48,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
     private final UserBlockRepository userBlockRepository;
 
+    private final RestTemplate restTemplate;
     private final ModelMapper modelMapper;
 
     private ModelMapper skipNullMapper;
@@ -83,6 +91,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         UserProfile savedProfile = userProfileRepository.save(userProfile);
         return modelMapper.map(savedProfile, UserProfileResponse.class);
     }
+
     @Override
     public FollowRequestModeResponse updateFollowRequestMode(Boolean followRequestMode) {
         User user = userHelper.getCurrentUser();
@@ -183,13 +192,11 @@ public class UserProfileServiceImpl implements UserProfileService {
             return toFullResponse(owner);
         }
         if (userBlockRepository.isBlocked(viewerId, userId)) {
-            return buildLimitedResponse(profile,owner);
+            return buildLimitedResponse(profile, owner);
         }
-//        if(!owner.getId().equals(viewerId)){
-//            userProfileRepository.increaseFollowerCountBy(owner.getId());
-//        }
-        boolean isFollowing=followRepository.existsByFollowerIdAndFollowingId(viewerId,owner.getId());
-        if(isFollowing){
+
+        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(viewerId, owner.getId());
+        if (isFollowing) {
             followRepository.incrementView(viewerId, owner.getId(), LocalDateTime.now());
         }
         switch (owner.getProfileVisibility()) {
@@ -201,19 +208,18 @@ public class UserProfileServiceImpl implements UserProfileService {
                         followRepository.existsByFollowerIdAndFollowingIdAndStatus(
                                 viewerId, owner.getId(), FollowStatus.ACCEPTED);
 
-                if (!isMutual) return buildLimitedResponse(owner.getProfile(),owner);
+                if (!isMutual) return buildLimitedResponse(owner.getProfile(), owner);
 
                 return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
             }
             case PRIVATE -> {
-                return buildLimitedResponse(owner.getProfile(),owner);
+                return buildLimitedResponse(owner.getProfile(), owner);
             }
 
         }
 
         return toFullResponse(owner);
     }
-
 
 
     @Override
@@ -240,7 +246,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
 
-    private UserProfileResponse buildLimitedResponse(UserProfile profile,User owner) {
+    private UserProfileResponse buildLimitedResponse(UserProfile profile, User owner) {
         if (profile == null) throw new AppException(ErrorCode.USER_NOT_FOUND);
         return UserProfileResponse.builder()
                 .fullName(profile.getFullName())
@@ -312,4 +318,69 @@ public class UserProfileServiceImpl implements UserProfileService {
     public void setRetryLoadBalancerInterceptor(RetryLoadBalancerInterceptor retryLoadBalancerInterceptor) {
         this.retryLoadBalancerInterceptor = retryLoadBalancerInterceptor;
     }
+
+
+    @Override
+    @Cacheable("provinces")
+    public List<String> getProvinces() {
+        try {
+            String apiUrl = "https://provinces.open-api.vn/api/v1/p/";
+            ResponseEntity<List<Map<String, Object>>> responseEntity =
+                    restTemplate.exchange(
+                            apiUrl,
+                            HttpMethod.GET,
+                            null,
+                            new ParameterizedTypeReference<List<Map<String, Object>>>() {
+                            }
+                    );
+
+            List<Map<String, Object>> response = responseEntity.getBody();
+
+            if (response == null) return List.of();
+
+            return response.stream()
+                    .map(p -> (String) p.get("name"))
+                    .map(this::stripPrefix)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("The status API call failed: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private String stripPrefix(String name) {
+        if (name == null) return "";
+        return Pattern.compile("^(Thành phố |Tỉnh )",
+                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ)
+                .matcher(name).replaceAll("").trim();
+    }
+    @Override
+    public UserSearchPageResponse search(String name, String city, Boolean friendsOnly, Boolean followersOnly,
+                                  Boolean followingOnly, int page, int size) {
+        User currentUser = userHelper.getCurrentUser();
+        Long currentUserId = currentUser.getId();
+        Pageable pageable = PageRequest.of(page, size);
+
+        String resolvedCity = (city != null && !city.isBlank()) ? city.trim() : null;
+        List<Long> filterIds = null;
+        if (Boolean.TRUE.equals(friendsOnly)) {
+            filterIds = followRepository.findMutualFollowingIds(currentUserId);
+        } else if (Boolean.TRUE.equals(followersOnly)) {
+            filterIds = followRepository.findFollowerIds(currentUserId);
+        } else if (Boolean.TRUE.equals(followingOnly)) {
+            filterIds = followRepository.findFollowingIds(currentUserId);
+        }
+
+        boolean userFilter = filterIds != null;
+        List<Long> safeIds = (filterIds != null && !filterIds.isEmpty()) ? filterIds : List.of(-1L);
+        Page<UserSearchResponse> users = followRepository.search(
+                name.trim(), resolvedCity, userFilter, safeIds, currentUserId, pageable
+        );
+        return UserSearchPageResponse.builder()
+                .users(users)
+                .build();
+    }
+
+
 }
