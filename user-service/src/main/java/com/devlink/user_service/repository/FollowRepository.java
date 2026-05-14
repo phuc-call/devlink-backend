@@ -1,6 +1,7 @@
 package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.reponse.FollowResponse;
+import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.UserSearchResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
@@ -167,4 +168,28 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     @Query("SELECT f.following.id FROM Follow f WHERE f.follower.id = :id")
     List<Long> findFollowingIds(@Param("id") Long id);
+
+    @Query("""
+        SELECT new com.devlink.user_service.dto.reponse.NotificationBrithDay(
+            u.id, u.profile.fullName, u.profile.avatarUrl)
+        FROM Follow f
+        JOIN User u ON u.id = f.following.id
+        WHERE f.follower.id = :userId
+          AND f.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+          AND EXISTS (
+              SELECT 1 FROM Follow f2
+              WHERE f2.follower.id = f.following.id
+                AND f2.following.id = :userId
+                AND f2.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+          )
+          AND MONTH(u.birthDay) = :month
+          AND DAY(u.birthDay) = :day
+          AND u.id NOT IN (SELECT b.blockedId FROM UserBlock b WHERE b.blocker.id = :userId)
+          AND u.id NOT IN (SELECT b.blocker.id FROM UserBlock b WHERE b.blockedId = :userId)
+        """)
+    List<NotificationBrithDay> findFriendsBirthdayToday(
+            @Param("userId") Long userId,
+            @Param("month") int month,
+            @Param("day") int day
+    );
 }

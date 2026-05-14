@@ -1,13 +1,18 @@
 package com.devlink.user_service.dto.reponse;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Builder @Getter @Setter
+@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationBrithDay {
     Long userId;
     String fullName;
     String avatarUrl;
-    String message;
+
+    public String getMessage() {
+        return "Today is " + fullName + "'s birthday, please give him the best wishes";
+    }
 }

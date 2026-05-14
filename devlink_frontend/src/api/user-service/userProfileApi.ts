@@ -2,7 +2,7 @@ import axiosInstance from '../axiosInstance';
 import type {
     UpdateProfileRequest,
     UserProfileResponse,
-    UserRecommendationResponse,
+    UserRecommendationResponse, UserSearchPageResponse, UserSearchParams,
     VisibilitySettingResponse
 } from '../../types/profile.types';
 

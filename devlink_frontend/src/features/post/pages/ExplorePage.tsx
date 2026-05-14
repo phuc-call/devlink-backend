@@ -1,15 +1,36 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {userProfileApi} from '../../../api/user-service/userProfileApi';
-import type {UserSearchResponse} from '../../../api/user-service/userProfileApi';
+
+import type {UserSearchResponse} from '../../../types/profile.types';
 import styles from './ExplorePage.module.css';
 
 type FilterGroup = 'all' | 'friends' | 'followers' | 'following';
 
-function UserCard({user}: { user: UserSearchResponse }) {
+// ── Props readonly để tránh warning "Mark the props as read-only"
+interface UserCardProps {
+    readonly user: UserSearchResponse;
+}
+
+function UserCard({user}: UserCardProps) {
     const navigate = useNavigate();
+
+    const handleClick = () => {
+        void navigate(`/profile/${user.userId}`);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') handleClick();
+    };
+
     return (
-        <div className={styles.card} onClick={() => navigate(`/profile/${user.userId}`)}>
+        <div
+            className={styles.card}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role="button"
+            tabIndex={0}
+        >
             <div className={styles.cardAvatar}>
                 {user.avatarUrl
                     ? <img src={user.avatarUrl} alt={user.fullName}/>
@@ -34,14 +55,18 @@ function SkeletonCard() {
     );
 }
 
-const FILTER_TABS: { key: FilterGroup; label: string }[] = [
+const FILTER_TABS: ReadonlyArray<{ readonly key: FilterGroup; readonly label: string }> = [
     {key: 'all', label: 'Tất cả'},
     {key: 'friends', label: 'Bạn bè'},
     {key: 'followers', label: 'Người theo dõi'},
     {key: 'following', label: 'Đang theo dõi'},
 ];
 
-function IconFilter({size = 15}: { size?: number }) {
+interface IconFilterProps {
+    readonly size?: number;
+}
+
+function IconFilter({size = 15}: IconFilterProps) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2"
@@ -53,9 +78,10 @@ function IconFilter({size = 15}: { size?: number }) {
 
 export default function ExplorePage() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
 
-    const [name, setName] = useState(searchParams.get('name') ?? '');
+    // ── Dùng useMemo thay vì useEffect+setState để tránh cascading render (dòng 86)
+    const name = useMemo(() => searchParams.get('name') ?? '', [searchParams]);
+
     const [city, setCity] = useState('');
     const [filterGroup, setFilterGroup] = useState<FilterGroup>('all');
     const [provinces, setProvinces] = useState<string[]>([]);
@@ -79,10 +105,6 @@ export default function ExplorePage() {
             .then(res => setProvinces(res.data.data))
             .catch(() => setProvinces([]));
     }, []);
-
-    useEffect(() => {
-        setName(searchParams.get('name') ?? '');
-    }, [searchParams]);
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
@@ -122,11 +144,17 @@ export default function ExplorePage() {
         }
     }, []);
 
+    // ── Reset + fetch khi filter thay đổi (dòng 129)
+    // setState ở đây là intentional — cần reset trước khi fetch mới
     useEffect(() => {
         if (!name.trim()) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUsers([]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPage(0);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHasMore(true);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setInitialLoad(true);
         void fetchUsers(name, city, filterGroup, 0, true);
     }, [name, city, filterGroup, fetchUsers]);
@@ -144,10 +172,15 @@ export default function ExplorePage() {
 
     const selectedCity = city || 'Tất cả tỉnh thành';
 
-    // Tính class cho sidebarWrap — tránh "undefined" khi không collapsed
     const sidebarWrapClass = sidebarOpen
         ? styles.sidebarWrap
         : `${styles.sidebarWrap} ${styles.sidebarWrapCollapsed}`;
+
+    // ── Tách handler để tránh warning "Unexpected negated condition" (dòng 86, 224)
+    const handleSidebarRailClick = () => setSidebarOpen(true);
+    const handleSidebarRailKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') setSidebarOpen(true);
+    };
 
     return (
         <div className={styles.page}>
@@ -157,11 +190,14 @@ export default function ExplorePage() {
                     {/* ── Sidebar wrapper ── */}
                     <div className={sidebarWrapClass}>
 
-                        {/* Rail khi thu */}
+                        {/* Rail khi thu — thêm role/keyboard để fix accessibility warning (dòng 164) */}
                         {!sidebarOpen && (
                             <div
                                 className={styles.sidebarRail}
-                                onClick={() => setSidebarOpen(true)}
+                                onClick={handleSidebarRailClick}
+                                onKeyDown={handleSidebarRailKeyDown}
+                                role="button"
+                                tabIndex={0}
                                 title="Mở bộ lọc"
                             >
                                 <IconFilter size={14}/>
@@ -247,21 +283,25 @@ export default function ExplorePage() {
                     {/* ── Content ── */}
                     <main className={styles.content}>
                         <div className={styles.results}>
-                            {initialLoad
-                                ? Array.from({length: 6}, (_, i) => <SkeletonCard key={i}/>)
-                                : users.length === 0
-                                    ? (
+                            {/* Tách ternary lồng nhau thành biến để fix warning dòng 254 */}
+                            {(() => {
+                                if (initialLoad) {
+                                    return Array.from({length: 6}, (_, i) => <SkeletonCard key={i}/>);
+                                }
+                                if (users.length === 0) {
+                                    return (
                                         <div className={styles.empty}>
-                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF"
-                                                 strokeWidth="1.5">
+                                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                                 stroke="#9CA3AF" strokeWidth="1.5">
                                                 <circle cx="11" cy="11" r="8"/>
                                                 <path d="m21 21-4.35-4.35"/>
                                             </svg>
                                             <p>Không tìm thấy người dùng nào</p>
                                         </div>
-                                    )
-                                    : users.map(user => <UserCard key={user.userId} user={user}/>)
-                            }
+                                    );
+                                }
+                                return users.map(user => <UserCard key={user.userId} user={user}/>);
+                            })()}
                         </div>
 
                         <div ref={loaderRef} style={{height: 1}}/>

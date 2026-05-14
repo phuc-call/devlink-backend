@@ -1,3 +1,4 @@
+
 export type ProgrammingLanguage =
     | 'JAVASCRIPT' | 'TYPESCRIPT' | 'PYTHON' | 'JAVA' | 'GO'
     | 'RUST' | 'CPP' | 'CSHARP' | 'KOTLIN' | 'SWIFT' | 'PHP' | 'RUBY';
@@ -68,4 +69,30 @@ export type ProfileVisibility = 'PRIVATE' | 'PUBLIC' | 'PROTECTED';
 export interface VisibilitySettingResponse {
     current: ProfileVisibility;
     options: ProfileVisibility[];
+}
+
+export interface UserSearchParams {
+    name: string;
+    city?: string;
+    friendsOnly?: boolean;
+    followersOnly?: boolean;
+    followingOnly?: boolean;
+    page?: number;
+    size?: number;
+}
+
+export interface UserSearchResponse {
+    userId: number;
+    fullName: string;
+    avatarUrl?: string;
+}
+
+export interface UserSearchPageResponse {
+    users: {
+        content: UserSearchResponse[];
+        last: boolean;
+        totalElements: number;
+        totalPages: number;
+        number: number;
+    };
 }

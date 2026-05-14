@@ -1,5 +1,9 @@
 package com.devlink.user_service.service;
 
-public interface NotificationService {
+import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 
+import java.util.List;
+
+public interface NotificationService {
+     List<NotificationBrithDay> birthdayAnnouncement();
 }
