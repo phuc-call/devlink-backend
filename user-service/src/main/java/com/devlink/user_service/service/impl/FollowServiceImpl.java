@@ -8,6 +8,7 @@ import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.enums.FollowActionResult;
 import com.devlink.user_service.entity.enums.FollowListType;
 import com.devlink.user_service.entity.enums.FollowStatus;
+import com.devlink.user_service.entity.enums.NotificationType;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
@@ -31,11 +32,12 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @RequiredArgsConstructor
-public class FollowServiceImpl implements FollowService {
+public class    FollowServiceImpl implements FollowService {
     private final UserHelper userHelper;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final UserProfileRepository userProfileRepository;
+    private final NotificationServiceImpl notificationService;
 
     private final UserBlockService userBlockService;
 
@@ -65,6 +67,8 @@ public class FollowServiceImpl implements FollowService {
                     .build());
             userProfileRepository.increaseFollowerCount(targetUser.getId()); // B +1 follower
             userProfileRepository.increaseFollowingCount(currentUserId);
+            //announcement
+            notificationService.followAnnouncement(currentUserId, userId, NotificationType.FOLLOW_BACK);
         } else if (Boolean.FALSE.equals(targetUser.getFollowRequestMode())) {
             // Auto 2 A→B + B→A
             followRepository.save(Follow.builder()
@@ -79,6 +83,8 @@ public class FollowServiceImpl implements FollowService {
             userProfileRepository.increaseFollowingCount(currentUserId);
             userProfileRepository.increaseFollowerCount(currentUserId);       // A +1 follower
             userProfileRepository.increaseFollowingCount(targetUser.getId()); // B +1 following
+            //announcement
+            notificationService.followAnnouncement(currentUserId, userId,NotificationType.FOLLOW);
 
         } else {
 
@@ -88,6 +94,8 @@ public class FollowServiceImpl implements FollowService {
                     .build());
             userProfileRepository.increaseFollowerCount(targetUser.getId()); // B +1 follower
             userProfileRepository.increaseFollowingCount(currentUserId);     // A +1 following
+            //announcement
+            notificationService.followAnnouncement(currentUserId, userId,NotificationType.FOLLOW_REQUEST);
         }
     }
 

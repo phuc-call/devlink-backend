@@ -13,6 +13,7 @@ public enum ErrorCode {
     CANNOT_BLOCK_YOURSELF("You cannot block yourself", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.CONFLICT),
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
+    NOTIFICATION_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
     EMAIL_TEMPLATE_NOT_FOUND("Email template not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND("Role configuration error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_OAUTH2_MODE("Invalid OAuth2 mode", HttpStatus.BAD_REQUEST),

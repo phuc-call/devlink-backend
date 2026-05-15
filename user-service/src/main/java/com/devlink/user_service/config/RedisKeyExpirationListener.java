@@ -28,4 +28,13 @@ import org.springframework.stereotype.Component;
         }
 
     }
+
+    private void handleBirthdayTrigger(String key) {
+        try {
+            Long userId = Long.parseLong(key.split(":")[2]);
+            notificationService.handleBirthdayTrigger(userId);
+        } catch (Exception e) {
+            log.error("Error handling birthday trigger, key={}: {}", key, e.getMessage());
+        }
+    }
 }

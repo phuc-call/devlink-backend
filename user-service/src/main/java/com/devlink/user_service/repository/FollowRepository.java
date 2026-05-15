@@ -5,15 +5,16 @@ import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.UserSearchResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
-import feign.Param;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,12 +22,12 @@ import java.util.Optional;
 @Repository
 public interface FollowRepository extends JpaRepository<Follow, Long> {
     @Query("SELECT COUNT(f) FROM Follow f WHERE f.following.id = :userId AND f.createdAt>=:startOfDay")
-    int countTodayFollows(@RequestParam("userId") Long userId,
-                          @RequestParam("startOfDay") java.time.LocalDateTime startOfDay);
+    int countTodayFollows(@Param("userId") Long userId,
+                          @Param("startOfDay") java.time.LocalDateTime startOfDay);
 
 
     @Query("SELECT MAX(f.createdAt) FROM Follow f WHERE f.following.id = :userId")
-    Optional<LocalDateTime> findLastFollowTime(@RequestParam("userId") Long userId);
+    Optional<LocalDateTime> findLastFollowTime(@Param("userId") Long userId);
 
     @Query("""
             SELECT COUNT(DISTINCT f1.following.id)
@@ -66,33 +67,33 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     void incrementView(@Param("follower") Long follower, @Param("followingId") Long followingId, @Param("now") LocalDateTime now);
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
-        f.following.id,
-        f.following.profile.fullName,
-        f.following.profile.avatarUrl,
-        f.status
-    )
-    FROM Follow f
-    WHERE f.follower.id = :followerId AND f.status=FollowStatus.PENDING
-    ORDER BY f.lastInteractedAt NULLS LAST,
-             f.viewCount DESC,
-             f.createdAt DESC
-    """)
+            SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+                f.following.id,
+                f.following.profile.fullName,
+                f.following.profile.avatarUrl,
+                f.status
+            )
+            FROM Follow f
+            WHERE f.follower.id = :followerId AND f.status=FollowStatus.PENDING
+            ORDER BY f.lastInteractedAt NULLS LAST,
+                     f.viewCount DESC,
+                     f.createdAt DESC
+            """)
     Page<FollowResponse> findFollowingList(@Param("followerId") Long followerId, Pageable pageable);
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
-        f.follower.id,
-        f.follower.profile.fullName,
-        f.follower.profile.avatarUrl,
-        f.status
-    )
-    FROM Follow f
-    WHERE f.following.id = :followingId AND f.status=FollowStatus.PENDING
-    ORDER BY f.lastInteractedAt DESC NULLS LAST,
-             f.viewCount DESC,
-             f.createdAt DESC
-    """)
+            SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+                f.follower.id,
+                f.follower.profile.fullName,
+                f.follower.profile.avatarUrl,
+                f.status
+            )
+            FROM Follow f
+            WHERE f.following.id = :followingId AND f.status=FollowStatus.PENDING
+            ORDER BY f.lastInteractedAt DESC NULLS LAST,
+                     f.viewCount DESC,
+                     f.createdAt DESC
+            """)
     Page<FollowResponse> findFollowerList(@Param("followingId") Long followingId, Pageable pageable);
 
 
@@ -121,17 +122,17 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
             Long followerId, Long followingId, FollowStatus status);
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
-        f.following.id,
-        f.following.profile.fullName,
-        f.following.profile.avatarUrl,
-        f.status
-    )
-    FROM Follow f
-    WHERE f.follower.id = :userId
-    AND f.status = FollowStatus.ACCEPTED
-    ORDER BY f.viewCount DESC
-    """)
+            SELECT new com.devlink.user_service.dto.reponse.FollowResponse(
+                f.following.id,
+                f.following.profile.fullName,
+                f.following.profile.avatarUrl,
+                f.status
+            )
+            FROM Follow f
+            WHERE f.follower.id = :userId
+            AND f.status = FollowStatus.ACCEPTED
+            ORDER BY f.viewCount DESC
+            """)
     Page<FollowResponse> findFriendsList(@Param("userId") Long userId, Pageable pageable);
 
     @Query("""
@@ -160,6 +161,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
             @Param("currentUserId") Long currentUserId,
             Pageable pageable
     );
+
     @Query("SELECT f.following.id FROM Follow f WHERE f.follower.id = :id AND f.status = 'ACCEPTED'")
     List<Long> findMutualFollowingIds(@Param("id") Long id);
 
@@ -170,26 +172,92 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     List<Long> findFollowingIds(@Param("id") Long id);
 
     @Query("""
-        SELECT new com.devlink.user_service.dto.reponse.NotificationBrithDay(
-            u.id, u.profile.fullName, u.profile.avatarUrl)
-        FROM Follow f
-        JOIN User u ON u.id = f.following.id
-        WHERE f.follower.id = :userId
-          AND f.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
-          AND EXISTS (
-              SELECT 1 FROM Follow f2
-              WHERE f2.follower.id = f.following.id
-                AND f2.following.id = :userId
-                AND f2.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
-          )
-          AND MONTH(u.birthDay) = :month
-          AND DAY(u.birthDay) = :day
-          AND u.id NOT IN (SELECT b.blockedId FROM UserBlock b WHERE b.blocker.id = :userId)
-          AND u.id NOT IN (SELECT b.blocker.id FROM UserBlock b WHERE b.blockedId = :userId)
-        """)
-    List<NotificationBrithDay> findFriendsBirthdayToday(
+            SELECT new com.devlink.user_service.dto.reponse.NotificationBrithDay(
+                u.id, u.profile.fullName, u.profile.avatarUrl)
+            FROM Follow f
+            JOIN User u ON u.id = f.following.id
+            WHERE f.follower.id = :userId
+              AND f.following.id IN :birthdayUserIds
+              AND f.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+              AND f.viewCount >= :minView
+              AND EXISTS (
+                  SELECT 1 FROM Follow f2
+                  WHERE f2.follower.id = f.following.id
+                    AND f2.following.id = :userId
+                    AND f2.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+              )
+              AND u.id NOT IN (SELECT b.blockedId FROM UserBlock b WHERE b.blocker.id = :userId)
+              AND u.id NOT IN (SELECT b.blocker.id FROM UserBlock b WHERE b.blockedId = :userId)
+            ORDER BY f.viewCount DESC, f.lastInteractedAt DESC NULLS LAST
+            """)
+    List<NotificationBrithDay> findBirthdayFriendsInList(
             @Param("userId") Long userId,
-            @Param("month") int month,
-            @Param("day") int day
+            @Param("birthdayUserIds") List<Long> birthdayUserIds,
+            @Param("minView") int minView
     );
+
+    @Query("""
+            SELECT f.following.id FROM Follow f
+            WHERE f.follower.id = :userId
+              AND f.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+              AND f.viewCount >= :minView
+              AND EXISTS (
+                  SELECT 1 FROM Follow f2
+                  WHERE f2.follower.id = f.following.id
+                    AND f2.following.id = :userId
+                    AND f2.status = com.devlink.user_service.entity.enums.FollowStatus.ACCEPTED
+              )
+            ORDER BY f.viewCount DESC, f.lastInteractedAt DESC NULLS LAST
+            """)
+    List<Long> findMutualFriendIds(
+            @Param("userId") Long userId,
+            @Param("minView") int minView,
+            Pageable pageable
+    );
+
+    // Scheduler: lấy follower cần notify
+    @Query(value = """
+            SELECT f.follower_id
+            FROM follows f
+            WHERE f.following_id = :birthdayUserId
+              AND f.status       = 'ACCEPTED'
+              AND f.view_count  >= :minView
+            """, nativeQuery = true)
+    List<Long> findFollowerIdsToNotify(
+            @Param("birthdayUserId") Long birthdayUserId,
+            @Param("minView") int minView);
+
+    // user open app looking for feed birthday 7 day
+    @Query(value = """
+            SELECT u.id         AS userId,
+                   p.full_name  AS fullName,
+                   p.avatar_url AS avatarUrl
+            FROM follows f
+            JOIN `user` u       ON u.id = f.following_id
+            JOIN user_profile p ON p.user_id = u.id
+            WHERE f.follower_id  = :currentUserId
+              AND f.status       = 'ACCEPTED'
+              AND f.view_count  >= :minView
+              AND DATE_FORMAT(u.birthday, '%m-%d')
+                  BETWEEN DATE_FORMAT(:fromDate, '%m-%d')
+                      AND DATE_FORMAT(:toDate,   '%m-%d')
+            """, nativeQuery = true)
+    List<NotificationBrithDay> findBirthdayFriendsInDateRange(
+            @Param("currentUserId") Long currentUserId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate,
+            @Param("minView") int minView);
+
+    // Real-time follow: check B có sinh nhật trong 7 ngày không
+    @Query(value = """
+            SELECT COUNT(*) > 0 FROM `user`
+            WHERE id = :userId
+              AND DATE_FORMAT(birthday, '%m-%d')
+                  BETWEEN DATE_FORMAT(:fromDate, '%m-%d')
+                      AND DATE_FORMAT(:toDate,   '%m-%d')
+            """, nativeQuery = true)
+    boolean isBirthdayActiveInLast7Days(
+            @Param("userId") Long userId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate);
 }

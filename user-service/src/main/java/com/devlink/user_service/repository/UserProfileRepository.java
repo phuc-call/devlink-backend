@@ -117,6 +117,9 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             """)
     void increaseFollowerCountBy(@Param("userId") Long userId);
 
+    @Query("SELECT p.fullName FROM UserProfile p WHERE p.user.id = :userId")
+    Optional<String> findFullNameByUserId(@Param("userId") Long userId);
+
 
 
 }

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSenderImpl mailSender;
 
     @Async
+    @CircuitBreaker(name = "emailCB", fallbackMethod = "sendEmailFallback")
     @Override
     public void sendEmailDTO(String toEmail, String type, Map<String, String> variables){
         String normalizedEmail=type.toUpperCase().trim();
@@ -43,6 +45,12 @@ public class EmailServiceImpl implements EmailService {
         } catch (MessagingException e) {
             log.error("[EMAIL] Failed type={} to={}: {}", type, toEmail, e.getMessage());
         }
+    }
+
+    private void sendEmailFallback(String toEmail, String type,
+                                   Map<String, String> variables, Throwable t) {
+        log.error("[EMAIL] Fallback - Gmail down. to={} type={} error={}",
+                toEmail, type, t.getMessage());
     }
 
     private String replacePlaceholders(String template, Map<String, String> variables) {
