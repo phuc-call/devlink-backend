@@ -13,7 +13,7 @@ public enum ErrorCode {
     CANNOT_BLOCK_YOURSELF("You cannot block yourself", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.CONFLICT),
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
-    NOTIFICATION_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
+    NOTIFICATION_NOT_FOUND("Notification not found", HttpStatus.NOT_FOUND),
     EMAIL_TEMPLATE_NOT_FOUND("Email template not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND("Role configuration error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_OAUTH2_MODE("Invalid OAuth2 mode", HttpStatus.BAD_REQUEST),
@@ -29,7 +29,14 @@ public enum ErrorCode {
     NOT_BLOCKED("User is not blocked", HttpStatus.BAD_REQUEST),
     VISIBILITY_NOT_FOUND("Not found visibility",HttpStatus.NOT_FOUND),
     USER_BLOCKED("You have been blocked by this user", HttpStatus.FORBIDDEN),
-    INVALID_REFRESH_TOKEN("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED);
+
+    INVALID_REFRESH_TOKEN("Refresh token is invalid or expired", HttpStatus.UNAUTHORIZED),
+    NOTIFICATION_PASSWORD_NOT_SET("Notification password has not been set", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_PASSWORD_ALREADY_SET("Notification password has been set", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_PASSWORD_WRONG("Notification password is incorrect", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_PASSWORD_INVALID("Notification password must be 4 digits", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_ALREADY_HIDDEN("Notification has already been hidden", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

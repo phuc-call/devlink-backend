@@ -1,16 +1,22 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.config.Constants;
 import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.NotificationResponse;
+import com.devlink.user_service.dto.request.NotificationActionRequest;
+import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
+import com.devlink.user_service.entity.EmailVerification;
 import com.devlink.user_service.entity.Notification;
+import com.devlink.user_service.entity.User;
+import com.devlink.user_service.entity.enums.EmailTemplateType;
+import com.devlink.user_service.entity.enums.NotificationAction;
 import com.devlink.user_service.entity.enums.NotificationType;
+import com.devlink.user_service.entity.enums.VerificationType;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
-import com.devlink.user_service.repository.FollowRepository;
-import com.devlink.user_service.repository.NotificationRepository;
-import com.devlink.user_service.repository.UserProfileRepository;
-import com.devlink.user_service.repository.UserRepository;
+import com.devlink.user_service.repository.*;
+import com.devlink.user_service.service.EmailService;
 import com.devlink.user_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,17 +25,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class NotificationServiceImpl implements NotificationService {
 
     private final FollowRepository followRepository;
@@ -37,6 +48,10 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserHelper userHelper;
     private final UserProfileRepository userProfileRepository;
     private final NotificationRepository notificationRepository;
+    private final EmailService emailService;
+    private static final Random random = new Random();
+    private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationRepository emailVerificationRepository;
     private final RedisTemplate<String, String> redisTemplate;
     // Constants
     private static final String QUEUE_PREFIX = "birthday:queue:";
@@ -157,7 +172,7 @@ public class NotificationServiceImpl implements NotificationService {
     private void sendIfNotSent(Long birthdayUserId, Long followerId) {
         String sentKey = SENT_PREFIX + LocalDate.now() + ":" + birthdayUserId + ":" + followerId;
         Boolean acquired = redisTemplate.opsForValue()
-                .setIfAbsent(sentKey, "1", Duration.ofDays(2));
+                .setIfAbsent(sentKey, "1", Duration.ofDays(7));
 
         if (Boolean.FALSE.equals(acquired)) {
             log.debug("[Birthday] Already sent: birthdayUserId={} → followerId={}",
@@ -201,6 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("[Follow] type={}, actorId={} → receiverId={}", type, actorId, receiverId);
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getNotifications(int page, int size) {
@@ -209,23 +225,101 @@ public class NotificationServiceImpl implements NotificationService {
                 userId, PageRequest.of(page, size)
         );
     }
+
     @Override
     @Transactional(readOnly = true)
     public int countUnread() {
         Long userId = userHelper.getCurrentUser().getId();
         return notificationRepository.countUnread(userId);
     }
+
     @Override
-    @Transactional
     public void markAsRead(Long notificationId) {
         Long userId = userHelper.getCurrentUser().getId();
         int updated = notificationRepository.markAsRead(notificationId, userId);
         if (updated == 0) throw new AppException(ErrorCode.NOTIFICATION_NOT_FOUND);
     }
+
     @Override
-    @Transactional
+
     public void markAllAsRead() {
         Long userId = userHelper.getCurrentUser().getId();
         notificationRepository.markAllAsRead(userId);
     }
+
+    @Override
+    public void handleAction(Long userId, NotificationActionRequest request) {
+        User user = userHelper.getCurrentUser();
+
+        // DELETE_MANY
+        if (request.getAction() == NotificationAction.DELETE_MANY) {
+            handleDeleteMany(request,user);
+        }
+
+        // HIDE, SHOW, DELETE
+        boolean isHidden = notificationRepository
+                .findIsHiddenByIdAndUserId(request.getId(), user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        switch (request.getAction()) {
+            case HIDE -> {
+                if (user.getPasswordNotification() == null || user.getPasswordNotification().isBlank())
+                    throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_NOT_SET);
+                if (!passwordEncoder.matches(request.getPassWord(), user.getPasswordNotification()))
+                    throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_WRONG);
+                if (isHidden)
+                    throw new AppException(ErrorCode.NOTIFICATION_ALREADY_HIDDEN);
+                notificationRepository.hideOne(request.getId(), user.getId());
+            }
+            case SHOW -> {
+                if (!isHidden) throw new AppException(ErrorCode.NOTIFICATION_NOT_HIDDEN);
+                notificationRepository.showOne(request.getId(), user.getId());
+            }
+            case DELETE -> notificationRepository.deleteOne(request.getId(), user.getId());
+        }
+    }
+
+    private void handleDeleteMany(NotificationActionRequest request, User user) {
+        if (request.getIds() == null || request.getIds().isEmpty())
+            throw new IllegalArgumentException("The notice must be not be left unaddressed");
+        if (request.getIds().size() > 50)
+            throw new IllegalArgumentException("You can only delete a maximum of 50 notifications");
+        notificationRepository.deleteManyByIdsAndUserId(request.getIds(), user.getId());
+    }
+
+    private String generateOtp(){
+        return String.format("%06d", random.nextInt(9999));
+    }
+
+    @Override
+    public void setUpNotificationOTP(){
+        User user=userHelper.getCurrentUser();
+        if(user.getPasswordNotification()!=null && !user.getPasswordNotification().isBlank()){
+            throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_ALREADY_SET);
+        }
+        emailVerificationRepository.deleteByEmailAndVerificationType(user.getEmail(), VerificationType.NOTIFICATION_OTP);
+        String otp = generateOtp();
+        emailVerificationRepository.save(EmailVerification.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .verificationType(VerificationType.NOTIFICATION_OTP)
+                .code(passwordEncoder.encode(otp))
+                .expiresAt(LocalDateTime.now().plusMinutes(Constants.OPS_EXPIRATION_MINUTES))
+                .used(false)
+                .build());
+        emailService.sendEmailDTO(user.getEmail(), EmailTemplateType.NOTIFICATION_OTP.name(), Map.of("otp", otp));
+    }
+    //Verify, save password
+    @Override
+    public void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request){
+        User user=userHelper.getCurrentUser();
+        emailService.verifyOtp(user.getEmail(), request.getOtp(),VerificationType.NOTIFICATION_OTP);
+        if (!request.getNewPassword().matches("\\d{4}"))
+            throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_INVALID);
+
+        user.setPasswordNotification(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+
 }

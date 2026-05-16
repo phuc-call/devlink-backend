@@ -1,10 +1,15 @@
 package com.devlink.user_service.service.impl;
 
+import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.entity.EmailTemplate;
+import com.devlink.user_service.entity.EmailVerification;
+import com.devlink.user_service.entity.enums.VerificationType;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.EmailTemplateRepository;
+import com.devlink.user_service.repository.EmailVerificationRepository;
 import com.devlink.user_service.service.EmailService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
@@ -12,17 +17,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service @Slf4j
 @Transactional @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailTemplateRepository emailTemplateRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
     private final JavaMailSenderImpl mailSender;
+    private final PasswordEncoder passwordEncoder;
+    private final UserHelper userHelper;
 
     @Async
     @CircuitBreaker(name = "emailCB", fallbackMethod = "sendEmailFallback")
@@ -60,6 +69,20 @@ public class EmailServiceImpl implements EmailService {
         }
         return result;
     }
+
+    public void verifyOtp(String email, String code, VerificationType type){
+
+        EmailVerification ev =emailVerificationRepository.
+                findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc(email,type,false)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_OTP));
+        if (ev.getExpiresAt().isBefore(LocalDateTime.now()))
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        if (!passwordEncoder.matches(code, ev.getCode()))
+            throw new AppException(ErrorCode.INVALID_OTP);
+        ev.setUsed(true);
+        emailVerificationRepository.save(ev);
+    }
+
 
 
 

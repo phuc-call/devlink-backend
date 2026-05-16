@@ -5,5 +5,6 @@ public enum EmailTemplateType {
     BADGE_GRANTED,
     BADGE_REVOKED,
     ACCOUNT_WARNING,
-    ACCOUNT_LOCKED
+    ACCOUNT_LOCKED,
+    NOTIFICATION_OTP
 }

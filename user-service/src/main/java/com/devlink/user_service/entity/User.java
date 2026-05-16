@@ -44,6 +44,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private ProfileVisibility profileVisibility= ProfileVisibility.PUBLIC;
 
+    private String passwordNotification;
+
 
     // if false auto PENDING → ACCEPTED
     @Column(name = "follow_request_mode", nullable = false)

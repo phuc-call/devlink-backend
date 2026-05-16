@@ -1,0 +1,255 @@
+/* NotificationBell.module.css */
+
+.wrap {
+    position: relative;
+}
+
+/* ── Icon chuông ── */
+.bellBtn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 9999px;
+    background: #F3F4F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.15s;
+}
+
+.bellBtn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.bellBtn:hover { background: #E5E7EB; }
+
+/* ── Badge số chưa đọc ── */
+.badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: #EF4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    line-height: 1;
+}
+
+/* ── Dropdown panel ── */
+.panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 380px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.10);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.15s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.panelTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.markAllBtn {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #3B82F6;
+    cursor: pointer;
+    padding: 0;
+    font-weight: 500;
+}
+
+.markAllBtn:hover { text-decoration: underline; }
+
+/* ── List ── */
+.list {
+    max-height: 440px;
+    overflow-y: auto;
+}
+
+.list::-webkit-scrollbar       { width: 4px; }
+.list::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+
+/* ── Item ── */
+.item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid #F9FAFB;
+}
+
+.item:hover  { background: #F9FAFB; }
+.unread      { background: #EFF6FF; }
+.unread:hover { background: #DBEAFE; }
+
+/* ── Avatar ── */
+.avatarWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.avatarFallback {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: #DBEAFE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #3B82F6;
+    font-weight: 600;
+}
+
+.typeIcon {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 14px;
+    background: #fff;
+    border-radius: 9999px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ── Body ── */
+.body {
+    flex: 1;
+    min-width: 0;
+}
+
+.content {
+    font-size: 13px;
+    color: #111827;
+    margin: 0 0 3px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.time {
+    font-size: 12px;
+    color: #6B7280;
+}
+
+/* ── Action area ── */
+.action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: #3B82F6;
+    flex-shrink: 0;
+}
+
+.followBtn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    background: #3B82F6;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.followBtn:hover    { background: #2563EB; }
+.followBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.followedBtn {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+.followedBtn:hover { background: #E5E7EB; }
+
+.friendBadge {
+    font-size: 12px;
+    color: #22C55E;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── Loading / Empty ── */
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #E5E7EB;
+    border-top-color: #3B82F6;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px;
+    color: #9CA3AF;
+    font-size: 14px;
+}

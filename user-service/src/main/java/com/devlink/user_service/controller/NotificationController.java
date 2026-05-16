@@ -3,6 +3,8 @@ package com.devlink.user_service.controller;
 import com.devlink.user_service.dto.reponse.ApiResponse;
 import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.NotificationResponse;
+import com.devlink.user_service.dto.request.NotificationActionRequest;
+import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
 import com.devlink.user_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,13 +44,34 @@ public class NotificationController {
     @PatchMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id) {
         notificationService.markAsRead(id);
-        return ResponseEntity.ok(ApiResponse.ok(null, "Đã đánh dấu đã đọc"));
+        return ResponseEntity.ok(ApiResponse.ok(null, "Marked as read"));
     }
 
 
     @PatchMapping("/read-all")
     public ResponseEntity<ApiResponse<Void>> markAllAsRead() {
         notificationService.markAllAsRead();
-        return ResponseEntity.ok(ApiResponse.ok(null, "Đã đánh dấu tất cả đã đọc"));
+        return ResponseEntity.ok(ApiResponse.ok(null, "All have been marked as read"));
+    }
+
+    @PostMapping("/action")
+    public ResponseEntity<ApiResponse<Void>> handleAction(
+            @RequestBody NotificationActionRequest request
+    ) {
+        notificationService.handleAction(null, request);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Operation successful"));
+    }
+    @PostMapping("/password/setup")
+    public ResponseEntity<ApiResponse<Void>> setupNotificationPassword() {
+        notificationService.setUpNotificationOTP();
+        return ResponseEntity.ok(ApiResponse.ok(null, "OTP has been sent to your email"));
+    }
+
+    @PostMapping("/password/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyOtpAndSetPassword(
+            @RequestBody NotificationPasswordSetupRequest request
+    ) {
+        notificationService.verifyOtpAndSetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Notification password has been set"));
     }
 }

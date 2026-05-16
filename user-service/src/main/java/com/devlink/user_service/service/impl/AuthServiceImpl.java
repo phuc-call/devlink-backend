@@ -77,25 +77,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void registerVerify(RegisterVerifyRequest request) {
-        verifyOtp(request.getEmail(), request.getOtp());
-    }
-
-    private void verifyOtp(String email, String code) {
-        EmailVerification ev = emailVerificationRepository.
-                findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc
-                        (email, VerificationType.EMAIL_OTP, false).orElseThrow(() ->
-                        new AppException(ErrorCode.INVALID_OTP));
-        if (ev.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new AppException(ErrorCode.OTP_EXPIRED);
-
-        }
-        if (!passwordEncoder.matches(code, ev.getCode())){
-            throw new AppException(ErrorCode.INVALID_OTP);
-        }
-
-        ev.setUsed(true);
-        emailVerificationRepository.save(ev);
-
+        emailService.verifyOtp(request.getEmail(), request.getOtp(), VerificationType.EMAIL_OTP);
     }
 
     @Override
@@ -156,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
         if (!iseVerify) {
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
-        long coverAvatarId = random.nextInt(9999) + 1;
+        long coverAvatarId = random.nextInt(9999);
         String avatarUrl=String.format("https://ui-avatars.com/api/?name=%s&background=random",request.getUsername());
         Role role = roleRepository.findByName(RoleName.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         User user = User.builder()
