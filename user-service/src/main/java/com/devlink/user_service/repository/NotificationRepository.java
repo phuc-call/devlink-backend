@@ -2,6 +2,7 @@ package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.reponse.NotificationResponse;
 import com.devlink.user_service.entity.Notification;
+import com.devlink.user_service.entity.enums.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,9 +34,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     );
 
 
-    // Đếm số thông báo chưa đọc
-    @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.isRead = false")
+    // Đếm số thông báo chưa đọc và trạng thái được hiển thi
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.isRead = false AND n.isHidden=false")
     int countUnread(@Param("userId") Long userId);
+    // Đếm số thông báo chưa đọc và trạng thái là ẩn hiện thị
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.isRead = false AND n.isHidden=true")
+    int countUnreadIsHiddenTrue(@Param("userId") Long userId);
+
 
     // Đánh dấu 1 thông báo đã đọc — trừ count đi 1
     @Modifying
@@ -68,4 +73,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.id = :id AND n.userId = :userId")
     void deleteOne(@Param("id") Long id, @Param("userId") Long userId);
+
+    void deleteByActorIdAndUserIdAndType(Long actorId, Long userId, NotificationType type);
+
 }

@@ -4,6 +4,7 @@ import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.NotificationResponse;
 import com.devlink.user_service.dto.request.NotificationActionRequest;
 import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
+import com.devlink.user_service.entity.enums.CountNotification;
 import com.devlink.user_service.entity.enums.NotificationType;
 import org.springframework.data.domain.Page;
 
@@ -21,7 +22,7 @@ public interface NotificationService {
     // General
     Page<NotificationResponse> getNotifications(int page, int size);
 
-    int countUnread();
+    int countUnread(CountNotification count);
 
     void markAsRead(Long notificationId);
 
@@ -29,7 +30,8 @@ public interface NotificationService {
 
     void handleAction(Long userId, NotificationActionRequest request);
 
-    public void setUpNotificationOTP();
-    public void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request);
+    void setUpNotificationOTP();
+
+    void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request);
 
 }

@@ -5,6 +5,7 @@ import com.devlink.user_service.dto.reponse.NotificationBrithDay;
 import com.devlink.user_service.dto.reponse.NotificationResponse;
 import com.devlink.user_service.dto.request.NotificationActionRequest;
 import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
+import com.devlink.user_service.entity.enums.CountNotification;
 import com.devlink.user_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +38,8 @@ public class NotificationController {
     }
 
     @GetMapping("/unread-count")
-    public ResponseEntity<ApiResponse<Integer>> countUnread() {
-        return ResponseEntity.ok(ApiResponse.ok(notificationService.countUnread()));
+    public ResponseEntity<ApiResponse<Integer>> countUnread(CountNotification count) {
+        return ResponseEntity.ok(ApiResponse.ok(notificationService.countUnread(count)));
     }
 
     @PatchMapping("/{id}/read")

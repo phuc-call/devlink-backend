@@ -1,11 +1,21 @@
 // src/api/user-service/notificationApi.ts
 import axiosInstance from '../axiosInstance';
-import type { NotificationPageResponse, NotificationResponse } from '../../types/notification.types';
+import type {
+    NotificationPageResponse, NotificationResponse, NotificationActionRequest,
+    NotificationPasswordSetupRequest
+} from '../../types/notification.types';
 
 export const notificationApi = {
     // Đếm số thông báo chưa đọcm dùng cho badge icon chuông
     getUnreadCount: () =>
-        axiosInstance.get<{ data: number }>('/api/users/notifications/unread-count'),
+        axiosInstance.get<{ data: number }>('/api/users/notifications/unread-count', {
+            params: { count: 'COUNT_SHOW_NOTIFICATION' },
+        }),
+
+    getUnreadCountHidden: () =>
+        axiosInstance.get<{ data: number }>('/api/users/notifications/unread-count', {
+            params: { count: 'COUNT_HIDDEN_NOTIFICATION' },
+        }),
 
     // Lấy tất cả notification, phân trang, mới nhất lên đầu
     getNotifications: (page = 0, size = 20) =>
@@ -24,4 +34,15 @@ export const notificationApi = {
     // Sinh nhật bạn bè trong 7 ngày gần đây
     getBirthdayNotifications: () =>
         axiosInstance.get<{ data: NotificationResponse[] }>('/api/users/notifications/birthday'),
+
+    handleAction: (request: NotificationActionRequest) =>
+        axiosInstance.post<{ data: null }>('/api/users/notifications/action', request),
+
+    // Bước 1: Gửi OTP về email
+    setupNotificationPassword: () =>
+        axiosInstance.post<{ data: null }>('/api/users/notifications/password/setup'),
+
+    // Bước 2: Verify OTP + lưu password 4 số
+    verifyOtpAndSetPassword: (request: NotificationPasswordSetupRequest) =>
+        axiosInstance.post<{ data: null }>('/api/users/notifications/password/verify', request),
 };

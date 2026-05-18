@@ -12,6 +12,7 @@ import com.devlink.user_service.entity.enums.NotificationType;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
+import com.devlink.user_service.repository.NotificationRepository;
 import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.FollowService;
@@ -37,6 +38,7 @@ public class    FollowServiceImpl implements FollowService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final UserProfileRepository userProfileRepository;
+    private final NotificationRepository notificationRepository;
     private final NotificationServiceImpl notificationService;
 
     private final UserBlockService userBlockService;
@@ -116,9 +118,20 @@ public class    FollowServiceImpl implements FollowService {
         }
 
         followRepository.deleteByFollowerIdAndFollowingId(currentUserId, userId);
-
         userProfileRepository.decreaseFollowerCount(targetUser.getId());
         userProfileRepository.decreaseFollowingCount(currentUserId);
+        //Notification
+        notificationRepository.deleteByActorIdAndUserIdAndType(
+                currentUserId, userId, NotificationType.FOLLOW_REQUEST
+        );
+        notificationRepository.deleteByActorIdAndUserIdAndType(
+                currentUserId, userId, NotificationType.FOLLOW
+        );
+        notificationRepository.deleteByActorIdAndUserIdAndType(
+                currentUserId, userId,NotificationType.FOLLOW_BACK
+        );
+
+
     }
 
     @Override

@@ -82,8 +82,4 @@ public class EmailServiceImpl implements EmailService {
         ev.setUsed(true);
         emailVerificationRepository.save(ev);
     }
-
-
-
-
 }

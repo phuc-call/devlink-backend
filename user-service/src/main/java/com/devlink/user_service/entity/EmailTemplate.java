@@ -13,7 +13,11 @@ import java.time.LocalDateTime;
                 columnNames = {"type", "language"}
         )
 )
-@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmailTemplate {
 
     @Id

@@ -9,10 +9,7 @@ import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
 import com.devlink.user_service.entity.EmailVerification;
 import com.devlink.user_service.entity.Notification;
 import com.devlink.user_service.entity.User;
-import com.devlink.user_service.entity.enums.EmailTemplateType;
-import com.devlink.user_service.entity.enums.NotificationAction;
-import com.devlink.user_service.entity.enums.NotificationType;
-import com.devlink.user_service.entity.enums.VerificationType;
+import com.devlink.user_service.entity.enums.*;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
@@ -53,6 +50,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationRepository emailVerificationRepository;
     private final RedisTemplate<String, String> redisTemplate;
+
     // Constants
     private static final String QUEUE_PREFIX = "birthday:queue:";
     private static final String SENT_PREFIX = "birthday:sent:";
@@ -175,7 +173,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .setIfAbsent(sentKey, "1", Duration.ofDays(7));
 
         if (Boolean.FALSE.equals(acquired)) {
-            log.debug("[Birthday] Already sent: birthdayUserId={} → followerId={}",
+            log.debug("[Birthday] Already sent: birthdayUserId={} followerId={}",
                     birthdayUserId, followerId);
             return;
         }
@@ -188,6 +186,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .type(NotificationType.BIRTHDAY)
                         .content("Hôm nay là sinh nhật của " + fullName)
                         .isRead(false)
+                        .isHidden(false)
                         .build())
         );
 
@@ -196,8 +195,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
 
+    @Override
     public void followAnnouncement(Long actorId, Long receiverId, NotificationType type) {
         userProfileRepository.findFullNameByUserId(actorId).ifPresent(fullName -> {
+//            if (type == NotificationType.FOLLOW_BACK) {
+//                notificationRepository.deleteByActorIdAndUserIdAndType(
+//                        receiverId, actorId, NotificationType.FOLLOW_REQUEST);
+//            }
+
             String content = switch (type) {
                 case FOLLOW -> fullName + " đã theo dõi bạn";
                 case FOLLOW_BACK -> fullName + " đã theo dõi lại, hai bạn đã là bạn bè";
@@ -211,6 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .type(type)
                     .content(content)
                     .isRead(false)
+                    .isHidden(false)
                     .build());
         });
         log.info("[Follow] type={}, actorId={} → receiverId={}", type, actorId, receiverId);
@@ -228,9 +234,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public int countUnread() {
+    public int countUnread(CountNotification count) {
         Long userId = userHelper.getCurrentUser().getId();
-        return notificationRepository.countUnread(userId);
+        if (count == CountNotification.COUNT_SHOW_NOTIFICATION) {
+            return notificationRepository.countUnread(userId);
+        } else if (count == CountNotification.COUNT_HIDDEN_NOTIFICATION) {
+            return notificationRepository.countUnreadIsHiddenTrue(userId);
+        }
+        return 0;
     }
 
     @Override
@@ -253,7 +264,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         // DELETE_MANY
         if (request.getAction() == NotificationAction.DELETE_MANY) {
-            handleDeleteMany(request,user);
+            handleDeleteMany(request, user);
         }
 
         // HIDE, SHOW, DELETE
@@ -287,14 +298,14 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.deleteManyByIdsAndUserId(request.getIds(), user.getId());
     }
 
-    private String generateOtp(){
+    private String generateOtp() {
         return String.format("%06d", random.nextInt(9999));
     }
 
     @Override
-    public void setUpNotificationOTP(){
-        User user=userHelper.getCurrentUser();
-        if(user.getPasswordNotification()!=null && !user.getPasswordNotification().isBlank()){
+    public void setUpNotificationOTP() {
+        User user = userHelper.getCurrentUser();
+        if (user.getPasswordNotification() != null && !user.getPasswordNotification().isBlank()) {
             throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_ALREADY_SET);
         }
         emailVerificationRepository.deleteByEmailAndVerificationType(user.getEmail(), VerificationType.NOTIFICATION_OTP);
@@ -309,17 +320,17 @@ public class NotificationServiceImpl implements NotificationService {
                 .build());
         emailService.sendEmailDTO(user.getEmail(), EmailTemplateType.NOTIFICATION_OTP.name(), Map.of("otp", otp));
     }
+
     //Verify, save password
     @Override
-    public void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request){
-        User user=userHelper.getCurrentUser();
-        emailService.verifyOtp(user.getEmail(), request.getOtp(),VerificationType.NOTIFICATION_OTP);
+    public void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request) {
+        User user = userHelper.getCurrentUser();
+        emailService.verifyOtp(user.getEmail(), request.getOtp(), VerificationType.NOTIFICATION_OTP);
         if (!request.getNewPassword().matches("\\d{4}"))
             throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_INVALID);
 
         user.setPasswordNotification(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
-
 
 }

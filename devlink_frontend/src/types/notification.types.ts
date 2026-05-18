@@ -1,5 +1,20 @@
+// src/types/notification.types.ts
 
 export type NotificationType = 'BIRTHDAY' | 'FOLLOW' | 'FOLLOW_BACK' | 'FOLLOW_REQUEST';
+
+export type NotificationAction = 'HIDE' | 'SHOW' | 'DELETE' | 'DELETE_MANY';
+
+export interface NotificationActionRequest {
+    action: NotificationAction;
+    id?: number;
+    ids?: number[];
+    passWord?: string;
+}
+
+export interface NotificationPasswordSetupRequest {
+    otp: string;
+    newPassword: string;
+}
 
 export interface NotificationResponse {
     id: number;
@@ -9,6 +24,7 @@ export interface NotificationResponse {
     type: NotificationType;
     content: string;
     isRead: boolean;
+    isHidden: boolean;   // thêm mới
     createdAt: string;
 }
 
