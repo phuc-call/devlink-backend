@@ -4,8 +4,48 @@ networks:
     driver: bridge
 volumes:
   user-db-data:
+  post-db-data:
+  chat-db-data:
 services:
   # ─── DATABASES ───────────────────────────────────────────────
+  # post-db
+  post-db:
+    image: mysql:8.0
+    container_name: post-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: post_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - post-db-data:/var/lib/mysql
+    networks:
+      - microservice-net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # chat-db
+  chat-db:
+    image: mysql:8.0
+    container_name: chat-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: chat_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - chat-db-data:/var/lib/mysql
+    networks:
+      - microservice-net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # user-db
   user-db:
     image: mysql:8.0
     container_name: user-db
@@ -51,8 +91,8 @@ services:
       - .env
     build: ./user-service
     container_name: user-service
-    ports:
-      - "8081:8080"
+#    ports:
+#      - "8081:8080"
     environment:
       DB_HOST: user-db
       DB_NAME: user_db
@@ -64,6 +104,50 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       user-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - microservice-net
+
+  post-service:
+    build: ./post-service
+    container_name: post-service
+
+    environment:
+      DB_HOST: post-db
+      DB_NAME: post_db
+      DB_USER: root
+      DB_PASS: root
+      EUREKA_URL: http://eureka-server:8761/eureka
+      REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      post-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - microservice-net
+
+  chat-service:
+    build: ./chat-service
+    container_name: chat-service
+
+    environment:
+      DB_HOST: chat-db
+      DB_NAME: chat_db
+      DB_USER: root
+      DB_PASS: root
+      EUREKA_URL: http://eureka-server:8761/eureka
+      REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      chat-db:
         condition: service_healthy
       eureka-server:
         condition: service_healthy

@@ -21,12 +21,12 @@ import java.util.Optional;
 
 @Repository
 public interface FollowRepository extends JpaRepository<Follow, Long> {
-    @Query("SELECT COUNT(f) FROM Follow f WHERE f.following.id = :userId AND f.createdAt>=:startOfDay")
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.follower.id = :userId AND f.createdAt>=:startOfDay")
     int countTodayFollows(@Param("userId") Long userId,
                           @Param("startOfDay") java.time.LocalDateTime startOfDay);
 
 
-    @Query("SELECT MAX(f.createdAt) FROM Follow f WHERE f.following.id = :userId")
+    @Query("SELECT MAX(f.createdAt) FROM Follow f WHERE f.follower.id = :userId")
     Optional<LocalDateTime> findLastFollowTime(@Param("userId") Long userId);
 
     @Query("""

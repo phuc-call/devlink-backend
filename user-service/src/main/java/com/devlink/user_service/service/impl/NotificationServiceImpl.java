@@ -265,25 +265,41 @@ public class NotificationServiceImpl implements NotificationService {
         // DELETE_MANY
         if (request.getAction() == NotificationAction.DELETE_MANY) {
             handleDeleteMany(request, user);
+            return;
         }
 
-        // HIDE, SHOW, DELETE
+        boolean hasPassword = user.getPasswordNotification() != null && !user.getPasswordNotification().isBlank();
+        boolean correctPassword = hasPassword && passwordEncoder.matches(request.getPassWord(), user.getPasswordNotification());
+
+        if (request.getAction() == NotificationAction.VERIFY_PASSWORD) {
+            if (!hasPassword)
+                throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_NOT_SET);
+            if (!correctPassword)
+                throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_WRONG);
+            return;
+        }
+
         boolean isHidden = notificationRepository
                 .findIsHiddenByIdAndUserId(request.getId(), user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
         switch (request.getAction()) {
             case HIDE -> {
-                if (user.getPasswordNotification() == null || user.getPasswordNotification().isBlank())
+                if (!hasPassword)
                     throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_NOT_SET);
-                if (!passwordEncoder.matches(request.getPassWord(), user.getPasswordNotification()))
+                if (!correctPassword)
                     throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_WRONG);
                 if (isHidden)
                     throw new AppException(ErrorCode.NOTIFICATION_ALREADY_HIDDEN);
                 notificationRepository.hideOne(request.getId(), user.getId());
             }
             case SHOW -> {
-                if (!isHidden) throw new AppException(ErrorCode.NOTIFICATION_NOT_HIDDEN);
+                if (!hasPassword)
+                    throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_NOT_SET);
+                if (!correctPassword)
+                    throw new AppException(ErrorCode.NOTIFICATION_PASSWORD_WRONG);
+                if (!isHidden)
+                    throw new AppException(ErrorCode.NOTIFICATION_NOT_HIDDEN);
                 notificationRepository.showOne(request.getId(), user.getId());
             }
             case DELETE -> notificationRepository.deleteOne(request.getId(), user.getId());
@@ -331,6 +347,13 @@ public class NotificationServiceImpl implements NotificationService {
 
         user.setPasswordNotification(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+    }
+
+    @Override
+    public boolean checkPasswordNotification() {
+        User user = userHelper.getCurrentUser();
+        return user.getPasswordNotification() != null &&
+                !user.getPasswordNotification().isBlank();
     }
 
 }

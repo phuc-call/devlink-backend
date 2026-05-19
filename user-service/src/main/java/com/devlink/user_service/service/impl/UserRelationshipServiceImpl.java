@@ -151,15 +151,17 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
 
     public boolean isActiveMode(Long userId){
         LocalDateTime oneHourAgo =LocalDateTime.now().minusHours(ACTIVE_WINDOW_HOURS);
+        //condition one: turn on the friends suggestion function
         int recentFollow=followRepository.countTodayFollows(userId, oneHourAgo );
         if(recentFollow<ACTIVE_FOLLOW_MIN) return false;
-        Optional<LocalDateTime>findFirstFollowWindow=followRepository.findFollowAfter(userId,oneHourAgo);
-        if(findFirstFollowWindow.isEmpty()) return false;
-        int expireHours=FEATURED_EXPIRE_MIN_HOURS+new Random(userId).nextInt(
-                FEATURED_EXPIRE_MAX_HOURS-FEATURED_EXPIRE_MIN_HOURS+1
-        );
-       LocalDateTime expireTime=findFirstFollowWindow.get().plusHours(expireHours);
-       return expireTime.isBefore(LocalDateTime.now());
+
+        //condition two: Most resent follow is less than 24 hours old
+        Optional<LocalDateTime> lastFollow = followRepository.findLastFollowTime(userId);
+        if (lastFollow.isEmpty()) return false;
+
+        //cut off: turn off function
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(FEATURED_EXPIRE_MIN_HOURS); // 24h
+        return lastFollow.get().isAfter(cutoff);
     }
 
     private int calculateScore(UserProfile current, CandidateProfileDTO candidate, int mutualFriends) {

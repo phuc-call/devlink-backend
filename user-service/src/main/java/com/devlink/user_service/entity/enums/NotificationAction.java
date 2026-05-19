@@ -5,4 +5,5 @@ public enum NotificationAction {
     SHOW,
     DELETE,
     DELETE_MANY,    //limit <= 50
+    VERIFY_PASSWORD
 }

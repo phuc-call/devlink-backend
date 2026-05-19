@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,5 +76,33 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     void deleteOne(@Param("id") Long id, @Param("userId") Long userId);
 
     void deleteByActorIdAndUserIdAndType(Long actorId, Long userId, NotificationType type);
+
+    @Modifying
+    @Query("""
+        DELETE FROM Notification n
+        WHERE n.id IN (
+            SELECT n2.id FROM Notification n2
+            WHERE n2.isHidden = false
+            AND n2.isRead = true
+            AND n2.createdAt < :now
+            ORDER BY n2.createdAt ASC
+        )
+        """)
+    void deleteAutoNotificationLimit1000(@Param("now") LocalDateTime now);
+
+
+    @Modifying
+    @Query("""
+        DELETE FROM Notification n
+        WHERE n.id IN :ids""")
+    void deleteByIds(@Param("ids") List<Long> ids);
+
+    // Thêm method lấy id
+    @Query("""
+        SELECT n.id FROM Notification n
+        WHERE n.isHidden = false
+        AND n.isRead = true
+        AND n.createdAt < :now""")
+    List<Long> findExpiredIds(@Param("now") LocalDateTime now, Pageable pageable);
 
 }

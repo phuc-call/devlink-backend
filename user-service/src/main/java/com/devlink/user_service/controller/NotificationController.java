@@ -75,4 +75,9 @@ public class NotificationController {
         notificationService.verifyOtpAndSetPassword(request);
         return ResponseEntity.ok(ApiResponse.ok(null, "Notification password has been set"));
     }
+
+    @GetMapping("/password-notification")
+    public ResponseEntity<ApiResponse<Boolean>> passwordNotification() {
+        return ResponseEntity.ok(ApiResponse.ok(notificationService.checkPasswordNotification()));
+    }
 }

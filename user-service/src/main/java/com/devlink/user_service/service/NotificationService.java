@@ -34,4 +34,6 @@ public interface NotificationService {
 
     void verifyOtpAndSetPassword(NotificationPasswordSetupRequest request);
 
+    boolean checkPasswordNotification();
+
 }

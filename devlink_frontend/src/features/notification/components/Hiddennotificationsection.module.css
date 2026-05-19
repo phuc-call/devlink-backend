@@ -1,0 +1,532 @@
+/* src/features/notification/components/HiddenNotificationSection.module.css */
+
+.section {
+    background: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Header ── */
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 0.12s;
+}
+
+.sectionHeader:hover {
+    background: #F9FAFB;
+}
+
+.sectionHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sectionIconWrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    background: #F3F4F6;
+    color: #6B7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sectionTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.sectionSub {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin: 2px 0 0;
+}
+
+.sectionHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.countBadge {
+    font-size: 11px;
+    font-weight: 600;
+    background: #EFF6FF;
+    color: #3B82F6;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* ── Body ── */
+.sectionBody {
+    border-top: 0.5px solid #F3F4F6;
+}
+
+/* ── Step Box ── */
+.stepBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 24px;
+    gap: 6px;
+}
+
+.stepIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: #EFF6FF;
+    color: #3B82F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.stepIconError {
+    background: #FEF2F2;
+    color: #EF4444;
+}
+
+.stepTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    text-align: center;
+}
+
+.stepDesc {
+    font-size: 13px;
+    color: #6B7280;
+    margin: 0;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.stepActions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+/* ── PIN ── */
+.pinRow {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0 4px;
+}
+
+.pinBox {
+    width: 52px;
+    height: 56px;
+    border-radius: 8px;
+    border: 1.5px solid #E5E7EB;
+    background: #F9FAFB;
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+
+.pinBox:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px #BFDBFE;
+    background: #FFFFFF;
+}
+
+.pinBoxError {
+    border-color: #EF4444;
+}
+
+.pinBoxError:focus {
+    box-shadow: 0 0 0 3px #FECACA;
+}
+
+/* ── OTP Input ── */
+.otpInput {
+    width: 100%;
+    max-width: 220px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #E5E7EB;
+    background: #F9FAFB;
+    font-size: 18px;
+    font-weight: 500;
+    color: #111827;
+    text-align: center;
+    letter-spacing: 6px;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    margin: 8px 0;
+}
+
+.otpInput:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px #BFDBFE;
+    background: #FFFFFF;
+}
+
+/* ── Buttons ── */
+.confirmBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: #3B82F6;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    width: 100%;
+    max-width: 240px;
+    transition: background 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+
+.confirmBtn:hover:not(:disabled) {
+    background: #2563EB;
+}
+
+.confirmBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cancelBtn {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B7280;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+
+.cancelBtn:hover:not(:disabled) {
+    background: #F3F4F6;
+}
+
+.cancelBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.linkBtn {
+    font-size: 12px;
+    color: #3B82F6;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    text-decoration: underline;
+    font-family: 'Inter', sans-serif;
+}
+
+.linkBtn:hover {
+    color: #2563EB;
+}
+
+/* ── Error ── */
+.errorRow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #EF4444;
+    margin-top: 2px;
+}
+
+/* ── Spinner ── */
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #E5E7EB;
+    border-top-color: #3B82F6;
+    border-radius: 9999px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    padding: 28px 0;
+}
+
+/* ── Notification Item ── */
+.item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid #F3F4F6;
+    transition: background 0.12s;
+}
+
+.item:last-child {
+    border-bottom: none;
+}
+
+.item:hover {
+    background: #F9FAFB;
+}
+
+.itemMain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.avatarWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    object-fit: cover;
+    border: 1px solid #E5E7EB;
+}
+
+.avatarFallback {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: #DBEAFE;
+    color: #1D4ED8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.typeBadge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #FFFFFF;
+}
+
+.badgeFollow   { background: #3B82F6; color: #fff; }
+.badgeBirthday { background: #EC4899; color: #fff; }
+.badgeFriend   { background: #22C55E; color: #fff; }
+
+.itemBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.itemContent {
+    font-size: 14px;
+    color: #111827;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.contentRead {
+    color: #6B7280;
+}
+
+.itemContent strong {
+    font-weight: 600;
+    color: #374151;
+}
+
+.itemMeta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+}
+
+.itemTime {
+    font-size: 12px;
+    color: #9CA3AF;
+}
+
+.hiddenTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #9CA3AF;
+    background: #F3F4F6;
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.itemActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.moreWrap {
+    position: relative;
+}
+
+.moreBtn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #9CA3AF;
+    transition: all 0.12s;
+}
+
+.moreBtn:hover {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+.moreBtnActive {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+/* ── Context Menu ── */
+.ctxMenu {
+    position: absolute;
+    right: 0;
+    top: 34px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.10);
+    z-index: 50;
+    min-width: 180px;
+    padding: 4px;
+}
+
+.ctxItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #374151;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+    font-family: 'Inter', sans-serif;
+}
+
+.ctxItem:hover {
+    background: #F3F4F6;
+}
+
+.ctxDivider {
+    height: 1px;
+    background: #F3F4F6;
+    margin: 3px 0;
+}
+
+.ctxDanger {
+    color: #EF4444;
+}
+
+.ctxDanger:hover {
+    background: #FEF2F2;
+}
+
+/* ── Empty ── */
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 36px 0;
+    color: #9CA3AF;
+}
+
+.empty p {
+    font-size: 14px;
+}
+
+/* ── Modal (cho SHOW action) ── */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+}
+
+.modal {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.modalActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    width: 100%;
+}
