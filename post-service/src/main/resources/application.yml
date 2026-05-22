@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 210MB
   application:
     name: post-service
 
@@ -90,8 +94,14 @@ logging:
     com.devlink: DEBUG
     org.springframework.web: DEBUG
 
+
 springdoc:
   api-docs:
+    enabled: true
     path: /v3/api-docs
   swagger-ui:
     enabled: false
+gemini:
+  api:
+    key: gen-lang-client-0144616623
+    model: gemini-1.5-flash

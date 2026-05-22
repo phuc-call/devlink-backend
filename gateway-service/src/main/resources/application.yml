@@ -68,14 +68,21 @@ spring:
                     redis-rate-limiter.burstCapacity: 20
                     key-resolver: "#{@userKeyResolver}"
 
-            # x
-            - id: x
-              uri: lb://x
+            # post-service
+            - id: post-service
+              uri: lb://post-service
               predicates:
-                - Path=/api/x/**
+                - Path=/api/posts/**
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
+
+            - id: post-service-docs
+              uri: lb://post-service
+              predicates:
+                - Path=/post-service/v3/api-docs/**
+              filters:
+                - RewritePath=/post-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
             # x
             - id: x
@@ -141,8 +148,8 @@ springdoc:
     urls:
       - name: user-service
         url: /user-service/v3/api-docs
-      - name: x
-        url: /x/v3/api-docs
+      - name: post-service
+        url: /post-service/v3/api-docs
       - name: x
         url: /x/v3/api-docs
 

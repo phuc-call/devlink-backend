@@ -15,12 +15,14 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 import ua_parser.Parser;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 @Configuration
 public class AppConfig {
@@ -67,7 +69,7 @@ public class AppConfig {
                         .url("/")
                         .description("Via Gateway")))
                 .info(new Info()
-                        .title("User Service API")
+                        .title("Post Service API")
                         .version("1.0.0"))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
                 .components(new Components()
@@ -89,5 +91,17 @@ public class AppConfig {
         return redisMessageListenerContainer;
     }
 
+    @Bean("postAsyncExecutor")
+    public Executor postAsyncExecutor() {
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(4);
+        ex.setMaxPoolSize(10);
+        ex.setQueueCapacity(100);
+        ex.setThreadNamePrefix("post-async-");
+        ex.setWaitForTasksToCompleteOnShutdown(true);
+        ex.setAwaitTerminationSeconds(30);
+        ex.initialize();
+        return ex;
+    }
 
 }

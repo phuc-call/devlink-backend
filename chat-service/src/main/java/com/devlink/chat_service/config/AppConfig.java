@@ -67,7 +67,7 @@ public class AppConfig {
                         .url("/")
                         .description("Via Gateway")))
                 .info(new Info()
-                        .title("User Service API")
+                        .title("Chat Service API")
                         .version("1.0.0"))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
                 .components(new Components()

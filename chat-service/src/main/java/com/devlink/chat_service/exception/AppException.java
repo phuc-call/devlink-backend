@@ -1,6 +1,6 @@
 package com.devlink.chat_service.exception;
 
-import com.devlink.post_service.exception.ErrorCode;
+
 import lombok.Getter;
 
 @Getter

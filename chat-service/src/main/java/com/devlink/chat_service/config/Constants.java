@@ -12,7 +12,7 @@ public final class Constants {
             "/swagger-ui/**",
             "/swagger-ui.html",
 
-            "/post-service/v3/api-docs/**"
+            "/chat-service/v3/api-docs/**"
     };
 
     public static final String PAGE_NUMBER = "0";
