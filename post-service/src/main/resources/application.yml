@@ -103,5 +103,43 @@ springdoc:
     enabled: false
 gemini:
   api:
-    key: gen-lang-client-0144616623
-    model: gemini-1.5-flash
+    key: AIzaSyAQuAvLi9u-JdRbfMFpq7jT7UKEwvv_d5Q
+    model: "gemini-2.0-flash"
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      user-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.FeignException
+      user-service-feed-info:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+
+  retry:
+    instances:
+      user-service:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - java.io.IOException
+          - feign.FeignException.ServiceUnavailable
+        ignore-exceptions:
+          - feign.FeignException.BadRequest
+          - feign.FeignException.Unauthorized
+          - feign.FeignException.Forbidden
+          - feign.FeignException.NotFound
+      user-service-feed-info:
+        max-attempts: 3
+        wait-duration: 500ms

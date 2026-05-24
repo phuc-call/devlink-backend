@@ -1,5 +1,6 @@
 package com.devlink.user_service.repository;
 
+import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.entity.User;
 import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,5 +24,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<Long> findUserIdsByBirthdayMonthAndDay(
             @Param("month") int month,
             @Param("day")   int day);
+
+    @Query("""
+    SELECT new com.devlink.user_service.dto.reponse.UserFeedInfoResponse(
+        u.id, p.fullName, p.avatarUrl, u.badge,
+        p.followerCount, p.followingCount,
+        (SELECT COUNT(f) > 0 FROM Follow f
+            WHERE f.follower.id = :currentUserId
+            AND f.following.id = u.id
+            AND f.status = 'ACCEPTED'),
+        (SELECT COUNT(f2) > 0 FROM Follow f2
+            WHERE f2.follower.id = :currentUserId
+            AND f2.following.id = u.id
+            AND f2.status = 'ACCEPTED'
+            AND EXISTS (
+                SELECT 1 FROM Follow f3
+                WHERE f3.follower.id = u.id
+                AND f3.following.id = :currentUserId
+                AND f3.status = 'ACCEPTED'
+            ))
+    )
+    FROM User u
+    LEFT JOIN u.profile p
+    WHERE u.id IN :userIds
+""")
+    List<UserFeedInfoResponse> findFeedInfoByIds(
+            @Param("userIds") List<Long> userIds,
+            @Param("currentUserId") Long currentUserId
+    );
 
 }

@@ -15,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -27,6 +29,10 @@ public class UserBlockServiceImpl implements UserBlockService {
     public boolean checkIfUserIsBlocked(Long a, Long b) {
         return userBlockRepository.isBlocked(a, b)
                 || userBlockRepository.isBlocked(b, a);
+    }
+    @Override
+    public List<Long> getBlockedAndBlockerIds(Long userId){
+        return userBlockRepository.findBlockedAndBlockerIds(userId);
     }
     @Override
     public BlockStatusResponse blockUser(Long userId) {
@@ -65,4 +71,5 @@ public class UserBlockServiceImpl implements UserBlockService {
                 followRepository.deleteByFollowerIdAndFollowingId(userId, currentUserId);
         }
     }
+
 

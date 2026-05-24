@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "posts")
-@EntityListeners(AuditingEntityListener.class) ///todo:
+@EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Post {
 
@@ -29,11 +29,11 @@ public class Post {
 
     @Column(columnDefinition = "TEXT")
     private String content;
-
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private PostStatus status = PostStatus.PENDING_REVIEW;
-
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private Visibility visibility = Visibility.PUBLIC;
@@ -45,9 +45,10 @@ public class Post {
     @Column(name = "shared_post_id")
     private Long sharedPostId;
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
-
+    @Builder.Default
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
 

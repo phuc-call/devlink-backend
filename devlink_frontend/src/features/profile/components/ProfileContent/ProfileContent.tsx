@@ -1,20 +1,42 @@
+// src/features/profile/components/ProfileContent.tsx
+import { useState } from 'react';
 import styles from './ProfileContent.module.css';
+import CreatePostModal from '../../../../components/post/CreatePostModal/CreatePostModal.tsx';
 
 export default function ProfileContent() {
+    const [showCreatePost, setShowCreatePost] = useState(false);
+
     return (
         <div className={styles.wrap}>
+
+            {showCreatePost && (
+                <CreatePostModal
+                    onClose={() => setShowCreatePost(false)}
+                    onSuccess={() => {
+                        // TODO: reload danh sách bài viết của profile
+                    }}
+                    avatarUrl={undefined}
+                    displayName={undefined}
+                />
+            )}
 
             {/* Create post */}
             <div className={styles.createCard}>
                 <div className={styles.createRow}>
                     <div className={styles.createAvatar} />
-                    <button className={styles.createInput}>
+                    <button
+                        className={styles.createInput}
+                        onClick={() => setShowCreatePost(true)}
+                    >
                         Bạn đang nghĩ gì?
                     </button>
                 </div>
                 <div className={styles.createDivider} />
                 <div className={styles.createActions}>
-                    <button className={styles.createAction}>
+                    <button
+                        className={styles.createAction}
+                        onClick={() => setShowCreatePost(true)}
+                    >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                              stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polygon points="23 7 16 12 23 17 23 7"/>
@@ -22,7 +44,10 @@ export default function ProfileContent() {
                         </svg>
                         Video
                     </button>
-                    <button className={styles.createAction}>
+                    <button
+                        className={styles.createAction}
+                        onClick={() => setShowCreatePost(true)}
+                    >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                              stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -31,7 +56,10 @@ export default function ProfileContent() {
                         </svg>
                         Ảnh / Video
                     </button>
-                    <button className={styles.createAction}>
+                    <button
+                        className={styles.createAction}
+                        onClick={() => setShowCreatePost(true)}
+                    >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                              stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

@@ -1,4 +1,4 @@
-package com.devlink.post_service.dto.reponse;
+package com.devlink.post_service.dto.response;
 
 import lombok.*;
 

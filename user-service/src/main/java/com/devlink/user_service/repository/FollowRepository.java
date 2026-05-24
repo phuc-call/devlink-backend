@@ -260,4 +260,17 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
             @Param("userId") Long userId,
             @Param("fromDate") LocalDate fromDate,
             @Param("toDate") LocalDate toDate);
+
+    @Query("""
+    SELECT f.following.id FROM Follow f
+    WHERE f.follower.id = :userId
+    AND f.status = 'ACCEPTED'
+    AND EXISTS (
+        SELECT 1 FROM Follow f2
+        WHERE f2.follower.id = f.following.id
+        AND f2.following.id = :userId
+        AND f2.status = 'ACCEPTED'
+    )
+""")
+    List<Long> findFriendIds(@Param("userId") Long userId);
 }

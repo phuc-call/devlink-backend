@@ -1,18 +1,17 @@
 package com.devlink.post_service.controller;
 
-import com.devlink.post_service.dto.reponse.ApiResponse;
-import com.devlink.post_service.dto.reponse.PostResponse;
 import com.devlink.post_service.dto.request.CreatePostRequest;
+import com.devlink.post_service.dto.response.ApiResponse;
+import com.devlink.post_service.dto.response.FeedPostResponse;
+import com.devlink.post_service.dto.response.PostResponse;
 import com.devlink.post_service.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -33,5 +32,15 @@ public class PostController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response,
                         "Bài viết đã được tạo và đang chờ kiểm duyệt"));
+    }
+
+    @GetMapping("/feed")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String postType) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getFeed(page, size, postType), "Success")
+        );
     }
 }

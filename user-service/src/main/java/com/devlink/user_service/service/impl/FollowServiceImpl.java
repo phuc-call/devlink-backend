@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Transactional
@@ -134,6 +135,10 @@ public class    FollowServiceImpl implements FollowService {
 
     }
 
+    @Override
+    public List<Long> getFriendIds(Long userId) {
+        return followRepository.findFriendIds(userId);
+    }
     @Override
     public FollowActionResult getFollowStatus(Long userId) {
         Long currentUserId = userHelper.getCurrentUser().getId();

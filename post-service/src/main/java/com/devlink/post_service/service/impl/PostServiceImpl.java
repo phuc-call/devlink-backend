@@ -1,8 +1,10 @@
 package com.devlink.post_service.service.impl;
 
+import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.config.Constants;
-import com.devlink.post_service.dto.reponse.PostResponse;
+import com.devlink.post_service.dto.client.UserFeedInfoResponse;
 import com.devlink.post_service.dto.request.CreatePostRequest;
+import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.PostFile;
 import com.devlink.post_service.entity.PostMedia;
@@ -10,24 +12,26 @@ import com.devlink.post_service.entity.PostTag;
 import com.devlink.post_service.entity.enums.*;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
-import com.devlink.post_service.repository.AccountRestrictionRepository;
-import com.devlink.post_service.repository.PostFileRepository;
-import com.devlink.post_service.repository.PostRepository;
+import com.devlink.post_service.repository.*;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
 import com.devlink.post_service.service.PostService;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.internal.util.StringUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +53,9 @@ public class PostServiceImpl implements PostService {
     private final PostFileRepository postFileRepository;
     private final FileStorageService fileStorageService;
     private final PostAsyncService postAsyncService;
+    private final UserServiceClient userServiceClient;
+    private final PostTagRepository postTagRepository;
+    private final PostMediaRepository postMediaRepository;
 
     @Override
     @Transactional
@@ -66,7 +73,17 @@ public class PostServiceImpl implements PostService {
 
         //  Validate content + files
         boolean hasContent = StringUtils.hasText(request.getContent());
-        boolean hasFiles = !CollectionUtils.isEmpty(request.getMediaFiles());
+
+        List<MultipartFile> validFiles;
+        if(request.getMediaFiles()==null){
+            validFiles = List.of();
+        } else {
+            validFiles = request.getMediaFiles().stream()
+                    .filter(f -> f != null && !f.isEmpty())
+                    .toList();
+        }
+
+        boolean hasFiles = !validFiles.isEmpty();
 
         if (!hasContent && !hasFiles)
             throw new AppException(ErrorCode.POST_CONTENT_EMPTY);
@@ -75,7 +92,9 @@ public class PostServiceImpl implements PostService {
             throw new AppException(ErrorCode.POST_FILE_REQUIRED);
 
         if (hasFiles)
-            request.getMediaFiles().forEach(this::validateFile);
+            validateFiles(validFiles);
+
+
 
         // Tạo Post
         Post post = Post.builder()
@@ -108,7 +127,7 @@ public class PostServiceImpl implements PostService {
 
         if (hasFiles) {
             int idx = 0;
-            for (MultipartFile file : request.getMediaFiles()) {
+            for (MultipartFile file : validFiles) {
                 String ext = getExt(file.getOriginalFilename());
                 MediaType mType = resolveMediaType(ext);
                 String url = fileStorageService.upload(
@@ -143,14 +162,14 @@ public class PostServiceImpl implements PostService {
 
     //  validate
 
-    private void validateFile(MultipartFile file) {
-        if (file.getSize() > MAX_SIZE_BYTES)
-            throw new AppException(ErrorCode.POST_FILE_TOO_LARGE);
-
-        String ext = getExt(file.getOriginalFilename());
-        if (!ALLOWED_EXT.contains(ext.toLowerCase()))
-            throw new AppException(ErrorCode.POST_FILE_UNSUPPORTED_FORMAT);
-    }
+//    private void validateFile(MultipartFile file) {
+//        if (file.getSize() > MAX_SIZE_BYTES)
+//            throw new AppException(ErrorCode.POST_FILE_TOO_LARGE);
+//
+//        String ext = getExt(file.getOriginalFilename());
+//        if (!ALLOWED_EXT.contains(ext.toLowerCase()))
+//            throw new AppException(ErrorCode.POST_FILE_UNSUPPORTED_FORMAT);
+//    }
 
     // helpers
 
@@ -177,8 +196,8 @@ public class PostServiceImpl implements PostService {
                 .postType(post.getPostType())
                 .aiModerationStatus(post.getAiModerationStatus())
                 .tags(post.getTags().stream().map(PostTag::getTag).toList())
-                .mediaList(mediaList.stream().map(m -> PostResponse.MediaResponse.builder()
-                        .id(m.getId()).mediaType(m.getMediaType().name())
+                .mediaList(mediaList.stream().map(m -> MediaResponse.builder()
+                        .id(m.getId()).mediaType(m.getMediaType())
                         .url(m.getUrl()).originalName(m.getOriginalName())
                         .fileExtension(m.getFileExtension())
                         .fileSize(m.getFileSize()).orderIndex(m.getOrderIndex())
@@ -211,5 +230,122 @@ public class PostServiceImpl implements PostService {
         // Tổng dung lượng không quá 200MB
         if (totalSize > Constants.MAX_TOTAL_SIZE_BYTES)
             throw new AppException(ErrorCode.POST_FILE_TOTAL_SIZE_EXCEEDED);
+    }
+
+    @Override
+    public Page<FeedPostResponse> getFeed(int page, int size, String postType) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        List<Long> friendIds = fetchFriendIds();
+        List<Long> blockedIds = fetchBlockedIds();
+
+        PostType postTypeEnum = null;
+        if (postType != null && !postType.isBlank()) {
+            try {
+                postTypeEnum = PostType.valueOf(postType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new AppException(ErrorCode.INVALID_POST_TYPE);
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Long> idPage = postRepository.findFeedPostIds(
+                currentUserId, friendIds, blockedIds, postTypeEnum, pageable
+        );
+
+        if (idPage.isEmpty()) return Page.empty(pageable);
+
+        List<Long> ids = idPage.getContent();
+
+        List<FeedPostResponse> posts = postRepository.findFeedPostDtos(ids);
+
+        Map<Long, List<TagResponse>> tagsMap = postTagRepository
+                .findTagsByPostIds(ids).stream()
+                .collect(Collectors.groupingBy(TagResponse::getPostId));
+
+        Map<Long, List<MediaResponse>> mediaMap = postMediaRepository
+                .findMediaByPostIds(ids).stream()
+                .collect(Collectors.groupingBy(MediaResponse::getPostId));
+
+        List<Long> authorIds = posts.stream()
+                .map(FeedPostResponse::getAuthorId)
+                .distinct()
+                .toList();
+
+        Map<Long, UserFeedInfoResponse> authorMap = fetchUserFeedInfo(authorIds);
+
+        posts.forEach(p -> {
+            p.setTags(tagsMap.getOrDefault(p.getId(), List.of()));
+            p.setMediaList(mediaMap.getOrDefault(p.getId(), List.of()));
+            p.setAuthor(authorMap.get(p.getAuthorId()));
+        });
+
+        Map<Long, FeedPostResponse> postMap = posts.stream()
+                .collect(Collectors.toMap(FeedPostResponse::getId, p -> p));
+
+        List<FeedPostResponse> ordered = ids.stream()
+                .map(postMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
+    }
+
+    //  Circuit Breaker methods
+
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
+            name = "user-service-friends",
+            fallbackMethod = "fetchFriendIdsFallback"
+    )
+    @Retry(name = "user-service-friends")
+    public List<Long> fetchFriendIds() {
+        log.info("[PostService] Calling getFriendIds");
+        ApiResponse<List<Long>> res = userServiceClient.getFriendIds();
+        return res.getData() != null ? res.getData() : List.of(-1L);
+    }
+
+    public List<Long> fetchFriendIdsFallback(Throwable t) {
+        log.warn("[CB-friends] fallback: {}", t.getMessage());
+        return List.of(-1L);
+    }
+
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
+            name = "user-service-blocked",
+            fallbackMethod = "fetchBlockedIdsFallback"
+    )
+    @Retry(name = "user-service-blocked")
+    public List<Long> fetchBlockedIds() {
+        log.info("[PostService] Calling getBlockedIds");
+        ApiResponse<List<Long>> res = userServiceClient.getBlockedIds();
+        return res.getData() != null ? res.getData() : List.of(-1L);
+    }
+
+    public List<Long> fetchBlockedIdsFallback(Throwable t) {
+        log.warn("[CB-blocked] fallback: {}", t.getMessage());
+        return List.of(-1L);
+    }
+
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
+            name = "user-service-feed-info",
+            fallbackMethod = "fetchUserFeedInfoFallback"
+    )
+    @Retry(name = "user-service-feed-info")
+    public Map<Long, UserFeedInfoResponse> fetchUserFeedInfo(List<Long> authorIds) {
+        log.info("[PostService] Calling getUserFeedInfo size={}", authorIds.size());
+        ApiResponse<Map<Long, UserFeedInfoResponse>> res =
+                userServiceClient.getUserFeedInfo(authorIds);
+        return res.getData() != null ? res.getData() : Map.of();
+    }
+
+    public Map<Long, UserFeedInfoResponse> fetchUserFeedInfoFallback(
+            List<Long> authorIds, Throwable t) {
+        log.warn("[CB-feed-info] fallback: {}", t.getMessage());
+        return Map.of();
+    }
+
+    @Override
+    public Page<FeedPostResponse>getPost(int page,int size){
+
+        return null;
     }
 }

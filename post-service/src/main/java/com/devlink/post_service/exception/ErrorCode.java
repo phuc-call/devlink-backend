@@ -45,6 +45,10 @@ public enum ErrorCode {
     "File không được rỗng",
     HttpStatus.BAD_REQUEST),
 
+    INVALID_POST_TYPE(                          // ← thêm vào đây
+            "Loại bài viết không hợp lệ",
+            HttpStatus.BAD_REQUEST),
+
     POST_TOO_MANY_FILES(
     "Tối đa 10 file mỗi bài viết",
     HttpStatus.BAD_REQUEST),
@@ -60,4 +64,5 @@ public enum ErrorCode {
         this.message = message;
         this.httpStatus = httpStatus;
     }
+
 }

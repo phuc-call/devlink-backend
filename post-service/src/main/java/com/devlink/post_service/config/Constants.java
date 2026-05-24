@@ -9,7 +9,7 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/webjars/**",              // ← thêm
+            "/webjars/**",
             "/actuator/**",
             "/api/posts/public/**"
     };

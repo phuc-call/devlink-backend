@@ -1,6 +1,6 @@
 spring:
   application:
-    name: post-service
+    name: chat-service
 
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:chat_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
