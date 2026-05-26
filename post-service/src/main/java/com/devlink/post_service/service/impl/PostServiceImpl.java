@@ -4,6 +4,7 @@ import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.client.UserFeedInfoResponse;
 import com.devlink.post_service.dto.request.CreatePostRequest;
+import com.devlink.post_service.dto.request.UpdatePostRequest;
 import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.PostFile;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class PostServiceImpl implements PostService {
 
     private static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;
@@ -128,20 +130,11 @@ public class PostServiceImpl implements PostService {
         if (hasFiles) {
             int idx = 0;
             for (MultipartFile file : validFiles) {
-                String ext = getExt(file.getOriginalFilename());
-                MediaType mType = resolveMediaType(ext);
-                String url = fileStorageService.upload(
-                        file, "posts/" + mType.name().toLowerCase());
-
-                PostMedia media = PostMedia.builder()
-                        .post(post).mediaType(mType).url(url)
-                        .originalName(file.getOriginalFilename())
-                        .fileExtension(ext).fileSize(file.getSize())
-                        .orderIndex(idx++)
-                        .build();
+                PostMedia media = uploadAndBuildMedia(file, post, idx++);
                 post.getMediaList().add(media);
                 savedMedia.add(media);
 
+                String ext = getExt(file.getOriginalFilename());
                 if (FILE_EXT.contains(ext.toLowerCase())) {
                     PostFile pf = postFileRepository.save(
                             PostFile.builder().postId(post.getId()).mediaId(media.getId()).build());
@@ -160,18 +153,6 @@ public class PostServiceImpl implements PostService {
         return toResponse(post, savedMedia);
     }
 
-    //  validate
-
-//    private void validateFile(MultipartFile file) {
-//        if (file.getSize() > MAX_SIZE_BYTES)
-//            throw new AppException(ErrorCode.POST_FILE_TOO_LARGE);
-//
-//        String ext = getExt(file.getOriginalFilename());
-//        if (!ALLOWED_EXT.contains(ext.toLowerCase()))
-//            throw new AppException(ErrorCode.POST_FILE_UNSUPPORTED_FORMAT);
-//    }
-
-    // helpers
 
     private String getExt(String name) {
         if (name == null || !name.contains(".")) return "";
@@ -348,4 +329,152 @@ public class PostServiceImpl implements PostService {
 
         return null;
     }
+
+    @Override
+
+    public PostResponse updatePost(Long postId, UpdatePostRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getAuthorId().equals(currentUserId)) {
+            throw new AppException(ErrorCode.POST_FORBIDDEN);
+        }
+
+        if (post.getStatus() == PostStatus.DELETED) {
+            throw new AppException(ErrorCode.POST_ALREADY_DELETED);
+        }
+
+        boolean contentChanged = false;
+
+
+        if (request.getContent() != null) {
+            post.setContent(request.getContent());
+            contentChanged = true;
+        }
+
+        if (request.getVisibility() != null) {
+            post.setVisibility(request.getVisibility());
+        }
+
+        if (request.getTags() != null) {
+            List<String> newTags = request.getTags().stream()
+                    .filter(StringUtils::hasText)
+                    .map(t -> t.trim().toLowerCase())
+                    .distinct()
+                    .toList();
+
+            post.getTags().removeIf(existing ->
+                    !newTags.contains(existing.getTag())
+            );
+
+            List<String> existingTags = post.getTags().stream()
+                    .map(PostTag::getTag)
+                    .toList();
+
+            newTags.stream()
+                    .filter(t -> !existingTags.contains(t))
+                    .forEach(t -> post.getTags().add(
+                            PostTag.builder().post(post).tag(t).build()
+                    ));
+
+            contentChanged = true;
+        }
+
+
+        if (request.getRemoveMediaIds() != null && !request.getRemoveMediaIds().isEmpty()) {
+            post.getMediaList().removeIf(m ->
+                    request.getRemoveMediaIds().contains(m.getId())
+            );
+            contentChanged = true;
+        }
+
+        // Thêm media mới chỉ khi có file hợp lệ
+        List<PostMedia> newMediaAdded = new ArrayList<>();
+        if (request.getNewMediaFiles() != null) {
+            List<MultipartFile> validFiles = request.getNewMediaFiles().stream()
+                    .filter(f -> f != null && !f.isEmpty())
+                    .toList();
+
+            if (!validFiles.isEmpty()) {
+                validateFiles(validFiles);
+                int currentMaxOrder = post.getMediaList().stream()
+                        .mapToInt(PostMedia::getOrderIndex)
+                        .max().orElse(-1);
+
+                int idx = currentMaxOrder + 1;
+                for (MultipartFile file : validFiles) {
+                    PostMedia media = uploadAndBuildMedia(file, post, idx++);
+                    post.getMediaList().add(media);
+                    newMediaAdded.add(media);
+                }
+                contentChanged = true;
+            }
+        }
+        Post saved = postRepository.save(post);
+
+        List<PostFile> filesToProcess = newMediaAdded.stream()
+                .filter(m -> FILE_EXT.contains(
+                        m.getFileExtension() != null ? m.getFileExtension().toLowerCase() : ""))
+                .map(m -> postFileRepository.save(
+                        PostFile.builder()
+                                .postId(saved.getId())
+                                .mediaId(m.getId())
+                                .build()))
+                .toList();
+
+        if (contentChanged) postAsyncService.moderatePost(saved.getId());
+        filesToProcess.forEach(pf -> postAsyncService.processPostFile(pf.getId()));
+
+        return toResponse(saved, saved.getMediaList());
+    }
+
+    @Override
+    public void deletePost(Long postId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        if(!post.getAuthorId().equals(currentUserId)){
+            throw new AppException(ErrorCode.POST_NOT_YOURSELF);
+        }
+
+        // Đã xoá rồi thì thôi
+        if (post.getStatus() == PostStatus.DELETED) {
+            throw new AppException(ErrorCode.POST_ALREADY_DELETED);
+        }
+
+        // Soft delete các PostFile liên quan (xoá text extract, AI summary...)
+        List<Long> mediaIds = post.getMediaList().stream()
+                .map(PostMedia::getId)
+                .toList();
+
+        if (!mediaIds.isEmpty()) {
+            postFileRepository.deleteByMediaIdIn(mediaIds);
+        }
+
+        //Soft delete Post — tags & media xoá cascade qua orphanRemoval
+        post.setStatus(PostStatus.DELETED);
+        post.setDeletedAt(LocalDateTime.now());
+        postRepository.save(post);
+
+        log.info("[PostService] deletePost postId={} by userId={}", postId, currentUserId);
+    }
+
+    private PostMedia uploadAndBuildMedia(MultipartFile file, Post post, int orderIndex){
+        String ext=getExt(file.getOriginalFilename());
+        MediaType mType=resolveMediaType(ext);
+        String url = fileStorageService.upload(file, "posts/" + mType.name().toLowerCase());
+        return PostMedia.builder()
+                .post(post).mediaType(mType).url(url)
+                .originalName(file.getOriginalFilename())
+                .fileExtension(ext).fileSize(file.getSize())
+                .orderIndex(orderIndex)
+                .build();
+    }
+
+
 }

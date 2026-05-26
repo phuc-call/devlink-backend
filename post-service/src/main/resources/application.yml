@@ -143,3 +143,9 @@ resilience4j:
       user-service-feed-info:
         max-attempts: 3
         wait-duration: 500ms
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_USER:devlink_admin}
+  secret-key: ${MINIO_PASSWORD:devlink_secret_123}
+  bucket: ${MINIO_BUCKET:devlink-media}

@@ -2,6 +2,7 @@ package com.devlink.post_service.repository;
 
 import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.entity.Post;
+import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.RestrictionType;
 import org.springframework.data.domain.Page;
@@ -60,6 +61,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         ORDER BY p.createdAt DESC
     """)
     List<FeedPostResponse> findFeedPostDtos(@Param("ids") List<Long> ids);
+
+    @Query("SELECT COUNT(p)>0 FROM Post p WHERE p.id=:id AND p.status<>:status")
+    boolean existsByIdAndStatusNot(@Param("id") Long id, @Param("status") PostStatus status);
 
 
 }

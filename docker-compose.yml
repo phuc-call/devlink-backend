@@ -6,6 +6,7 @@ volumes:
   user-db-data:
   post-db-data:
   chat-db-data:
+  minio-data:
 services:
   # ─── DATABASES ───────────────────────────────────────────────
   # post-db
@@ -71,6 +72,27 @@ services:
       - "6379:6379"
     networks:
       - microservice-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: devlink_admin
+      MINIO_ROOT_PASSWORD: devlink_secret_123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - microservice-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   #SERVICE
   eureka-server:
     build: ./eureka-server
@@ -124,6 +146,11 @@ services:
       EUREKA_URL: http://eureka-server:8761/eureka
       REDIS_HOST: redis
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_USER: devlink_admin
+      MINIO_PASSWORD: devlink_secret_123
+      MINIO_BUCKET: devlink-media
     depends_on:
       post-db:
         condition: service_healthy
@@ -131,6 +158,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      minio:
+        condition: service_healthy
     networks:
       - microservice-net
 

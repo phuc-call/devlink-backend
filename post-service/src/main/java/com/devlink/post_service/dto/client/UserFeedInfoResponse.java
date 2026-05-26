@@ -11,6 +11,6 @@ public class UserFeedInfoResponse {
     private String badge;
     private Integer followerCount;
     private Integer followingCount;
-    private Boolean isFollowing;  // current user có follow author không
+    private Boolean isFollowing;
     private Boolean isFriend;
 }

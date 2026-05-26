@@ -47,6 +47,9 @@ public class Comment {
     @Column(name = "ai_moderation_score")
     private Double aiModerationScore;
 
+    @Column(name = "like_count", nullable = false)
+    private Long likeCount = 0L;
+
     @CreatedDate ///todo
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

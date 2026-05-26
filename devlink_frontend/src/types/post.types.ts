@@ -88,3 +88,11 @@ export interface PageResponse<T> {
     first: boolean;
     empty: boolean;
 }
+
+export interface UpdatePostRequest {
+    content?: string;
+    visibility?: Visibility;
+    tags?: string[];
+    newMediaFiles?: File[];
+    removeMediaIds?: number[];
+}

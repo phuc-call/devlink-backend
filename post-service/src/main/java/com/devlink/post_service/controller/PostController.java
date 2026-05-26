@@ -1,6 +1,7 @@
 package com.devlink.post_service.controller;
 
 import com.devlink.post_service.dto.request.CreatePostRequest;
+import com.devlink.post_service.dto.request.UpdatePostRequest;
 import com.devlink.post_service.dto.response.ApiResponse;
 import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.PostResponse;
@@ -42,5 +43,23 @@ public class PostController {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFeed(page, size, postType), "Success")
         );
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PostResponse>> updatePost(
+            @PathVariable Long id,
+            @ModelAttribute UpdatePostRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.updatePost(id, request), "Update post successfully")
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<Void> deletePost(@PathVariable Long id) {
+        postService.deletePost(id);
+        return ApiResponse.<Void>builder()
+                .message("Xoá bài viết thành công")
+                .build();
     }
 }
