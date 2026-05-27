@@ -2,6 +2,7 @@ package com.devlink.post_service.client;
 
 import com.devlink.post_service.config.FeignClientConfig;
 import com.devlink.post_service.dto.client.UserFeedInfoResponse;
+import com.devlink.post_service.dto.client.UserInfoForCommentResponse;
 import com.devlink.post_service.dto.response.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,10 @@ public interface UserServiceClient {
 
     @PostMapping("/internal/users/feed-info")
     ApiResponse<Map<Long, UserFeedInfoResponse>> getUserFeedInfo(
+            @RequestBody List<Long> userIds
+    );
+    @PostMapping("/internal/users/basic-info")
+    ApiResponse<Map<Long, UserInfoForCommentResponse>> getUserBasicInfo(
             @RequestBody List<Long> userIds
     );
 }

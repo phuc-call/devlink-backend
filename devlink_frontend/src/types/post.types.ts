@@ -76,6 +76,8 @@ export interface FeedPostResponse {
     tags: TagResponse[];
     mediaList: MediaResponse[];
     author: AuthorInfo;
+    commentCount?: number;
+    likeCount?: number;
 }
 
 export interface PageResponse<T> {

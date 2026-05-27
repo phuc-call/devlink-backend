@@ -1,5 +1,6 @@
 package com.devlink.user_service.controller;
 
+import com.devlink.user_service.dto.internal.UserInfoForCommentResponse;
 import com.devlink.user_service.dto.reponse.ApiResponse;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.service.FollowService;
@@ -45,5 +46,15 @@ public class PostServiceController {
                 ApiResponse.ok(
                         postServiceClient.getUserFeedInfo(userIds, currentUserId), "Success")
         );
+    }
+
+    @PostMapping("/basic-info")
+    public ApiResponse<Map<Long, UserInfoForCommentResponse>> getUserBasicInfo(
+            @RequestBody List<Long> userIds
+    ) {
+        return ApiResponse.<Map<Long, UserInfoForCommentResponse>>builder()
+                .success(true)
+                .data(postServiceClient.getUserBasicInfo(userIds))
+                .build();
     }
 }

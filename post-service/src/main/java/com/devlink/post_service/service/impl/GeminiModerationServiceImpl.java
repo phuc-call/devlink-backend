@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -43,16 +44,26 @@ public class GeminiModerationServiceImpl implements GeminiModerationService {
         }
 
         String prompt = """
-                Bạn là hệ thống kiểm duyệt nội dung mạng xã hội sinh viên DevLink.
-                Phân tích nội dung và trả về JSON (chỉ JSON, không markdown):
+                You are a content moderation system for DevLink, a student social network.
+                Analyze the content and return JSON only (no markdown):
                 {"status":"APPROVED|REJECTED|MANUAL_REVIEW","score":0.0,"reason":null}
                 
-                Tiêu chí vi phạm: spam, bạo lực, khiêu dâm, thù hận, sai lệch.
+                Violation criteria: spam, violence, pornography, hate speech, misinformation.
                 
-                Nội dung: %s
+                Content: %s
                 """.formatted(content);
 
         String raw = callGemini(prompt);
+
+        // Gemini rate limit, auto PENDING
+        if (raw == null) {
+            return ModerationResult.builder()
+                    .status(AiModerationStatus.PENDING)
+                    .score(0.0)
+                    .reason("Rate limit - pending review")
+                    .build();
+        }
+
         return parseModerationResult(raw);
     }
 
@@ -62,7 +73,7 @@ public class GeminiModerationServiceImpl implements GeminiModerationService {
         String truncated = extractedText.length() > 8000
                 ? extractedText.substring(0, 8000) + "..." : extractedText;
 
-        String prompt = "Tóm tắt nội dung sau trong 3-5 câu bằng tiếng Việt, chỉ trả về đoạn tóm tắt:\n" + truncated;
+        String prompt = ("Summarize the following content in 3-5 sentences in Vietnamese, return only the summary:\n" + truncated);
         return callGemini(prompt);
     }
 
@@ -83,6 +94,13 @@ public class GeminiModerationServiceImpl implements GeminiModerationService {
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 429) {
+                log.warn("[Gemini] Rate limit (429), fallback to PENDING");
+                return null; // null = signal để fallback
+            }
+            log.error("[Gemini] call failed: {}", e.getMessage());
+            throw new AppException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         } catch (Exception e) {
             log.error("[Gemini] call failed: {}", e.getMessage());
             throw new AppException(ErrorCode.AI_SERVICE_UNAVAILABLE);

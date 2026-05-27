@@ -1,5 +1,6 @@
 package com.devlink.user_service.service.impl;
 
+import com.devlink.user_service.dto.internal.UserInfoForCommentResponse;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.PostServiceClient;
@@ -26,5 +27,16 @@ public class PostServiceClientImpl implements PostServiceClient {
         return userRepository.findFeedInfoByIds(userIds, currentUserId)
                 .stream()
                 .collect(Collectors.toMap(UserFeedInfoResponse::getId, u -> u));
+    }
+
+
+    @Transactional(readOnly = true)
+    public Map<Long, UserInfoForCommentResponse> getUserBasicInfo(List<Long> userIds) {
+        return userRepository.findBasicInfoByIds(userIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        UserInfoForCommentResponse::getId,
+                        info -> info
+                ));
     }
 }

@@ -32,6 +32,13 @@ public enum ErrorCode {
     POST_NOT_FOUND(
             "Không tìm thấy bài viết",
             HttpStatus.NOT_FOUND),
+    COMMENT_NOT_FOUND(
+            "Không tìm thấy bình luận",
+            HttpStatus.NOT_FOUND),
+
+    FORBIDDEN(
+            "Bạn không có quyền thực hiện thao tác này",
+            HttpStatus.FORBIDDEN),
 
     POST_ALREADY_DELETED(
             "Bài viết đã bị xoá",
@@ -64,6 +71,8 @@ public enum ErrorCode {
     COMMENT_GLOBALLY_LOCKED("Tài khoản của bạn đang bị khóa chức năng bình luận", HttpStatus.FORBIDDEN),
     COMMENT_POST_LOCKED("Bài viết này đang bị khóa bình luận với tài khoản của bạn", HttpStatus.FORBIDDEN),
     CONTENT_REJECTED_BY_AI("Nội dung bình luận vi phạm tiêu chuẩn cộng đồng", HttpStatus.BAD_REQUEST),
+
+
 
     POST_NOT_YOURSELF(
     "Chỉ dược xóa bài viết của bạn",

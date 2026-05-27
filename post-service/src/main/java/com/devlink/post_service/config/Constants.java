@@ -18,9 +18,13 @@ public final class Constants {
     public static final String PAGE_SIZE = "2";
     public static final String SORT_DIR = "asc";
     public static final int OPS_EXPIRATION_MINUTES = 5;
+    public static final String USER_COMMENT = "user:comment:";
 
-    public static final long MAX_SIZE_BYTES       = 50L * 1024 * 1024;  // 50MB each file
+    public static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;  // 50MB each file
     public static final long MAX_TOTAL_SIZE_BYTES = 200L * 1024 * 1024; // 200MB sum
-    public static final int  MAX_FILE_COUNT       = 10; // tối đa 10 file
+    public static final int MAX_FILE_COUNT = 10; // tối đa 10 file
 
-}
+    //Warning
+    public static final String LOG_REDIS_DESERIALIZE_FAILED = "[Comment] Redis read failed userId={}";
+    public static final String LOG_REDIS_SERIALIZE_FAILED = "[Comment] Redis write failed userId={}";
+    }

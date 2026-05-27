@@ -1,5 +1,6 @@
 package com.devlink.user_service.repository;
 
+import com.devlink.user_service.dto.internal.UserInfoForCommentResponse;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.entity.User;
 import feign.Param;
@@ -52,5 +53,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("userIds") List<Long> userIds,
             @Param("currentUserId") Long currentUserId
     );
+
+    @Query("""
+        SELECT new com.devlink.user_service.dto.internal.UserInfoForCommentResponse(
+            u.id, u.username, u.profile.avatarUrl
+        )
+        FROM User u
+        WHERE u.id IN :ids
+        """)
+    List<UserInfoForCommentResponse> findBasicInfoByIds(@Param("ids") List<Long> ids);
 
 }

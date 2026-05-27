@@ -9,18 +9,25 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "comments")
+@Table(
+        name = "comment_replies",
+        indexes = {
+                @Index(name = "idx_reply_post",    columnList = "post_id"),
+                @Index(name = "idx_reply_comment", columnList = "comment_id"),
+                @Index(name = "idx_reply_parent",  columnList = "parent_reply_id"),
+                @Index(name = "idx_reply_author",  columnList = "author_id"),
+                @Index(name = "idx_reply_created", columnList = "created_at"),
+        }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Comment {
+public class CommentReply {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,34 +36,46 @@ public class Comment {
     @Column(name = "post_id", nullable = false)
     private Long postId;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "comment_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_reply_comment")
+    )
+    private Comment comment;
+
+    //CommentReply tự trỏ về chính nó vì một reply có thể có cha là một reply khác trong cùng bảng:
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "parent_reply_id",
+            nullable = true,
+            foreignKey = @ForeignKey(name = "fk_reply_parent")
+    )
+    private CommentReply parentReply;
+
     @Column(name = "author_id", nullable = false)
     private Long authorId;
-
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private CommentStatus status = CommentStatus.ACTIVE;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ai_moderation_status", length = 20, nullable = false)
+    @Builder.Default
     private AiModerationStatus aiModerationStatus = AiModerationStatus.PENDING;
 
     @Column(name = "ai_moderation_score")
     private Double aiModerationScore;
 
     @Column(name = "like_count", nullable = false)
-    private Long likeCount = 0L;
-    @OneToMany(
-            mappedBy = "comment",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
     @Builder.Default
-    private List<CommentReply> replies = new ArrayList<>();
+    private Long likeCount = 0L;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -10,7 +10,7 @@ import {
 import type {FeedPostResponse, MediaResponse, Visibility} from '../../../types/post.types';
 import {getCurrentUserId} from '../../../utils/auth';
 import {postApi} from '../../../api/post-service/postApi';
-
+import CommentSection from './CommentSection';
 interface Props {
     post: FeedPostResponse;
     onDeleted?: (postId: number) => void;
@@ -64,6 +64,7 @@ function InlineEditForm({
         });
         e.target.value = '';
     };
+
 
     const removeExisting = (id: number) => {
         setExistingMedia(prev => prev.filter(m => m.id !== id));
@@ -386,6 +387,7 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
     const [editing, setEditing] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [commentOpen, setCommentOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const currentUserId = getCurrentUserId();
@@ -624,15 +626,41 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                 }}>
                     <FooterBtn icon={<Eye size={14}/>} label={`${post.viewCount}`}/>
                     <FooterBtn icon={<Heart size={14}/>} label="Thích"/>
-                    <FooterBtn icon={<MessageCircle size={14}/>} label="Bình luận"/>
+
+                    {/* Bình luận — toggle CommentSection */}
+                    <button
+                        onClick={() => setCommentOpen(v => !v)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '6px 10px', borderRadius: 6, border: 'none',
+                            background: commentOpen ? '#EFF6FF' : 'transparent',
+                            cursor: 'pointer', fontSize: 13,
+                            color: commentOpen ? '#3B82F6' : '#6B7280',
+                            fontFamily: 'Inter, sans-serif', fontWeight: commentOpen ? 600 : 500,
+                            transition: 'background 0.12s',
+                        }}
+                    >
+                        <MessageCircle size={14}/>
+                        Bình luận
+                    </button>
+
                     <FooterBtn icon={<Share2 size={14}/>} label="Chia sẻ"/>
                 </div>
+
+                {/* ── CommentSection xổ xuống khi click ── */}
+                {commentOpen && (
+                    <CommentSection
+                        postId={post.id}
+                        commentCount={post.commentCount}
+                        defaultOpen
+                    />
+                )}
             </div>
         </>
     );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function MenuItem({icon, label, onClick, color, danger}: {
     icon: React.ReactNode; label: string;
     onClick: () => void; color: string; danger?: boolean;

@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;  // ← đúng import
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -65,5 +66,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(p)>0 FROM Post p WHERE p.id=:id AND p.status<>:status")
     boolean existsByIdAndStatusNot(@Param("id") Long id, @Param("status") PostStatus status);
 
-
+    @Query("SELECT p.authorId FROM Post p WHERE p.id = :id AND p.status <> :status")
+    Optional<Long> findAuthorIdByIdAndStatusNot(@Param("id") Long id, @Param("status") PostStatus status);
 }
