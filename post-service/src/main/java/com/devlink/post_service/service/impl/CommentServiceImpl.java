@@ -1,7 +1,7 @@
 package com.devlink.post_service.service.impl;
 
+import com.devlink.post_service.client.UserInfoCacheClient;
 import com.devlink.post_service.client.UserServiceClient;
-import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.client.UserInfoForCommentResponse;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
 import com.devlink.post_service.dto.request.ModerationResult;
@@ -23,33 +23,27 @@ import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentService;
 import com.devlink.post_service.service.GeminiModerationService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link CommentService}.
+ * Handles comment and reply lifecycle: create, read, update, delete.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CommentServiceImpl implements CommentService {
-
-    private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
 
     private final CommentRepository commentRepository;
     private final CommentLockRepository commentLockRepository;
@@ -57,7 +51,7 @@ public class CommentServiceImpl implements CommentService {
     private final GeminiModerationService geminiModerationService;
     private final UserServiceClient userServiceClient;
     private final CommentReplyRepository commentReplyRepository;
-
+    private final UserInfoCacheClient userInfoCacheClient;
 
     @Override
     @Transactional
@@ -77,7 +71,6 @@ public class CommentServiceImpl implements CommentService {
         if (commentLockRepository.existsPostLockForUser(authorId, request.getPostId(), now)) {
             throw new AppException(ErrorCode.COMMENT_POST_LOCKED);
         }
-
 
 
         ModerationResult moderation = geminiModerationService.moderateContent(request.getContent());
@@ -130,7 +123,8 @@ public class CommentServiceImpl implements CommentService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        Map<Long, UserInfoForCommentResponse> userInfoMap = fetchUserBasicInfo(authorIds);
+        Map<Long, UserInfoForCommentResponse> userInfoMap =
+                userInfoCacheClient.getBasicInfo(authorIds);
 
         return commentPage.map(c -> {
             UserInfoForCommentResponse user = userInfoMap.get(c.getAuthorId());
@@ -148,77 +142,13 @@ public class CommentServiceImpl implements CommentService {
         });
     }
 
-    @CircuitBreaker(name = "user-service-feed-info", fallbackMethod = "fetchUserBasicInfoFallback")
-    @Retry(name = "user-service-feed-info")
-    public Map<Long, UserInfoForCommentResponse> fetchUserBasicInfo(List<Long> userIds) {
-        Map<Long, UserInfoForCommentResponse> result = new HashMap<>();
-        List<Long> cacheMiss = new ArrayList<>();
-
-        // Check Redis
-        for (Long userId : userIds) {
-            String json = redisTemplate.opsForValue().get(Constants.USER_COMMENT + userId);
-            if (json != null) {
-                try {
-                    result.put(userId, objectMapper.readValue(json, UserInfoForCommentResponse.class));
-                } catch (Exception e) {
-                    log.warn(Constants.LOG_REDIS_DESERIALIZE_FAILED, userId);
-                    cacheMiss.add(userId);
-                }
-            } else {
-                cacheMiss.add(userId);
-            }
-        }
-
-        //Cache miss gọi Feign batch
-        if (!cacheMiss.isEmpty()) {
-            log.info("[Comment] Feign getUserBasicInfo size={}", cacheMiss.size());
-            Map<Long, UserInfoForCommentResponse> fetched = userServiceClient
-                    .getUserBasicInfo(cacheMiss)
-                    .getData();
-
-            fetched.forEach((id, info) -> {
-                try {
-                    redisTemplate.opsForValue().set(
-                            Constants.USER_COMMENT + id,
-                            objectMapper.writeValueAsString(info),
-                            Duration.ofMinutes(5)
-                    );
-                } catch (Exception e) {
-                    log.warn(Constants.LOG_REDIS_SERIALIZE_FAILED, id);
-                }
-            });
-
-            result.putAll(fetched);
-        }
-
-        return result;
-    }
-
-    public Map<Long, UserInfoForCommentResponse> fetchUserBasicInfoFallback(
-            List<Long> userIds, Throwable t) {
-        log.warn("[CB-basic-info] fallback reason={}", t.getMessage());
-
-        Map<Long, UserInfoForCommentResponse> result = new HashMap<>();
-        for (Long userId : userIds) {
-            String json = redisTemplate.opsForValue().get(Constants.USER_COMMENT + userId);
-            if (json != null) {
-                try {
-                    result.put(userId, objectMapper.readValue(json, UserInfoForCommentResponse.class));
-                } catch (Exception e) {
-                    log.warn(Constants.LOG_REDIS_DESERIALIZE_FAILED, userId);
-                }
-            }
-        }
-        return result;
-    }
-
 
 
     @Override
     @Transactional
     public void delete(Long id, CommentType type) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        if(type.equals(CommentType.COMMENT)){
+        if (type.equals(CommentType.COMMENT)) {
             Comment comment = commentRepository.findById(id)
                     .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -300,6 +230,7 @@ public class CommentServiceImpl implements CommentService {
                 .type(CommentType.COMMENT)
                 .build();
     }
+
     private CommentResponse toReplyResponse(CommentReply r) {
         return CommentResponse.builder()
                 .id(r.getId())

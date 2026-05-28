@@ -28,4 +28,5 @@ public interface CommentLockRepository extends JpaRepository<CommentLock,Long> {
     boolean existsPostLockForUser(@Param("userId") Long userId,
                                   @Param("postId") Long postId,
                                   @Param("now") LocalDateTime now);
+
 }

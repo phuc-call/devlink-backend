@@ -1,9 +1,7 @@
 package com.devlink.post_service.repository;
 
+import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.entity.CommentReply;
-import com.devlink.post_service.entity.enums.CommentStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,30 +13,31 @@ import java.util.Optional;
 @Repository
 public interface CommentReplyRepository extends JpaRepository<CommentReply, Long> {
 
-    /** Tìm reply theo id để validate parentReplyId */
+    /**
+     * Tìm reply theo id để validate parentReplyId
+     */
     Optional<CommentReply> findByIdAndPostId(Long id, Long postId);
 
-    //Lấy danh sách replies của 1 top-level comment.
-    @Query("""
-        SELECT r FROM CommentReply r
-        WHERE r.comment.id = :commentId
-          AND r.status IN :statuses
-        ORDER BY r.createdAt ASC
-        """)
-    Page<CommentReply> findByCommentId(
+    /**
+     * Returns paginated active replies for a given comment thread
+     * via stored procedure, mapped to projection (display fields only).
+     */
+    @Query(value = "CALL get_replies_comment(:commentId, :offset, :limit)", nativeQuery = true)
+    List<CommentReplyProcedureResult> findRepliesByProcedure(
             @Param("commentId") Long commentId,
-            @Param("statuses")  List<CommentStatus> statuses,
-            Pageable pageable
+            @Param("offset") int offset,
+            @Param("limit") int limit
     );
 
-    /** Đếm tổng replies của 1 comment */
-    @Query("""
-        SELECT COUNT(r) FROM CommentReply r
-        WHERE r.comment.id = :commentId
-          AND r.status IN :statuses
-        """)
-    long countByCommentId(
-            @Param("commentId") Long commentId,
-            @Param("statuses")  List<CommentStatus> statuses
-    );
+
+    /**
+     * Đếm tổng replies của 1 comment
+     */
+    /**
+     * Counts total active replies for a given comment thread.
+     * Used to build Page metadata (totalElements, totalPages).
+     */
+    @Query(value = "CALL count_rep_comment(:commentId)",nativeQuery = true)
+    long countActiveByCommentId(@Param("commentId") long commentId);
+
 }
