@@ -1,6 +1,8 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.internal.UserInfoForCommentResponse;
+import com.devlink.user_service.dto.internal.LanguageInternal;
+import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
+import com.devlink.user_service.dto.internal.UserNameInternal;
 import com.devlink.user_service.dto.reponse.ApiResponse;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.service.FollowService;
@@ -49,12 +51,29 @@ public class PostServiceController {
     }
 
     @PostMapping("/basic-info")
-    public ApiResponse<Map<Long, UserInfoForCommentResponse>> getUserBasicInfo(
+    public ApiResponse<Map<Long, UserInfoForCommentInternal>> getUserBasicInfo(
             @RequestBody List<Long> userIds
     ) {
-        return ApiResponse.<Map<Long, UserInfoForCommentResponse>>builder()
+        return ApiResponse.<Map<Long, UserInfoForCommentInternal>>builder()
                 .success(true)
                 .data(postServiceClient.getUserBasicInfo(userIds))
+                .build();
+    }
+
+
+    @GetMapping("/{userId}/name")
+    public ApiResponse<UserNameInternal> getUserNameById(@PathVariable Long userId) {
+        return ApiResponse.<UserNameInternal>builder()
+                .success(true)
+                .data(postServiceClient.getCurrentUser(userId))
+                .build();
+    }
+
+    @GetMapping("/languages")
+    public ApiResponse<LanguageInternal>getLanguages(){
+        return ApiResponse.<LanguageInternal>builder()
+                .success(true)
+                .data(postServiceClient.getListLange())
                 .build();
     }
 }

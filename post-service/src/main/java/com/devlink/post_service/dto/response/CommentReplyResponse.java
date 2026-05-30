@@ -5,7 +5,7 @@ import com.devlink.post_service.entity.enums.CommentStatus;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Builder
@@ -19,6 +19,6 @@ public class CommentReplyResponse {
     private CommentStatus status;
     private AiModerationStatus aiModerationStatus;
     private Long likeCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

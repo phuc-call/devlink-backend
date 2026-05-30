@@ -4,14 +4,8 @@ import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.PostFile;
 import com.devlink.post_service.entity.UserSavedPost;
 import com.devlink.post_service.entity.UserStorageConfig;
-import com.devlink.post_service.entity.enums.AiModerationStatus;
-import com.devlink.post_service.entity.enums.PostStatus;
-import com.devlink.post_service.entity.enums.SaveType;
-import com.devlink.post_service.entity.enums.Visibility;
-import com.devlink.post_service.repository.PostFileRepository;
-import com.devlink.post_service.repository.PostRepository;
-import com.devlink.post_service.repository.UserSavedPostRepository;
-import com.devlink.post_service.repository.UserStorageConfigRepository;
+import com.devlink.post_service.entity.enums.*;
+import com.devlink.post_service.repository.*;
 import com.devlink.post_service.service.GeminiModerationService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +16,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -39,6 +33,7 @@ public class PostAsyncService {
     private final UserSavedPostRepository userSavedPostRepository;
     private final GeminiModerationService geminiModerationService;
     private final ObjectMapper objectMapper;
+    private final LearningTemplateRepository templateRepository;
     private final ApplicationContext applicationContext;
 
 
@@ -102,7 +97,7 @@ public class PostAsyncService {
                 String summary = geminiModerationService.summarizeFileContent(extractedText);
                 postFile.setExtractedText(extractedText);
                 postFile.setAiSummary(summary);
-                postFile.setProcessedAt(LocalDateTime.now());
+                postFile.setProcessedAt(Instant.now());
                 postFileRepository.save(postFile);
             }
         } catch (Exception e) {
@@ -181,5 +176,31 @@ public class PostAsyncService {
         // TODO: implement PDFBox / Apache POI
         log.info("[FileExtract][PLACEHOLDER] mediaId={}", postFile.getMediaId());
         return null;
+    }
+
+    /**
+     * [ASYNC] Extract text từ learning template PDF/DOCX + tạo AI summary
+     */
+    @Async("postAsyncExecutor")
+    @Transactional
+    public void extractAndSummarizeTemplate(Long templateId, String fileUrl, TemplateFileType fileType) {
+        log.info("[Async][Template] extract start id={}", templateId);
+        try {
+            // TODO: implement với Apache Tika
+            String extractedText = null;
+
+            final String aiSummary = (extractedText != null && !extractedText.isBlank())
+                    ? geminiModerationService.summarizeFileContent(extractedText)
+                    : null;
+
+            templateRepository.findById(templateId).ifPresent(t -> {
+                t.setExtractedText(extractedText);
+                t.setAiSummary(aiSummary);
+                templateRepository.save(t);
+                log.info("[Async][Template] done id={}", templateId);
+            });
+        } catch (Exception e) {
+            log.error("[Async][Template] failed id={}", templateId, e);
+        }
     }
 }

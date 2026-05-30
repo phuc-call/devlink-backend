@@ -35,7 +35,6 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(
             "Không tìm thấy bình luận",
             HttpStatus.NOT_FOUND),
-
     FORBIDDEN(
             "Bạn không có quyền thực hiện thao tác này",
             HttpStatus.FORBIDDEN),
@@ -63,6 +62,49 @@ public enum ErrorCode {
     "Tối đa 10 file mỗi bài viết",
     HttpStatus.BAD_REQUEST),
 
+
+
+    TEMPLATE_NOT_FOUND(
+            "Không tìm thấy template",
+            HttpStatus.NOT_FOUND),
+
+    TEMPLATE_LANGUAGE_NOT_SUPPORTED(
+            "Ngôn ngữ lập trình không được hỗ trợ",
+            HttpStatus.BAD_REQUEST),
+
+    TEMPLATE_FILE_TYPE_MISMATCH(
+            "Loại file không khớp với định dạng file thực tế",
+            HttpStatus.BAD_REQUEST),
+
+    TEMPLATE_FILE_TOO_LARGE(
+            "File template vượt quá giới hạn 100MB",
+            HttpStatus.BAD_REQUEST),
+
+    TEMPLATE_FORK_NOT_FOUND(
+            "Không tìm thấy bản fork",
+            HttpStatus.NOT_FOUND),
+
+    TEMPLATE_FORK_NOT_OWNER(
+            "Bạn không có quyền chỉnh sửa bản fork này",
+            HttpStatus.FORBIDDEN),
+
+    TEMPLATE_VIDEO_CANNOT_FORK(
+            "File VIDEO không thể fork",
+            HttpStatus.BAD_REQUEST),
+
+    TEMPLATE_TOO_MANY_PENDING_SUGGESTIONS(
+            "Bạn đã có 3 đề xuất đang chờ duyệt cho template này",
+            HttpStatus.TOO_MANY_REQUESTS),
+
+    TEMPLATE_SUGGESTION_NOT_FOUND(
+            "Không tìm thấy đề xuất",
+            HttpStatus.NOT_FOUND),
+
+    TEMPLATE_SUGGESTION_ALREADY_REVIEWED(
+            "Đề xuất này đã được xử lý rồi",
+            HttpStatus.BAD_REQUEST),
+
+
     POST_FILE_TOTAL_SIZE_EXCEEDED(
     "Tổng dung lượng file không được vượt quá 200MB",
     HttpStatus.BAD_REQUEST),
@@ -73,10 +115,12 @@ public enum ErrorCode {
     CONTENT_REJECTED_BY_AI("Nội dung bình luận vi phạm tiêu chuẩn cộng đồng", HttpStatus.BAD_REQUEST),
 
 
-
+    POST_COMMENT_COUNT_UPDATE_FAILED(  "Cập nhật số lượng comment thất bại",HttpStatus.BAD_REQUEST),
     POST_NOT_YOURSELF(
     "Chỉ dược xóa bài viết của bạn",
     HttpStatus.BAD_REQUEST);
+
+
 
     private final String message;
     private final HttpStatus httpStatus;

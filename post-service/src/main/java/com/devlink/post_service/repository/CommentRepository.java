@@ -29,7 +29,7 @@ public interface CommentRepository extends JpaRepository<Comment,Long> {
     @Query("""
              SELECT new com.devlink.post_service.dto.response.CommentProjection(
                              c.id, c.postId, c.authorId,
-                             c.content, c.status, c.likeCount, c.createdAt
+                             c.content, c.status, c.replyCount, c.likeCount, c.createdAt
                          )
             FROM Comment c
             WHERE c.postId = :postId
@@ -48,7 +48,7 @@ public interface CommentRepository extends JpaRepository<Comment,Long> {
     @Query("""
          SELECT new com.devlink.post_service.dto.response.CommentProjection(
                          c.id, c.postId, c.authorId,
-                         c.content, c.status, c.likeCount, c.createdAt
+                         c.content, c.status,c.replyCount, c.likeCount, c.createdAt
                      )
         FROM Comment c
         WHERE c.postId = :postId

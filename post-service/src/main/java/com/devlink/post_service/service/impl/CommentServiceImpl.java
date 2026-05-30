@@ -2,7 +2,7 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserInfoCacheClient;
 import com.devlink.post_service.client.UserServiceClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentResponse;
+import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
 import com.devlink.post_service.dto.request.ModerationResult;
 import com.devlink.post_service.dto.request.UpdateCommentRequest;
@@ -31,18 +31,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of {@link CommentService}.
- * Handles comment and reply lifecycle: create, read, update, delete.
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
@@ -52,9 +50,11 @@ public class CommentServiceImpl implements CommentService {
     private final UserServiceClient userServiceClient;
     private final CommentReplyRepository commentReplyRepository;
     private final UserInfoCacheClient userInfoCacheClient;
+    private final PostServiceImpl postService;
+
 
     @Override
-    @Transactional
+
     public CommentResponse createComment(CreateCommentRequest request) {
 
         Long authorId = SecurityUtils.getCurrentUserId();
@@ -62,7 +62,7 @@ public class CommentServiceImpl implements CommentService {
         if (!postRepository.existsByIdAndStatusNot(request.getPostId(), PostStatus.DELETED)) {
             throw new AppException(ErrorCode.POST_NOT_FOUND);
         }
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         if (commentLockRepository.existsGlobalLockForUser(authorId, now)) {
             throw new AppException(ErrorCode.COMMENT_GLOBALLY_LOCKED);
@@ -94,6 +94,8 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         Comment saved = commentRepository.save(comment);
+        //Increase comment count on post
+        postService.updateCommentCount(request.getPostId(),+1);
         log.info("[Comment] Tạo thành công. id={}, postId={}, authorId={}, aiStatus={}",
                 saved.getId(), saved.getPostId(), saved.getAuthorId(), saved.getAiModerationStatus());
 
@@ -123,16 +125,18 @@ public class CommentServiceImpl implements CommentService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        Map<Long, UserInfoForCommentResponse> userInfoMap =
+        Map<Long, UserInfoForCommentClient> userInfoMap =
                 userInfoCacheClient.getBasicInfo(authorIds);
 
+
         return commentPage.map(c -> {
-            UserInfoForCommentResponse user = userInfoMap.get(c.getAuthorId());
+            UserInfoForCommentClient user = userInfoMap.get(c.getAuthorId());
             return CommentSummaryResponse.builder()
                     .id(c.getId())
                     .postId(c.getPostId())
                     .authorId(c.getAuthorId())
                     .content(c.getContent())
+                    .replyCount(c.getReplyCount())
                     .status(c.getStatus())
                     .likeCount(c.getLikeCount())
                     .createdAt(c.getCreatedAt())
@@ -145,7 +149,7 @@ public class CommentServiceImpl implements CommentService {
 
 
     @Override
-    @Transactional
+
     public void delete(Long id, CommentType type) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         if (type.equals(CommentType.COMMENT)) {
@@ -159,6 +163,7 @@ public class CommentServiceImpl implements CommentService {
             // cascade tự xóa luôn replies
             commentRepository.delete(comment);
             log.info("[Comment] Xóa thành công. id={}, authorId={}", id, currentUserId);
+            postService.updateCommentCount(comment.getPostId(), -1);
         } else if (type.equals(CommentType.REPLY)) {
             CommentReply reply = commentReplyRepository.findById(id)
                     .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
@@ -167,13 +172,18 @@ public class CommentServiceImpl implements CommentService {
                 throw new AppException(ErrorCode.FORBIDDEN);
             }
 
+            //Decrease reply count on parent comment
+            Comment parent=reply.getComment();
+            parent.setReplyCount(Math.max(0,parent.getReplyCount()-1));
+            commentRepository.save(parent);
+
             commentReplyRepository.delete(reply);
             log.info("[Reply] Xóa thành công. id={}, authorId={}", id, currentUserId);
         }
     }
 
     @Override
-    @Transactional
+
     public CommentResponse update(Long id, UpdateCommentRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 

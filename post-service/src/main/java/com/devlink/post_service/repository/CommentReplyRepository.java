@@ -31,9 +31,6 @@ public interface CommentReplyRepository extends JpaRepository<CommentReply, Long
 
 
     /**
-     * Đếm tổng replies của 1 comment
-     */
-    /**
      * Counts total active replies for a given comment thread.
      * Used to build Page metadata (totalElements, totalPages).
      */

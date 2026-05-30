@@ -5,7 +5,7 @@ import com.devlink.post_service.entity.enums.CommentType;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Builder
@@ -18,9 +18,10 @@ public class CommentReplySummaryResponse {
     private String content;
     private CommentStatus status;
     private Long likeCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private CommentType type;
+    private String mentionedName;
 
     // Thông tin người reply từ user-service
     private String fullName;

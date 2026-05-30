@@ -1,6 +1,7 @@
 package com.devlink.post_service.dto.procedure;
 
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 
 /**
  * Mapped from get_replies_by_comment stored procedure.
@@ -15,6 +16,8 @@ public interface CommentReplyProcedureResult {
     String getContent();
     String getStatus();
     Long getLikeCount();
-    LocalDateTime getCreatedAt();
-    LocalDateTime getUpdatedAt();
+    String getMentionedName();
+    Instant getCreatedAt();
+    Instant getUpdatedAt();
+
 }

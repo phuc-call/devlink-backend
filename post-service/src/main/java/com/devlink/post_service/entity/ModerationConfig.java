@@ -4,7 +4,7 @@ package com.devlink.post_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "moderation_config")
@@ -35,9 +35,9 @@ public class ModerationConfig {
     private Long updatedBy;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @PrePersist
     @PreUpdate
-    protected void onSave() { this.updatedAt = LocalDateTime.now(); }
+    protected void onSave() { this.updatedAt = Instant.now(); }
 }

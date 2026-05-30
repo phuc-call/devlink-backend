@@ -6,7 +6,8 @@ import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.Visibility;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import java.util.List;
 @Getter
 @NoArgsConstructor
@@ -22,6 +23,6 @@ public class PostResponse {
     private AiModerationStatus aiModerationStatus;
     private List<String> tags;
     private List<MediaResponse> mediaList;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
 }

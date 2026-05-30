@@ -3,7 +3,7 @@ package com.devlink.post_service.dto.client;
 import lombok.*;
 
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
-public class UserFeedInfoResponse {
+public class UserFeedInfoClient {
     private Long id;
     private String fullName;
     private String avatarUrl;

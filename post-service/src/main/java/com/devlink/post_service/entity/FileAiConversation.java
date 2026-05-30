@@ -4,7 +4,8 @@ import com.devlink.post_service.entity.enums.AiConversationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 
 // FileAiConversation.java
 @Entity
@@ -43,8 +44,8 @@ public class FileAiConversation {
     private Integer tokensUsed;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @PrePersist
-    protected void onCreate() { this.createdAt = LocalDateTime.now(); }
+    protected void onCreate() { this.createdAt = Instant.now(); }
 }

@@ -2,7 +2,9 @@ package com.devlink.post_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+
+import java.time.Instant;
+
 
 @Entity
 @Table(name = "post_tags")
@@ -21,8 +23,8 @@ public class PostTag {
     private String tag;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @PrePersist
-    protected void onCreate() { this.createdAt = LocalDateTime.now(); }
+    protected void onCreate() { this.createdAt = Instant.now(); }
 }

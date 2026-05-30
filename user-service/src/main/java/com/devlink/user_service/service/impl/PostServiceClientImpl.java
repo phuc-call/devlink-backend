@@ -1,13 +1,20 @@
 package com.devlink.user_service.service.impl;
 
-import com.devlink.user_service.dto.internal.UserInfoForCommentResponse;
+import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.dto.internal.LanguageInternal;
+import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
+import com.devlink.user_service.dto.internal.UserNameInternal;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
+import com.devlink.user_service.entity.User;
+import com.devlink.user_service.entity.UserProfile;
+import com.devlink.user_service.entity.enums.ProgrammingLanguage;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.PostServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,6 +25,7 @@ import java.util.stream.Collectors;
 public class PostServiceClientImpl implements PostServiceClient {
 
     private final UserRepository userRepository;
+    private final UserHelper u;
 
 
     @Override
@@ -31,12 +39,37 @@ public class PostServiceClientImpl implements PostServiceClient {
 
 
     @Transactional(readOnly = true)
-    public Map<Long, UserInfoForCommentResponse> getUserBasicInfo(List<Long> userIds) {
+    public Map<Long, UserInfoForCommentInternal> getUserBasicInfo(List<Long> userIds) {
         return userRepository.findBasicInfoByIds(userIds)
                 .stream()
                 .collect(Collectors.toMap(
-                        UserInfoForCommentResponse::getId,
+                        UserInfoForCommentInternal::getId,
                         info -> info
                 ));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserNameInternal getCurrentUser(Long userId){
+        User user=u.getUser(userId);
+        UserProfile profile=user.getProfile();
+        return UserNameInternal.builder()
+                .userName(profile.getFullName())
+                .avatar(profile.getAvatarUrl())
+                .build();
+
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LanguageInternal getListLange(){
+        List<String> languages=new ArrayList<>();
+        for(ProgrammingLanguage programmingLanguage:ProgrammingLanguage.values()){
+            languages.add(programmingLanguage.name());
+        }
+
+        return LanguageInternal.builder()
+                .languages(languages)
+                .build();
     }
 }

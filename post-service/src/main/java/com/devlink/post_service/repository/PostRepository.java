@@ -1,6 +1,6 @@
 package com.devlink.post_service.repository;
 
-import com.devlink.post_service.dto.response.FeedPostResponse;
+import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;  // ← đúng import
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +26,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     boolean existsActiveRestriction(
             @Param("userId") Long userId,
             @Param("types") List<RestrictionType> types,
-            @Param("now") LocalDateTime now
+            @Param("now") Instant now
     );
     // Ưu tiên view cao + random để mỗi lần reload khác nhau
     @Query("""
@@ -50,18 +50,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable
     );
 
-    @Query("""
-        SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
-            p.id, p.authorId, p.content,
-            p.status, p.visibility, p.postType,
-            p.viewCount, p.isPinned, p.aiModerationStatus,
-            p.createdAt, p.updatedAt
-        )
-        FROM Post p
-        WHERE p.id IN :ids
-        ORDER BY p.createdAt DESC
-    """)
-    List<FeedPostResponse> findFeedPostDtos(@Param("ids") List<Long> ids);
+    @Query(value = "CALL get_feed_posts(:ids)", nativeQuery = true)
+    List<FeedPostProcedureResult> callGetFeedPosts(@Param("ids") String ids);
 
     @Query("SELECT COUNT(p)>0 FROM Post p WHERE p.id=:id AND p.status<>:status")
     boolean existsByIdAndStatusNot(@Param("id") Long id, @Param("status") PostStatus status);

@@ -1,6 +1,6 @@
 package com.devlink.user_service.repository;
 
-import com.devlink.user_service.dto.internal.CandidateProfileDTO;
+import com.devlink.user_service.dto.internal.CandidateProfileInternal;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import feign.Param;
@@ -16,7 +16,7 @@ import java.util.Optional;
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
 
     @Query("""
-            SELECT new com.devlink.user_service.dto.internal.CandidateProfileDTO(
+            SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
                 up.user.id,
                 up.fullName,
                 up.avatarUrl,
@@ -41,7 +41,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
                 WHERE b.blockedId = :currentUserId
             )
             """)
-    List<CandidateProfileDTO> findCandidateProfiles(
+    List<CandidateProfileInternal> findCandidateProfiles(
             @Param("currentUserId") Long currentUserId,
             @Param("city") String city,
             @Param("school") String school,
@@ -51,7 +51,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     Optional<UserProfile> findByUser(User user);
 
     @Query("""
-            SELECT new com.devlink.user_service.dto.internal.CandidateProfileDTO(
+            SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
                         up.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
                         )
                         FROM UserProfile up
@@ -60,10 +60,10 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
                 AND up.user.id NOT IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId)
                 AND up.user.id NOT IN (SELECT b.blockedId FROM UserBlock b WHERE b.blockedId = :userId)
                             ORDER BY RAND()""")
-    List<CandidateProfileDTO> findBadgedCandidates(@Param("userId") Long userId);
+    List<CandidateProfileInternal> findBadgedCandidates(@Param("userId") Long userId);
 
     @Query("""
-                    SELECT new com.devlink.user_service.dto.internal.CandidateProfileDTO(
+                    SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
                                 up.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
                                 )
                      FROM UserProfile up
@@ -73,8 +73,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             ORDER BY RAND()
             LIMIT :limit
             """)
-    List<CandidateProfileDTO> findRandomCandidates(@Param("userId") Long userId,
-                                                   @Param("limit") int limit);
+    List<CandidateProfileInternal> findRandomCandidates(@Param("userId") Long userId,
+                                                        @Param("limit") int limit);
 
     @Modifying
     @Query("""

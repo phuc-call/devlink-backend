@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class CandidateProfileDTO {
+public class CandidateProfileInternal {
     private Long userId;
     private String fullName;
     private String avatarUrl;

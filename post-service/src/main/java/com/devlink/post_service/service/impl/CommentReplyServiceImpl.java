@@ -3,7 +3,7 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserInfoCacheClient;
 import com.devlink.post_service.client.UserServiceClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentResponse;
+import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.dto.request.CreateCommentReplyRequest;
 import com.devlink.post_service.dto.request.ModerationResult;
@@ -47,30 +47,32 @@ public class CommentReplyServiceImpl implements CommentReplyService {
     private final ObjectMapper objectMapper;
     private final UserInfoCacheClient userInfoCacheClient;
 
+
     @Override
     @Transactional
     public CommentReplyResponse createReply(CreateCommentReplyRequest request) {
         Long authorId = SecurityUtils.getCurrentUserId();
 
-        //Validate top-level comment tồn tại và thuộc đúng post
+        //Validate top-level comment exists belongs to the post
         Comment comment = commentRepository
                 .findByIdAndPostId(request.getCommentId(), request.getPostId())
                 .orElseThrow(() -> new AppException(ErrorCode.PARENT_COMMENT_NOT_FOUND));
-
-        // Validate parentReply nếu có
-        //    C reply B: parentReplyId = B.id
-        //    D reply C: parentReplyId = C.id
-        //    parentReply phải thuộc cùng post và cùng thread (commentId)
         CommentReply parentReply = null;
         if (request.getParentReplyId() != null) {
             parentReply = commentReplyRepository
                     .findByIdAndPostId(request.getParentReplyId(), request.getPostId())
                     .orElseThrow(() -> new AppException(ErrorCode.PARENT_COMMENT_NOT_FOUND));
 
-            // Đảm bảo parentReply thuộc cùng thread với commentId
             if (!parentReply.getComment().getId().equals(request.getCommentId())) {
                 throw new AppException(ErrorCode.PARENT_COMMENT_NOT_FOUND);
             }
+        }
+
+        String mentionedName = null;
+        if (parentReply != null) {
+            mentionedName = userInfoCacheClient.getUserName(parentReply.getAuthorId());
+            log.info("[Reply] Resolved mentionedName={} for authorId={}",
+                    mentionedName, parentReply.getAuthorId());
         }
 
         //Kiểm duyệt AI
@@ -92,8 +94,11 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .status(status)
                 .aiModerationStatus(moderation.getStatus())
                 .aiModerationScore(moderation.getScore())
+                .mentionedName(mentionedName)
                 .likeCount(0L)
                 .build();
+        //increase reply count on the parent comment
+        comment.setReplyCount(comment.getReplyCount() + 1);
 
         CommentReply saved = commentReplyRepository.save(reply);
 
@@ -128,11 +133,11 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        Map<Long, UserInfoForCommentResponse> userInfoMap =
+        Map<Long, UserInfoForCommentClient> userInfoMap =
                 userInfoCacheClient.getBasicInfo(authorIds);
 
         List<CommentReplySummaryResponse> content = replies.stream().map(r -> {
-            UserInfoForCommentResponse user = userInfoMap.get(r.getAuthorId());
+            UserInfoForCommentClient user = userInfoMap.get(r.getAuthorId());
             return CommentReplySummaryResponse.builder()
                     .id(r.getId())
                     .postId(r.getPostId())
@@ -142,6 +147,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                     .content(r.getContent())
                     .status(CommentStatus.valueOf(r.getStatus())) // String → Enum
                     .likeCount(r.getLikeCount())
+                    .mentionedName(r.getMentionedName())
                     .type(CommentType.REPLY)
                     .createdAt(r.getCreatedAt())
                     .updatedAt(r.getUpdatedAt())

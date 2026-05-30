@@ -22,6 +22,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        time_zone: UTC
         dialect: org.hibernate.dialect.MySQL8Dialect
 
   flyway:

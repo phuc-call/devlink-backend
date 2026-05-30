@@ -9,7 +9,8 @@ import org.springframework.data.domain.Page;
 public interface PostService {
     PostResponse createPost(CreatePostRequest request);
     Page<FeedPostResponse> getFeed(int page, int size, String postType);
-    Page<FeedPostResponse>getPost(int page,int size);
+
     PostResponse updatePost(Long postId, UpdatePostRequest request);
     void deletePost(Long postId);
+
 }

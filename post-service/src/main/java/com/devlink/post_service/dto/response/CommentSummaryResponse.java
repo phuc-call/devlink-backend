@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Builder
@@ -21,8 +21,10 @@ public class CommentSummaryResponse {
     private String content;
     private CommentStatus status;
     private String badge;
+    private Long replyCount;
     private Long likeCount;
-    private LocalDateTime createdAt;
+    private String mentionedName;
+    private Instant createdAt;
     private String fullName;
     private String avatarUrl;
 }

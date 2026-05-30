@@ -1,7 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.internal.CandidateProfileDTO;
+import com.devlink.user_service.dto.internal.CandidateProfileInternal;
 import com.devlink.user_service.dto.reponse.UserRecommendationResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
@@ -64,7 +64,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         Long userId = user.getId();
 
         //select the candidate profiles
-        List<CandidateProfileDTO> candidateProfiles = userProfileRepository.findCandidateProfiles(
+        List<CandidateProfileInternal> candidateProfiles = userProfileRepository.findCandidateProfiles(
                 userId,
                 userProfile.getCity(),
                 userProfile.getSchool(),
@@ -72,11 +72,11 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         if (!candidateProfiles.isEmpty()) {
             return getNormalRecommendations(userProfile, candidateProfiles, userId);
         }
-        List<CandidateProfileDTO>badgedProfiles=userProfileRepository.findBadgedCandidates(userId);
+        List<CandidateProfileInternal>badgedProfiles=userProfileRepository.findBadgedCandidates(userId);
         if(!badgedProfiles.isEmpty()) {
             return getNormalRecommendations(userProfile,badgedProfiles,userId);
         }
-        List<CandidateProfileDTO> randomProfiles = userProfileRepository.findRandomCandidates(userId, NORMAL_LIMIT * 2);
+        List<CandidateProfileInternal> randomProfiles = userProfileRepository.findRandomCandidates(userId, NORMAL_LIMIT * 2);
         return getNormalRecommendations(userProfile, randomProfiles, userId);
     }
     //Only return 3 people highlighted
@@ -87,13 +87,13 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         Long userId=user.getId();
         UserProfile profile=user.getProfile();
         if(!isActiveMode(userId))return List.of();
-        List<CandidateProfileDTO>candidate=userProfileRepository.findCandidateProfiles(
+        List<CandidateProfileInternal>candidate=userProfileRepository.findCandidateProfiles(
                 userId,profile.getCity(),profile.getSchool(),profile.getMajor());
         return findFeaturedRecommendations(profile,candidate,userId);
     }
     private List<UserRecommendationResponse> getNormalRecommendations(
             UserProfile currentProfile,
-            List<CandidateProfileDTO> candidateProfiles,
+            List<CandidateProfileInternal> candidateProfiles,
             Long currentUserId
     ) {
         if (candidateProfiles.isEmpty()) return List.of();
@@ -109,7 +109,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
     }
 
     private UserRecommendationResponse buildResponse(
-            CandidateProfileDTO candidate,
+            CandidateProfileInternal candidate,
             UserProfile userProfile,
             Long currentUserId,
             boolean isFeatured
@@ -134,7 +134,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
 
     private List<UserRecommendationResponse> findFeaturedRecommendations(
             UserProfile userProfile,
-            List<CandidateProfileDTO>candidate,
+            List<CandidateProfileInternal>candidate,
             Long currentUserId) {
         if(candidate.isEmpty()) return List.of();
         List<UserRecommendationResponse>userRecommendations=candidate.stream().map(
@@ -164,7 +164,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         return lastFollow.get().isAfter(cutoff);
     }
 
-    private int calculateScore(UserProfile current, CandidateProfileDTO candidate, int mutualFriends) {
+    private int calculateScore(UserProfile current, CandidateProfileInternal candidate, int mutualFriends) {
         int result = 0;
         if (isMatch(current.getSchool(), candidate.getSchool())) {
             result += Weight.SCHOOL.value;

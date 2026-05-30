@@ -4,7 +4,8 @@ import com.devlink.post_service.entity.enums.CommentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 @Getter
 @AllArgsConstructor
 public class CommentProjection {
@@ -13,6 +14,7 @@ public class CommentProjection {
     private Long authorId;
     private String content;
     private CommentStatus status;
+    private Long replyCount;
     private Long likeCount;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

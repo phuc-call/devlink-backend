@@ -5,7 +5,7 @@ import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface CommentLockRepository extends JpaRepository<CommentLock,Long> {
     // Khóa toàn service (postId IS NULL)
@@ -16,7 +16,7 @@ public interface CommentLockRepository extends JpaRepository<CommentLock,Long> {
               AND cl.lockedUntil > :now
             """)
     boolean existsGlobalLockForUser(@Param("userId") Long userId,
-                                    @Param("now") LocalDateTime now);
+                                    @Param("now") Instant now);
 
     // Khóa trên bài viết cụ thể
     @Query("""
@@ -27,6 +27,6 @@ public interface CommentLockRepository extends JpaRepository<CommentLock,Long> {
             """)
     boolean existsPostLockForUser(@Param("userId") Long userId,
                                   @Param("postId") Long postId,
-                                  @Param("now") LocalDateTime now);
+                                  @Param("now") Instant now);
 
 }

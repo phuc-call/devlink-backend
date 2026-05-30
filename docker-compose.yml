@@ -13,9 +13,11 @@ services:
   post-db:
     image: mysql:8.0
     container_name: post-db
+    mem_limit: 256m
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: post_db
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 64M
     ports:
       - "3308:3306"
     volumes:
@@ -31,9 +33,11 @@ services:
   chat-db:
     image: mysql:8.0
     container_name: chat-db
+    mem_limit: 256m
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: chat_db
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 64M
     ports:
       - "3309:3306"
     volumes:
@@ -50,9 +54,11 @@ services:
   user-db:
     image: mysql:8.0
     container_name: user-db
+    mem_limit: 256m
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: user_db
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 64M
 
     ports:
       - "3307:3306"
@@ -68,6 +74,8 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
+    mem_limit: 64m
+    command: redis-server --maxmemory 48mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     networks:
@@ -75,6 +83,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    mem_limit: 256m
     container_name: minio
     ports:
       - "9000:9000"
@@ -112,10 +121,12 @@ services:
     env_file:
       - .env
     build: ./user-service
+    mem_limit: 384m
     container_name: user-service
 #    ports:
 #      - "8081:8080"
     environment:
+      JAVA_OPTS: "-Xms64m -Xmx256m -XX:+UseContainerSupport"
       DB_HOST: user-db
       DB_NAME: user_db
       DB_USER: root
@@ -137,8 +148,10 @@ services:
   post-service:
     build: ./post-service
     container_name: post-service
+    mem_limit: 500m
 
     environment:
+      JAVA_OPTS: "-Xms64m -Xmx256m -XX:+UseContainerSupport"
       DB_HOST: post-db
       DB_NAME: post_db
       DB_USER: root
@@ -189,6 +202,7 @@ services:
   gateway-service:
     build: ./gateway-service
     container_name: gateway-service
+    mem_limit: 256m
     ports:
       - "8080:8080"
     environment:

@@ -8,7 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(
@@ -58,7 +58,8 @@ public class CommentReply {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
-
+    @Column(name = "mentioned_name", length = 100, nullable = false)
+    private String mentionedName; //UserName of the user being replied to, fetched by authorId in comment table
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     @Builder.Default
@@ -78,9 +79,9 @@ public class CommentReply {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

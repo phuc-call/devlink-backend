@@ -2,7 +2,8 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.config.Constants;
-import com.devlink.post_service.dto.client.UserFeedInfoResponse;
+import com.devlink.post_service.dto.client.UserFeedInfoClient;
+import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
 import com.devlink.post_service.dto.response.*;
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,7 +70,7 @@ public class PostServiceImpl implements PostService {
         boolean restricted = restrictionRepository.existsActiveRestriction(
                 userId,
                 List.of(RestrictionType.POST_BAN, RestrictionType.FULL_BAN),
-                LocalDateTime.now()
+                Instant.now()
         );
         if (restricted) throw new AppException(ErrorCode.POST_ACCOUNT_RESTRICTED);
 
@@ -238,7 +239,27 @@ public class PostServiceImpl implements PostService {
 
         List<Long> ids = idPage.getContent();
 
-        List<FeedPostResponse> posts = postRepository.findFeedPostDtos(ids);
+        // Convert ids sang JSON string để truyền vào stored procedure
+        String idsJson = "[" + ids.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(",")) + "]";
+
+        List<FeedPostProcedureResult> rows = postRepository.callGetFeedPosts(idsJson);
+
+        List<FeedPostResponse> posts = rows.stream().map(r -> new FeedPostResponse(
+                r.getId(),
+                r.getAuthorId(),
+                r.getContent(),
+                PostStatus.valueOf(r.getStatus()),
+                Visibility.valueOf(r.getVisibility()),
+                PostType.valueOf(r.getPostType()),
+                r.getViewCount(),
+                r.getIsPinned(),
+                AiModerationStatus.valueOf(r.getAiModerationStatus()),
+                r.getCreatedAt(),
+                r.getUpdatedAt(),
+                r.getCommentCount() != null ? r.getCommentCount() : 0L
+        )).toList();
 
         Map<Long, List<TagResponse>> tagsMap = postTagRepository
                 .findTagsByPostIds(ids).stream()
@@ -253,7 +274,7 @@ public class PostServiceImpl implements PostService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserFeedInfoResponse> authorMap = fetchUserFeedInfo(authorIds);
+        Map<Long, UserFeedInfoClient> authorMap = fetchUserFeedInfo(authorIds);
 
         posts.forEach(p -> {
             p.setTags(tagsMap.getOrDefault(p.getId(), List.of()));
@@ -311,24 +332,19 @@ public class PostServiceImpl implements PostService {
             fallbackMethod = "fetchUserFeedInfoFallback"
     )
     @Retry(name = "user-service-feed-info")
-    public Map<Long, UserFeedInfoResponse> fetchUserFeedInfo(List<Long> authorIds) {
+    public Map<Long, UserFeedInfoClient> fetchUserFeedInfo(List<Long> authorIds) {
         log.info("[PostService] Calling getUserFeedInfo size={}", authorIds.size());
-        ApiResponse<Map<Long, UserFeedInfoResponse>> res =
+        ApiResponse<Map<Long, UserFeedInfoClient>> res =
                 userServiceClient.getUserFeedInfo(authorIds);
         return res.getData() != null ? res.getData() : Map.of();
     }
 
-    public Map<Long, UserFeedInfoResponse> fetchUserFeedInfoFallback(
+    public Map<Long, UserFeedInfoClient> fetchUserFeedInfoFallback(
             List<Long> authorIds, Throwable t) {
         log.warn("[CB-feed-info] fallback: {}", t.getMessage());
         return Map.of();
     }
 
-    @Override
-    public Page<FeedPostResponse>getPost(int page,int size){
-
-        return null;
-    }
 
     @Override
 
@@ -458,7 +474,7 @@ public class PostServiceImpl implements PostService {
 
         //Soft delete Post — tags & media xoá cascade qua orphanRemoval
         post.setStatus(PostStatus.DELETED);
-        post.setDeletedAt(LocalDateTime.now());
+        post.setDeletedAt(Instant.now());
         postRepository.save(post);
 
         log.info("[PostService] deletePost postId={} by userId={}", postId, currentUserId);
@@ -475,6 +491,21 @@ public class PostServiceImpl implements PostService {
                 .orderIndex(orderIndex)
                 .build();
     }
+
+
+
+    protected void updateCommentCount(Long postId, int countNumber) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        if (post.getCommentCount() + countNumber < 0) {
+            post.setCommentCount(0L);
+        }else{
+            post.setCommentCount(post.getCommentCount() + countNumber);
+        }
+        postRepository.save(post);
+    }
+
 
 
 }

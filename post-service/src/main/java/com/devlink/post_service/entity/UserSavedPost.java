@@ -4,7 +4,8 @@ import com.devlink.post_service.entity.enums.SaveType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 
 @Entity
 @Table(name = "user_saved_posts",
@@ -31,8 +32,8 @@ public class UserSavedPost {
     private SaveType saveType = SaveType.MANUAL;
 
     @Column(name = "saved_at", nullable = false, updatable = false)
-    private LocalDateTime savedAt;
+    private Instant savedAt;
 
     @PrePersist
-    protected void onCreate() { this.savedAt = LocalDateTime.now(); }
+    protected void onCreate() { this.savedAt = Instant.now(); }
 }

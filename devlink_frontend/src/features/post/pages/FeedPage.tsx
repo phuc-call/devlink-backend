@@ -7,6 +7,7 @@ import CreatePostModal from '../../../components/post/CreatePostModal/CreatePost
 import { getFeedApi } from '../../../api/post-service/getFeedApi';
 import type { FeedPostResponse } from '../../../types/post.types';
 import PostCard from '../components/PostCard';
+import { getCurrentUserInfo } from '../../../utils/auth';
 
 export default function FeedPage() {
     const { showModal, closeModal } = useProfileSetup();
@@ -15,15 +16,23 @@ export default function FeedPage() {
     const [page, setPage]       = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [displayName, setDisplayName] = useState<string | undefined>(undefined);
     const loadingRef = useRef(false);
+
+    // Load user info for avatar
+    useEffect(() => {
+        getCurrentUserInfo().then(info => {
+            if (info) {
+                setAvatarUrl(info.avatar);
+                setDisplayName(info.userName);
+            }
+        });
+    }, []);
 
     const loadFeed = useCallback(async (pageNum: number, reset = false) => {
         if (loadingRef.current) return;
         loadingRef.current = true;
-
-        // Dùng Promise.resolve() để setState không chạy đồng bộ trong effect,
-        // tránh lỗi ESLint "Calling setState synchronously within an effect"
-        await Promise.resolve();
         setLoading(true);
 
         try {
@@ -45,6 +54,7 @@ export default function FeedPage() {
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadFeed(0);
     }, [loadFeed]);
 
@@ -171,8 +181,8 @@ export default function FeedPage() {
                         setShowCreatePost(false);
                         handlePostCreated();
                     }}
-                    avatarUrl={undefined}
-                    displayName={undefined}
+                    avatarUrl={avatarUrl ?? undefined}
+                    displayName={displayName}
                 />
             )}
 
@@ -189,10 +199,25 @@ export default function FeedPage() {
                     textAlign: 'left',
                 }}
             >
-                <div style={{
-                    width: 38, height: 38, borderRadius: '50%',
-                    background: '#E4E6EB', flexShrink: 0,
-                }} />
+                {avatarUrl ? (
+                    <img
+                        src={avatarUrl}
+                        alt="avatar"
+                        style={{
+                            width: 38, height: 38, borderRadius: '50%',
+                            objectFit: 'cover', flexShrink: 0,
+                        }}
+                    />
+                ) : (
+                    <div style={{
+                        width: 38, height: 38, borderRadius: '50%',
+                        background: '#E4E6EB', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 600, color: '#6B7280',
+                    }}>
+                        {displayName ? displayName.charAt(0).toUpperCase() : ''}
+                    </div>
+                )}
                 <span style={{
                     flex: 1, color: '#BEC3C9', fontSize: 15,
                     background: '#F0F2F5', borderRadius: 20,
@@ -202,7 +227,6 @@ export default function FeedPage() {
                 </span>
             </button>
 
-            {/* Feed content */}
             {renderFeedContent()}
         </>
     );

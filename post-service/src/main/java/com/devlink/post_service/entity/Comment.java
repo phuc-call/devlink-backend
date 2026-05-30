@@ -8,7 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +33,17 @@ public class Comment {
     private Long authorId;
 
 
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private CommentStatus status = CommentStatus.ACTIVE;
+
+    @Builder.Default
+    @Column(name = "reply_count", nullable = false)
+    private Long replyCount = 0L;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ai_moderation_status", length = 20, nullable = false)
@@ -59,9 +64,8 @@ public class Comment {
     private List<CommentReply> replies = new ArrayList<>();
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
+    private Instant createdAt;
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

@@ -17,3 +17,21 @@ export function getCurrentUserId(): number | null {
     const sub = payload['sub'];
     return sub !== undefined ? Number(sub) : null;
 }
+
+
+
+export async function getCurrentUserInfo(): Promise<{ userName: string; avatar: string | null } | null> {
+    const id = getCurrentUserId();
+    if (!id) return null;
+    try {
+        const token = localStorage.getItem('accessToken');
+        const res = await fetch(
+            `${import.meta.env.VITE_API_GATEWAY_URL}/internal/users/${id}/name`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const json = await res.json();
+        return json.data ?? null;
+    } catch {
+        return null;
+    }
+}

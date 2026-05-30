@@ -30,10 +30,12 @@ export interface CommentSummaryResponse {
     content: string;
     status: CommentStatus;
     likeCount: number;
+    replyCount: number;
     createdAt: string;
     fullName: string | null;
     avatarUrl: string | null;
     type: CommentType;
+    mentionedName?: string | null;
 }
 
 // Reply từ comment_replies table
@@ -72,6 +74,7 @@ export interface CommentReplySummaryResponse {
     fullName: string | null;
     avatarUrl: string | null;
     type: CommentType;
+    mentionedName?: string | null;
 }
 
 export interface SpringPage<T> {

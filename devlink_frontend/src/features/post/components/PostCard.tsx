@@ -11,6 +11,7 @@ import type {FeedPostResponse, MediaResponse, Visibility} from '../../../types/p
 import {getCurrentUserId} from '../../../utils/auth';
 import {postApi} from '../../../api/post-service/postApi';
 import CommentSection from './CommentSection';
+
 interface Props {
     post: FeedPostResponse;
     onDeleted?: (postId: number) => void;
@@ -380,7 +381,7 @@ function DeleteConfirmDialog({
     );
 }
 
-// ─── Main PostCard ────────────────────────────────────────────────────────────
+
 export default function PostCard({post: initialPost, onDeleted, onUpdated}: Props) {
     const [post, setPost] = useState(initialPost);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -642,6 +643,16 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                     >
                         <MessageCircle size={14}/>
                         Bình luận
+                        {post.commentCount != null && post.commentCount > 0 && (
+                            <span style={{
+                                background: commentOpen ? '#DBEAFE' : '#F3F4F6',
+                                color: commentOpen ? '#3B82F6' : '#6B7280',
+                                fontSize: 11, fontWeight: 600,
+                                padding: '1px 7px', borderRadius: 9999, marginLeft: 2,
+                            }}>
+            {post.commentCount}
+        </span>
+                        )}
                     </button>
 
                     <FooterBtn icon={<Share2 size={14}/>} label="Chia sẻ"/>
@@ -652,7 +663,6 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                     <CommentSection
                         postId={post.id}
                         commentCount={post.commentCount}
-                        defaultOpen
                     />
                 )}
             </div>
