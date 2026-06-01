@@ -1,30 +1,37 @@
-import {createBrowserRouter, RouterProvider, Navigate, Outlet} from 'react-router-dom';
+// src/router/index.tsx
+import {createBrowserRouter, RouterProvider, Navigate} from 'react-router-dom';
+
+import {PublicGuard, PrivateGuard, AdminGuard} from '../features/auth/components/Guards';
+
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import OAuth2SuccessPage from '../features/auth/pages/OAuth2SuccessPage';
+
 import MainLayout from '../components/layout/MainLayout';
 import FeedPage from '../features/post/pages/FeedPage';
 import FollowingPage from '../features/post/pages/FollowingPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
 import NotificationPage from '../features/notification/pages/NotificationPage';
 import ChatPage from '../features/chat/pages/ChatPage';
-import ProfilePage from '../features/profile/pages/ProfilePage';
+
 import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
+import ProfilePage from '../features/profile/pages/ProfilePage';
 import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
+import MyTemplatesPage from '../features/post/pages/MyTemplatesPage/MyTemplatesPage';
 
-
-function PrivateGuard() {
-    const token = localStorage.getItem('accessToken');
-    return token ? <Outlet/> : <Navigate to="/login" replace/>;
-}
-
-function PublicGuard() {
-    const token = localStorage.getItem('accessToken');
-    return !token ? <Outlet/> : <Navigate to="/" replace/>;
-}
+import AdminLayout from '../components/layout/AdminLayout/AdminLayout';
+import DashboardPage from '../features/admin/pages/DashboardPage';
+import AdminPostsPage from '../features/admin/pages/AdminPostsPage';
+import AdminUsersPage from '../features/admin/pages/AdminUsersPage';
+import AdminTemplatesPage from '../features/admin/pages/AdminTemplatesPage';
+import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage';
+import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
+import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
+import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 
 const router = createBrowserRouter([
-    // Public routes — chỉ truy cập khi chưa đăng nhập
+
+    // ── Public ────────────────────────────────────────────────────────────────
     {
         element: <PublicGuard/>,
         children: [
@@ -33,9 +40,7 @@ const router = createBrowserRouter([
         ],
     },
 
-
     {path: '/oauth2/success', element: <OAuth2SuccessPage/>},
-
 
     {
         element: <PrivateGuard/>,
@@ -48,22 +53,38 @@ const router = createBrowserRouter([
                     {path: '/explore', element: <ExplorePage/>},
                     {path: '/notifications', element: <NotificationPage/>},
                     {path: '/chat', element: <ChatPage/>},
-
+                    {path: '/feature-1', element: <MyTemplatesPage/>},
                 ],
             },
-
             {
-                element: <ProfileLayout />,
+                element: <ProfileLayout/>,
                 children: [
-                    { path: '/profile/me', element: <ProfilePage /> },
-                    { path: '/profile/:userId', element: <UserProfilePage /> },
+                    {path: '/profile/me', element: <ProfilePage/>},
+                    {path: '/profile/:userId', element: <UserProfilePage/>},
                 ],
             },
-
         ],
     },
 
-    // Fallback
+    {
+        element: <AdminGuard/>,
+        children: [
+            {
+                element: <AdminLayout/>,
+                children: [
+                    {path: '/admin', element: <DashboardPage/>},
+                    {path: '/admin/analytics', element: <AdminAnalyticsPage/>},
+                    {path: '/admin/posts', element: <AdminPostsPage/>},
+                    {path: '/admin/comments', element: <AdminCommentsPage/>},
+                    {path: '/admin/templates', element: <AdminTemplatesPage/>},
+                    {path: '/admin/users', element: <AdminUsersPage/>},
+                    {path: '/admin/reports', element: <AdminReportsPage/>},
+                    {path: '/admin/settings', element: <AdminSettingsPage/>},
+                ],
+            },
+        ],
+    },
+
     {path: '*', element: <Navigate to="/" replace/>},
 ]);
 

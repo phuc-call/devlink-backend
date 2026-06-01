@@ -4,6 +4,7 @@ import com.devlink.user_service.dto.internal.LanguageInternal;
 import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
 import com.devlink.user_service.dto.internal.UserNameInternal;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.List;
 import java.util.Map;
@@ -109,5 +110,35 @@ public interface PostServiceClient {
      */
     LanguageInternal getListLange();
 
+    /**
+     * Returns the list of programming languages of the current logged-in user.
+     *
+     * <p>Used by post-service to filter learning templates
+     * matching the user's preferred languages (getMyTemplates).
+     *
+     * <p>Input:
+     *   - No input (userId extracted from SecurityContext)
+     *
+     * <p>Output:
+     *   - List&lt;String&gt; of language names e.g. ["JAVA","PYTHON"]
+     *   - Returns empty list if user has no language set
+     *
+     * <p>Validation:
+     *   1. Return empty list if profile or favoriteLanguage is null
+     *
+     * <p>Flow:
+     *   1. Get current user from SecurityContext
+     *   2. Get UserProfile from user
+     *   3. Convert favoriteLanguage enum list to String list
+     *   4. Return to caller
+     *
+     * <p>Performance note:
+     *   - Lightweight — only fetches 1 user's profile
+     *   - Result cached in Redis by post-service (Lazy cache TTL 24h)
+     *   - Invalidated via Kafka event when user updates languages
+     *
+     * @return list of language names of current user
+     */
+     List<String> getLanguageOfCurrentUser(@RequestHeader("X-User-Id") Long userId) ;
 
 }

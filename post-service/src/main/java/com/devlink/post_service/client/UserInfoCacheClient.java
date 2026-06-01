@@ -203,4 +203,46 @@ public class UserInfoCacheClient {
         return List.of();
     }
 
+    @CircuitBreaker(name = "user-service", fallbackMethod = "getUserLanguagesFallback")
+    @Retry(name = "user-service")
+    public List<String> getUserLanguages(Long userId) {
+        String key = "user_lang:" + userId;
+
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, new TypeReference<List<String>>() {});
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to deserialize user languages userId={}", userId);
+            }
+        }
+
+        ApiResponse<List<String>> res = userServiceClient.getLanguageOfCurrentUser(userId);
+        List<String> languages = res.getData() != null ? res.getData() : List.of();
+
+        if (!languages.isEmpty()) {
+            try {
+                redisTemplate.opsForValue().set(key,
+                        objectMapper.writeValueAsString(languages),
+                        Duration.ofHours(24));
+                log.info("[UserInfoCacheClient] Cached languages userId={} count={}", userId, languages.size());
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to cache languages userId={}", userId);
+            }
+        }
+        return languages;
+    }
+
+    public List<String> getUserLanguagesFallback(Long userId, Throwable t) {
+        log.warn("[UserInfoCacheClient] getUserLanguages fallback userId={}, reason={}", userId, t.getMessage());
+        try {
+            String cached = redisTemplate.opsForValue().get("user_lang:" + userId);
+            if (cached != null) {
+                return objectMapper.readValue(cached, new TypeReference<List<String>>() {});
+            }
+        } catch (Exception e) {
+            log.warn("[UserInfoCacheClient] Failed to read stale languages userId={}", userId);
+        }
+        return List.of();
+    }
 }

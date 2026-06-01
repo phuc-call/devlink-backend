@@ -28,13 +28,14 @@ public class PostServiceClientImpl implements PostServiceClient {
     private final UserHelper u;
 
 
+
     @Override
     public Map<Long, UserFeedInfoResponse> getUserFeedInfo(List<Long> userIds, Long currentUserId) {
         if (userIds == null || userIds.isEmpty()) return Map.of();
 
         return userRepository.findFeedInfoByIds(userIds, currentUserId)
                 .stream()
-                .collect(Collectors.toMap(UserFeedInfoResponse::getId, u -> u));
+                .collect(Collectors.toMap(UserFeedInfoResponse::getId, info -> info));
     }
 
 
@@ -71,5 +72,21 @@ public class PostServiceClientImpl implements PostServiceClient {
         return LanguageInternal.builder()
                 .languages(languages)
                 .build();
+    }
+
+    @Override
+    public List<String> getLanguageOfCurrentUser( Long userId) {
+        User user=u.getUser(userId);
+        UserProfile profile=user.getProfile();
+
+        if (profile == null || profile.getFavoriteLanguage() == null
+                || profile.getFavoriteLanguage().isEmpty()) {
+            return List.of();
+        }
+
+        return profile.getFavoriteLanguage()
+                .stream()
+                .map(Enum::name)
+                .toList();
     }
 }

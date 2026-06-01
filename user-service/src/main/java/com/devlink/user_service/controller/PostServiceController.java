@@ -76,4 +76,13 @@ public class PostServiceController {
                 .data(postServiceClient.getListLange())
                 .build();
     }
+
+    @GetMapping("/languages/me/{userId}")
+    public ApiResponse<List<String>> getLanguageOfCurrentUser(
+            @PathVariable Long userId) {
+        return ApiResponse.<List<String>>builder()
+                .success(true)
+                .data(postServiceClient.getLanguageOfCurrentUser(userId))
+                .build();
+    }
 }

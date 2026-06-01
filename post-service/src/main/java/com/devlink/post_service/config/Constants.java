@@ -1,5 +1,7 @@
 package com.devlink.post_service.config;
 
+import java.util.Set;
+
 public final class Constants {
     private Constants() {
     }
@@ -23,6 +25,15 @@ public final class Constants {
     public static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;  // 50MB each file
     public static final long MAX_TOTAL_SIZE_BYTES = 200L * 1024 * 1024; // 200MB sum
     public static final int MAX_FILE_COUNT = 10; // tối đa 10 file
+
+    public static final Set<String> ALLOWED_EXT = Set.of(
+            "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
+            "jpg", "jpeg", "png", "gif", "webp",
+            "mp4", "mov", "avi", "mkv"
+    );
+    public static final Set<String> FILE_EXT = Set.of(
+            "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt"
+    );
 
     //Warning
     public static final String LOG_REDIS_DESERIALIZE_FAILED = "[Comment] Redis read failed userId={}";

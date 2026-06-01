@@ -1,8 +1,8 @@
 package com.devlink.post_service.controller;
 
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
-import com.devlink.post_service.dto.response.ApiResponse;
-import com.devlink.post_service.dto.response.TemplateResponse;
+import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.entity.enums.Difficulty;
 import com.devlink.post_service.service.LearningTemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/posts/admin")
+@RequestMapping("/api/posts")
 @RequiredArgsConstructor
 @Slf4j
 public class LearningTemplateController {
 
     private final LearningTemplateService learningTemplateService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path = "/admin",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<TemplateResponse>> createTemplate(
             @Valid @ModelAttribute CreateTemplateRequest request,
             @RequestPart("file") MultipartFile file
@@ -33,4 +33,36 @@ public class LearningTemplateController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Template created successfully"));
     }
+
+    @GetMapping()
+    public ResponseEntity<ApiResponse<TemplateFileTyeAndDifficultlyResponse>> getTemplateFileTyeAndDifficultlyResponse(){
+        TemplateFileTyeAndDifficultlyResponse response=learningTemplateService.getFileTypeAndDifficulty();
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.ok(response,"Success"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<PagedResponse<TemplateCardResponse>>> getMyTemplates(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Difficulty difficulty,
+            @RequestParam(required = false) String tag
+    ) {
+        PagedResponse<TemplateCardResponse> result = learningTemplateService.getMyTemplates( page, size, difficulty, tag);
+        return ResponseEntity.ok(ApiResponse.ok(result, "Success"));
+    }
+
+    @GetMapping("/admin/template")
+    public ResponseEntity<ApiResponse<PagedResponse<TemplateCardResponse>>> getTemplateForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Difficulty difficulty,
+            @RequestParam(required = false) String tag
+    ){
+        PagedResponse<TemplateCardResponse> result = learningTemplateService.getTemplates( page, size, difficulty, tag);
+        return ResponseEntity.ok(ApiResponse.ok(result, "Success"));
+    }
+
+
 }

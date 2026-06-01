@@ -35,3 +35,18 @@ export async function getCurrentUserInfo(): Promise<{ userName: string; avatar: 
         return null;
     }
 }
+
+export function getCurrentUserRole(): string | null {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    const payload = decodeJwt(token);
+    if (!payload) return null;
+    const role = payload['role'];
+    return typeof role === 'string' ? role : null;
+}
+
+export function isAdmin(): boolean {
+    return getCurrentUserRole() === 'ADMIN';
+}
+
+

@@ -41,15 +41,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class PostServiceImpl implements PostService {
 
-    private static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;
-    private static final Set<String> ALLOWED_EXT = Set.of(
-            "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
-            "jpg", "jpeg", "png", "gif", "webp",
-            "mp4", "mov", "avi", "mkv"
-    );
-    private static final Set<String> FILE_EXT = Set.of(
-            "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt"
-    );
+
 
     private final PostRepository postRepository;
     private final AccountRestrictionRepository restrictionRepository;
@@ -59,6 +51,7 @@ public class PostServiceImpl implements PostService {
     private final UserServiceClient userServiceClient;
     private final PostTagRepository postTagRepository;
     private final PostMediaRepository postMediaRepository;
+
 
     @Override
     @Transactional
@@ -132,13 +125,17 @@ public class PostServiceImpl implements PostService {
             int idx = 0;
             for (MultipartFile file : validFiles) {
                 PostMedia media = uploadAndBuildMedia(file, post, idx++);
+                media=postMediaRepository.save(media);
                 post.getMediaList().add(media);
                 savedMedia.add(media);
 
                 String ext = getExt(file.getOriginalFilename());
-                if (FILE_EXT.contains(ext.toLowerCase())) {
+                if (Constants.FILE_EXT.contains(ext.toLowerCase())) {
                     PostFile pf = postFileRepository.save(
-                            PostFile.builder().postId(post.getId()).mediaId(media.getId()).build());
+                            PostFile.builder()
+                                    .postId(post.getId())
+                                    .mediaId(media.getId())
+                                    .build());
                     filesToProcess.add(pf);
                 }
             }
@@ -203,7 +200,7 @@ public class PostServiceImpl implements PostService {
 
             // Extension hợp lệ
             String ext = getExt(file.getOriginalFilename());
-            if (!ALLOWED_EXT.contains(ext.toLowerCase()))
+            if (!Constants.ALLOWED_EXT.contains(ext.toLowerCase()))
                 throw new AppException(ErrorCode.POST_FILE_UNSUPPORTED_FORMAT);
 
             totalSize += file.getSize();
@@ -421,7 +418,9 @@ public class PostServiceImpl implements PostService {
 
                 int idx = currentMaxOrder + 1;
                 for (MultipartFile file : validFiles) {
+
                     PostMedia media = uploadAndBuildMedia(file, post, idx++);
+                    media=postMediaRepository.save(media);
                     post.getMediaList().add(media);
                     newMediaAdded.add(media);
                 }
@@ -431,7 +430,7 @@ public class PostServiceImpl implements PostService {
         Post saved = postRepository.save(post);
 
         List<PostFile> filesToProcess = newMediaAdded.stream()
-                .filter(m -> FILE_EXT.contains(
+                .filter(m -> Constants.FILE_EXT.contains(
                         m.getFileExtension() != null ? m.getFileExtension().toLowerCase() : ""))
                 .map(m -> postFileRepository.save(
                         PostFile.builder()

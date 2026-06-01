@@ -1,7 +1,11 @@
 package com.devlink.post_service.service;
 
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
+import com.devlink.post_service.dto.response.PagedResponse;
+import com.devlink.post_service.dto.response.TemplateCardResponse;
+import com.devlink.post_service.dto.response.TemplateFileTyeAndDifficultlyResponse;
 import com.devlink.post_service.dto.response.TemplateResponse;
+import com.devlink.post_service.entity.enums.Difficulty;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -29,4 +33,25 @@ public interface LearningTemplateService {
      * @return TemplateResponse
      */
     TemplateResponse createTemplate(CreateTemplateRequest request, MultipartFile file);
+
+     TemplateFileTyeAndDifficultlyResponse getFileTypeAndDifficulty();
+
+     PagedResponse<TemplateCardResponse> getMyTemplates( int page, int size,
+                                                              Difficulty difficulty, String tag);
+
+    public PagedResponse<TemplateCardResponse> getTemplates(int page, int size,
+                                                              Difficulty difficulty, String tag);
+    /**
+     * Get full detail of a learning template.
+     * Increments view count via DB trigger. Includes fork info if the user has forked this template.
+     *
+     * Validation:
+     *   - Template must exist with status ACTIVE, otherwise throws TEMPLATE_NOT_FOUND (404)
+     *   - Caller must be authenticated via JWT (401 if missing)
+     *
+     * @param templateId    ID of the template to retrieve
+     * @param currentUserId ID of the authenticated user (from JWT)
+     * @return TemplateDetailResponse — includes forkInfo if user has forked, null otherwise
+     */
+    TemplateDetailResponse getTemplateDetail(Long templateId, Long currentUserId);
 }

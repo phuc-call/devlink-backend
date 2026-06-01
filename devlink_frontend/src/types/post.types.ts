@@ -1,5 +1,7 @@
 // src/types/post.types.ts
 
+import type {TemplateResponse} from "./template.types.ts";
+
 export type Visibility = 'PUBLIC' | 'FOLLOWERS_ONLY' | 'PRIVATE';
 export type PostType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
 export type AiModerationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -97,4 +99,26 @@ export interface UpdatePostRequest {
     tags?: string[];
     newMediaFiles?: File[];
     removeMediaIds?: number[];
+}
+
+export interface MyTemplateResponse extends TemplateResponse {
+    isFork: boolean;
+}
+
+/** Wrapper phân trang từ GET /api/posts/me */
+export interface MyTemplateListResponse {
+    content: MyTemplateResponse[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    hint: string | null;
+}
+
+/** Query params cho getMyTemplates */
+export interface GetMyTemplatesParams {
+    page?: number;
+    size?: number;
+    difficulty?: string;
+    tag?: string;
 }

@@ -68,6 +68,8 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: false
+    sql-migration-suffixes: .sql
+    mixed: true
 
   jpa:
     hibernate:

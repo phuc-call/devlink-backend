@@ -1,59 +1,56 @@
-// src/features/post/components/PostCard.tsx
-import {useState, useRef, useEffect} from 'react';
-import {formatDistanceToNow} from 'date-fns';
-import {vi} from 'date-fns/locale';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import {
     MoreHorizontal, Pencil, Trash2, Flag, Bookmark, Bell,
     Eye, Heart, MessageCircle, Share2, Check, X,
     ImagePlus, Globe, Users, Lock, FileText,
 } from 'lucide-react';
-import type {FeedPostResponse, MediaResponse, Visibility} from '../../../types/post.types';
-import {getCurrentUserId} from '../../../utils/auth';
-import {postApi} from '../../../api/post-service/postApi';
+import type { FeedPostResponse, MediaResponse, Visibility } from '../../../types/post.types';
+import { getCurrentUserId } from '../../../utils/auth';
+import { postApi } from '../../../api/post-service/postApi';
 import CommentSection from './CommentSection';
 
 interface Props {
     post: FeedPostResponse;
     onDeleted?: (postId: number) => void;
     onUpdated?: (post: FeedPostResponse) => void;
+    openCommentPostId: number | null;
+    onToggleComment: (id: number | null) => void;
 }
 
-const VISIBILITY_OPTIONS: { value: Visibility; label: string; icon: React.ReactNode }[] = [
-    {value: 'PUBLIC', label: 'Công khai', icon: <Globe size={13}/>},
-    {value: 'FOLLOWERS_ONLY', label: 'Người theo dõi', icon: <Users size={13}/>},
-    {value: 'PRIVATE', label: 'Chỉ mình tôi', icon: <Lock size={13}/>},
+const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
+    { value: 'PUBLIC', label: 'Công khai' },
+    { value: 'FOLLOWERS_ONLY', label: 'Người theo dõi' },
+    { value: 'PRIVATE', label: 'Chỉ mình tôi' },
 ];
 
-function visibilityLabel(v: string) {
+function visibilityLabel(v: string): { icon: React.ReactNode; text: string } {
     switch (v) {
-        case 'PUBLIC':
-            return {icon: <Globe size={12}/>, text: 'Công khai'};
-        case 'FOLLOWERS_ONLY':
-            return {icon: <Users size={12}/>, text: 'Người theo dõi'};
-        case 'PRIVATE':
-            return {icon: <Lock size={12}/>, text: 'Chỉ mình tôi'};
-        default:
-            return {icon: <Globe size={12}/>, text: v};
+        case 'PUBLIC':           return { icon: <Globe size={12} />, text: 'Công khai' };
+        case 'FOLLOWERS_ONLY':   return { icon: <Users size={12} />, text: 'Người theo dõi' };
+        case 'PRIVATE':          return { icon: <Lock size={12} />, text: 'Chỉ mình tôi' };
+        default:                 return { icon: <Globe size={12} />, text: v };
     }
 }
 
 // ─── Inline Edit Form ─────────────────────────────────────────────────────────
-function InlineEditForm({
-                            post, onCancel, onSaved,
-                        }: {
+interface InlineEditFormProps {
     post: FeedPostResponse;
     onCancel: () => void;
     onSaved: (updated: FeedPostResponse) => void;
-}) {
-    const [content, setContent] = useState(post.content ?? '');
-    const [visibility, setVisibility] = useState<Visibility>(post.visibility as Visibility);
+}
+
+function InlineEditForm({ post, onCancel, onSaved }: InlineEditFormProps) {
+    const [content, setContent]           = useState(post.content ?? '');
+    const [visibility, setVisibility]     = useState<Visibility>(post.visibility as Visibility);
     const [existingMedia, setExistingMedia] = useState<MediaResponse[]>(post.mediaList ?? []);
-    const [removeIds, setRemoveIds] = useState<number[]>([]);
-    const [newFiles, setNewFiles] = useState<File[]>([]);
-    const [newPreviews, setNewPreviews] = useState<string[]>([]);
-    const [tagInput, setTagInput] = useState(post.tags.map(t => t.tag).join(', '));
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [removeIds, setRemoveIds]       = useState<number[]>([]);
+    const [newFiles, setNewFiles]         = useState<File[]>([]);
+    const [newPreviews, setNewPreviews]   = useState<string[]>([]);
+    const [tagInput, setTagInput]         = useState(post.tags.map(t => t.tag).join(', '));
+    const [loading, setLoading]           = useState(false);
+    const [error, setError]               = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +63,6 @@ function InlineEditForm({
         e.target.value = '';
     };
 
-
     const removeExisting = (id: number) => {
         setExistingMedia(prev => prev.filter(m => m.id !== id));
         setRemoveIds(prev => [...prev, id]);
@@ -77,7 +73,7 @@ function InlineEditForm({
         setNewPreviews(prev => prev.filter((_, i) => i !== idx));
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!content.trim() && existingMedia.length === 0 && newFiles.length === 0) {
             setError('Bài viết phải có nội dung hoặc media');
             return;
@@ -98,7 +94,7 @@ function InlineEditForm({
                 ...post,
                 content: saved?.content ?? content,
                 visibility,
-                tags: tags.map((t, i) => ({id: i, postId: post.id, tag: t})),
+                tags: tags.map((t, i) => ({ id: i, postId: post.id, tag: t })),
                 mediaList: saved?.mediaList ?? existingMedia,
             };
             onSaved(updated);
@@ -107,7 +103,7 @@ function InlineEditForm({
         } finally {
             setLoading(false);
         }
-    };
+    }, [content, existingMedia, newFiles, tagInput, post, visibility, removeIds, onSaved]);
 
     return (
         <div style={{
@@ -117,7 +113,6 @@ function InlineEditForm({
             overflow: 'hidden',
             background: '#F9FAFB',
         }}>
-            {/* Content textarea */}
             <textarea
                 value={content}
                 onChange={e => setContent(e.target.value)}
@@ -132,8 +127,7 @@ function InlineEditForm({
                 }}
             />
 
-            {/* Tags */}
-            <div style={{padding: '0 12px 8px'}}>
+            <div style={{ padding: '0 12px 8px' }}>
                 <input
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
@@ -148,22 +142,13 @@ function InlineEditForm({
                 />
             </div>
 
-            {/* Existing media — có nút xoá */}
             {existingMedia.length > 0 && (
-                <div style={{padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                <div style={{ padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {existingMedia.map(m => (
-                        <div key={m.id} style={{position: 'relative', display: 'inline-block'}}>
+                        <div key={m.id} style={{ position: 'relative', display: 'inline-block' }}>
                             {m.mediaType === 'IMAGE' ? (
                                 <img src={m.url} alt={m.originalName}
-                                     style={{width: 72, height: 72, objectFit: 'cover', borderRadius: 6}}/>
-                            ) : m.mediaType === 'VIDEO' ? (
-                                <div style={{
-                                    width: 72, height: 72, borderRadius: 6,
-                                    background: '#1F2937', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                    <FileText size={24} color="#9CA3AF"/>
-                                </div>
+                                     style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6 }} />
                             ) : (
                                 <div style={{
                                     width: 72, height: 72, borderRadius: 6,
@@ -171,42 +156,37 @@ function InlineEditForm({
                                     alignItems: 'center', justifyContent: 'center',
                                     flexDirection: 'column', gap: 2,
                                 }}>
-                                    <FileText size={20} color="#3B82F6"/>
-                                    <span
-                                        style={{fontSize: 9, color: '#3B82F6', textAlign: 'center', padding: '0 2px'}}>
+                                    <FileText size={20} color="#3B82F6" />
+                                    <span style={{ fontSize: 9, color: '#3B82F6', textAlign: 'center', padding: '0 2px' }}>
                                         {m.originalName?.split('.').pop()?.toUpperCase()}
                                     </span>
                                 </div>
                             )}
                             <button
+                                type="button"
                                 onClick={() => removeExisting(m.id)}
                                 style={{
                                     position: 'absolute', top: -6, right: -6,
                                     width: 18, height: 18, borderRadius: '50%',
                                     background: '#EF4444', border: '2px solid #fff',
                                     cursor: 'pointer', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center',
-                                    padding: 0,
+                                    alignItems: 'center', justifyContent: 'center', padding: 0,
                                 }}
                             >
-                                <X size={10} color="#fff"/>
+                                <X size={10} color="#fff" />
                             </button>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* New file previews */}
             {newPreviews.length > 0 && (
-                <div style={{padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                <div style={{ padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {newPreviews.map((url, idx) => (
-                        <div key={idx} style={{position: 'relative', display: 'inline-block'}}>
+                        <div key={url} style={{ position: 'relative', display: 'inline-block' }}>
                             {newFiles[idx]?.type.startsWith('image/') ? (
                                 <img src={url} alt=""
-                                     style={{
-                                         width: 72, height: 72, objectFit: 'cover', borderRadius: 6,
-                                         border: '2px solid #3B82F6'
-                                     }}/>
+                                     style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6, border: '2px solid #3B82F6' }} />
                             ) : (
                                 <div style={{
                                     width: 72, height: 72, borderRadius: 6,
@@ -214,39 +194,37 @@ function InlineEditForm({
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     flexDirection: 'column', gap: 2,
                                 }}>
-                                    <FileText size={20} color="#3B82F6"/>
-                                    <span
-                                        style={{fontSize: 9, color: '#3B82F6', textAlign: 'center', padding: '0 2px'}}>
+                                    <FileText size={20} color="#3B82F6" />
+                                    <span style={{ fontSize: 9, color: '#3B82F6', textAlign: 'center', padding: '0 2px' }}>
                                         {newFiles[idx]?.name.split('.').pop()?.toUpperCase()}
                                     </span>
                                 </div>
                             )}
                             <button
+                                type="button"
                                 onClick={() => removeNew(idx)}
                                 style={{
                                     position: 'absolute', top: -6, right: -6,
                                     width: 18, height: 18, borderRadius: '50%',
                                     background: '#EF4444', border: '2px solid #fff',
                                     cursor: 'pointer', display: 'flex',
-                                    alignItems: 'center', justifyContent: 'center',
-                                    padding: 0,
+                                    alignItems: 'center', justifyContent: 'center', padding: 0,
                                 }}
                             >
-                                <X size={10} color="#fff"/>
+                                <X size={10} color="#fff" />
                             </button>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Toolbar: upload + visibility */}
             <div style={{
                 padding: '8px 12px',
                 display: 'flex', alignItems: 'center', gap: 8,
                 borderTop: '1px solid #E5E7EB', background: '#fff',
             }}>
-                {/* Upload button */}
                 <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 4,
@@ -256,7 +234,7 @@ function InlineEditForm({
                         fontFamily: 'Inter, sans-serif',
                     }}
                 >
-                    <ImagePlus size={14}/>
+                    <ImagePlus size={14} />
                     Thêm ảnh/file
                 </button>
                 <input
@@ -264,11 +242,10 @@ function InlineEditForm({
                     type="file"
                     multiple
                     accept="image/*,video/*,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt"
-                    style={{display: 'none'}}
+                    style={{ display: 'none' }}
                     onChange={handleFileChange}
                 />
 
-                {/* Visibility select */}
                 <select
                     value={visibility}
                     onChange={e => setVisibility(e.target.value as Visibility)}
@@ -284,12 +261,12 @@ function InlineEditForm({
                     ))}
                 </select>
 
-                {/* Actions */}
-                <div style={{marginLeft: 'auto', display: 'flex', gap: 8}}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                     {error && (
-                        <span style={{fontSize: 12, color: '#EF4444', alignSelf: 'center'}}>{error}</span>
+                        <span style={{ fontSize: 12, color: '#EF4444', alignSelf: 'center' }}>{error}</span>
                     )}
                     <button
+                        type="button"
                         onClick={onCancel}
                         style={{
                             padding: '6px 14px', borderRadius: 6,
@@ -301,7 +278,8 @@ function InlineEditForm({
                         Huỷ
                     </button>
                     <button
-                        onClick={handleSave}
+                        type="button"
+                        onClick={() => { void handleSave(); }}
                         disabled={loading}
                         style={{
                             padding: '6px 14px', borderRadius: 6, border: 'none',
@@ -312,7 +290,7 @@ function InlineEditForm({
                             fontFamily: 'Inter, sans-serif', fontWeight: 500,
                         }}
                     >
-                        <Check size={13}/>
+                        <Check size={13} />
                         {loading ? 'Đang lưu...' : 'Lưu'}
                     </button>
                 </div>
@@ -322,13 +300,13 @@ function InlineEditForm({
 }
 
 // ─── Delete Confirm Dialog ────────────────────────────────────────────────────
-function DeleteConfirmDialog({
-                                 onCancel, onConfirm, loading,
-                             }: {
+interface DeleteConfirmDialogProps {
     onCancel: () => void;
     onConfirm: () => void;
     loading: boolean;
-}) {
+}
+
+function DeleteConfirmDialog({ onCancel, onConfirm, loading }: DeleteConfirmDialogProps) {
     return (
         <div style={{
             position: 'fixed', inset: 0,
@@ -347,32 +325,41 @@ function DeleteConfirmDialog({
                     background: '#FEF2F2', margin: '0 auto 16px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                    <Trash2 size={22} color="#EF4444"/>
+                    <Trash2 size={22} color="#EF4444" />
                 </div>
-                <h3 style={{margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#111827'}}>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
                     Xoá bài viết?
                 </h3>
-                <p style={{margin: '0 0 20px', fontSize: 14, color: '#6B7280', lineHeight: 1.5}}>
+                <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6B7280', lineHeight: 1.5 }}>
                     Bài viết sẽ bị xoá và không thể khôi phục.
                 </p>
-                <div style={{display: 'flex', gap: 10}}>
-                    <button onClick={onCancel} style={{
-                        flex: 1, padding: '10px', borderRadius: 8,
-                        border: '1px solid #E5E7EB', background: '#fff',
-                        fontSize: 14, cursor: 'pointer', fontWeight: 500, color: '#374151',
-                        fontFamily: 'Inter, sans-serif',
-                    }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        style={{
+                            flex: 1, padding: '10px', borderRadius: 8,
+                            border: '1px solid #E5E7EB', background: '#fff',
+                            fontSize: 14, cursor: 'pointer', fontWeight: 500, color: '#374151',
+                            fontFamily: 'Inter, sans-serif',
+                        }}
+                    >
                         Huỷ
                     </button>
-                    <button onClick={onConfirm} disabled={loading} style={{
-                        flex: 1, padding: '10px', borderRadius: 8, border: 'none',
-                        background: loading ? '#FCA5A5' : '#EF4444',
-                        color: '#fff', fontSize: 14,
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        fontWeight: 500, fontFamily: 'Inter, sans-serif',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}>
-                        <Trash2 size={14}/>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={loading}
+                        style={{
+                            flex: 1, padding: '10px', borderRadius: 8, border: 'none',
+                            background: loading ? '#FCA5A5' : '#EF4444',
+                            color: '#fff', fontSize: 14,
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontWeight: 500, fontFamily: 'Inter, sans-serif',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        }}
+                    >
+                        <Trash2 size={14} />
                         {loading ? 'Đang xoá...' : 'Xoá'}
                     </button>
                 </div>
@@ -381,32 +368,93 @@ function DeleteConfirmDialog({
     );
 }
 
+// ─── MenuItem ─────────────────────────────────────────────────────────────────
+interface MenuItemProps {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+    color: string;
+    danger?: boolean;
+}
 
-export default function PostCard({post: initialPost, onDeleted, onUpdated}: Props) {
-    const [post, setPost] = useState(initialPost);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [editing, setEditing] = useState(false);
+function MenuItem({ icon, label, onClick, color, danger }: MenuItemProps) {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 14px', border: 'none', cursor: 'pointer',
+                background: hovered ? (danger === true ? '#FEF2F2' : '#F9FAFB') : '#fff',
+                color, fontSize: 13, fontWeight: 500, textAlign: 'left',
+                transition: 'background 0.12s', fontFamily: 'Inter, sans-serif',
+            }}
+        >
+            {icon}{label}
+        </button>
+    );
+}
+
+// ─── FooterBtn ────────────────────────────────────────────────────────────────
+interface FooterBtnProps {
+    icon: React.ReactNode;
+    label: string;
+}
+
+function FooterBtn({ icon, label }: FooterBtnProps) {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <button
+            type="button"
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 10px', borderRadius: 6, border: 'none',
+                background: hovered ? '#F3F4F6' : 'transparent',
+                cursor: 'pointer', fontSize: 13, color: '#6B7280',
+                fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                transition: 'background 0.12s',
+            }}
+        >
+            {icon}{label}
+        </button>
+    );
+}
+
+// ─── PostCard ─────────────────────────────────────────────────────────────────
+export default function PostCard({
+                                     post: initialPost, onDeleted, onUpdated,
+                                     openCommentPostId, onToggleComment,
+                                 }: Props) {
+    const [post, setPost]                   = useState(initialPost);
+    const [menuOpen, setMenuOpen]           = useState(false);
+    const [editing, setEditing]             = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [commentOpen, setCommentOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const currentUserId = getCurrentUserId();
-    const isOwner = currentUserId !== null && post.authorId === currentUserId;
+    const isOwner       = currentUserId !== null && post.authorId === currentUserId;
+    const commentOpen   = openCommentPostId === post.id;
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node))
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuOpen(false);
+            }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const timeAgo = formatDistanceToNow(new Date(post.createdAt), {addSuffix: true, locale: vi});
-    const vis = visibilityLabel(post.visibility);
+    const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi });
+    const vis     = visibilityLabel(post.visibility);
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         setDeleteLoading(true);
         try {
             await postApi.deletePost(post.id);
@@ -415,20 +463,24 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
         } catch {
             setDeleteLoading(false);
         }
-    };
+    }, [post.id, onDeleted]);
 
-    const handleUpdated = (updated: FeedPostResponse) => {
+    const handleUpdated = useCallback((updated: FeedPostResponse) => {
         setPost(updated);
         setEditing(false);
         onUpdated?.(updated);
-    };
+    }, [onUpdated]);
+
+    const handleToggleComment = useCallback(() => {
+        onToggleComment(commentOpen ? null : post.id);
+    }, [commentOpen, onToggleComment, post.id]);
 
     return (
         <>
             {showDeleteDialog && (
                 <DeleteConfirmDialog
                     onCancel={() => setShowDeleteDialog(false)}
-                    onConfirm={handleDelete}
+                    onConfirm={() => { void handleDelete(); }}
                     loading={deleteLoading}
                 />
             )}
@@ -445,18 +497,18 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                     display: 'flex', alignItems: 'flex-start',
                     justifyContent: 'space-between',
                 }}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <img
-                            src={post.author?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.fullName ?? 'U')}&background=3B82F6&color=fff`}
-                            alt={post.author?.fullName}
-                            style={{width: 40, height: 40, borderRadius: '50%', objectFit: 'cover'}}
+                            src={post.author?.avatarUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.fullName ?? 'U')}&background=3B82F6&color=fff`}
+                            alt={post.author?.fullName ?? 'User'}
+                            style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
                         />
                         <div>
-                            <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-                                <span style={{fontWeight: 600, fontSize: 14, color: '#111827'}}>
-                                    {post.author?.fullName || 'Người dùng'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
+                                    {post.author?.fullName ?? 'Người dùng'}
                                 </span>
-                                {post.author?.badge && post.author.badge !== 'NONE' && (
+                                {post.author?.badge != null && post.author.badge !== 'NONE' && (
                                     <span style={{
                                         background: '#DBEAFE', color: '#2563EB',
                                         fontSize: 11, padding: '1px 6px',
@@ -472,7 +524,7 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                             }}>
                                 <span>{timeAgo}</span>
                                 <span>·</span>
-                                <span style={{display: 'flex', alignItems: 'center', gap: 3}}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     {vis.icon} {vis.text}
                                 </span>
                             </div>
@@ -480,8 +532,9 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                     </div>
 
                     {/* ⋯ Menu */}
-                    <div ref={menuRef} style={{position: 'relative'}}>
+                    <div ref={menuRef} style={{ position: 'relative' }}>
                         <button
+                            type="button"
                             onClick={() => setMenuOpen(v => !v)}
                             style={{
                                 width: 32, height: 32, borderRadius: '50%',
@@ -491,10 +544,10 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                                 alignItems: 'center', justifyContent: 'center',
                                 color: '#6B7280',
                             }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
-                            onMouseLeave={e => (e.currentTarget.style.background = menuOpen ? '#F3F4F6' : 'transparent')}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = menuOpen ? '#F3F4F6' : 'transparent'; }}
                         >
-                            <MoreHorizontal size={18}/>
+                            <MoreHorizontal size={18} />
                         </button>
 
                         {menuOpen && (
@@ -508,22 +561,16 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                                 {isOwner ? (
                                     <>
                                         <MenuItem
-                                            icon={<Pencil size={15}/>}
+                                            icon={<Pencil size={15} />}
                                             label="Chỉnh sửa bài viết"
-                                            onClick={() => {
-                                                setEditing(true);
-                                                setMenuOpen(false);
-                                            }}
+                                            onClick={() => { setEditing(true); setMenuOpen(false); }}
                                             color="#374151"
                                         />
-                                        <div style={{height: 1, background: '#F3F4F6'}}/>
+                                        <div style={{ height: 1, background: '#F3F4F6' }} />
                                         <MenuItem
-                                            icon={<Trash2 size={15}/>}
+                                            icon={<Trash2 size={15} />}
                                             label="Xoá bài viết"
-                                            onClick={() => {
-                                                setShowDeleteDialog(true);
-                                                setMenuOpen(false);
-                                            }}
+                                            onClick={() => { setShowDeleteDialog(true); setMenuOpen(false); }}
                                             color="#EF4444"
                                             danger
                                         />
@@ -531,20 +578,20 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                                 ) : (
                                     <>
                                         <MenuItem
-                                            icon={<Bookmark size={15}/>}
+                                            icon={<Bookmark size={15} />}
                                             label="Lưu vào thư viện"
                                             onClick={() => setMenuOpen(false)}
                                             color="#374151"
                                         />
                                         <MenuItem
-                                            icon={<Bell size={15}/>}
+                                            icon={<Bell size={15} />}
                                             label="Đánh dấu theo dõi"
                                             onClick={() => setMenuOpen(false)}
                                             color="#374151"
                                         />
-                                        <div style={{height: 1, background: '#F3F4F6'}}/>
+                                        <div style={{ height: 1, background: '#F3F4F6' }} />
                                         <MenuItem
-                                            icon={<Flag size={15}/>}
+                                            icon={<Flag size={15} />}
                                             label="Tố cáo bài viết"
                                             onClick={() => setMenuOpen(false)}
                                             color="#EF4444"
@@ -567,14 +614,13 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                 ) : (
                     <>
                         {post.content && (
-                            <div style={{padding: '0 16px 12px', fontSize: 14, color: '#111827', lineHeight: 1.6}}>
+                            <div style={{ padding: '0 16px 12px', fontSize: 14, color: '#111827', lineHeight: 1.6 }}>
                                 {post.content}
                             </div>
                         )}
 
-                        {/* Tags */}
                         {post.tags.length > 0 && (
-                            <div style={{padding: '0 16px 10px', display: 'flex', flexWrap: 'wrap', gap: 6}}>
+                            <div style={{ padding: '0 16px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                 {post.tags.map(t => (
                                     <span key={t.id} style={{
                                         background: '#EFF6FF', color: '#3B82F6',
@@ -586,18 +632,17 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                             </div>
                         )}
 
-                        {/* Media */}
                         {post.mediaList.length > 0 && (
                             <div>
                                 {post.mediaList.map(m => (
                                     <div key={m.id}>
                                         {m.mediaType === 'IMAGE' && (
                                             <img src={m.url} alt={m.originalName}
-                                                 style={{width: '100%', maxHeight: 500, objectFit: 'cover'}}/>
+                                                 style={{ width: '100%', maxHeight: 500, objectFit: 'cover' }} />
                                         )}
                                         {m.mediaType === 'VIDEO' && (
-                                            <video controls style={{width: '100%', maxHeight: 500, background: '#000'}}>
-                                                <source src={m.url}/>
+                                            <video controls style={{ width: '100%', maxHeight: 500, background: '#000' }}>
+                                                <source src={m.url} />
                                             </video>
                                         )}
                                         {m.mediaType === 'FILE' && (
@@ -608,7 +653,7 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                                                    color: '#3B82F6', fontSize: 13, textDecoration: 'none',
                                                    borderTop: '1px solid #E5E7EB',
                                                }}>
-                                                <FileText size={16}/>
+                                                <FileText size={16} />
                                                 {m.originalName}
                                             </a>
                                         )}
@@ -625,12 +670,12 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                     borderTop: '1px solid #E5E7EB',
                     display: 'flex', gap: 4,
                 }}>
-                    <FooterBtn icon={<Eye size={14}/>} label={`${post.viewCount}`}/>
-                    <FooterBtn icon={<Heart size={14}/>} label="Thích"/>
+                    <FooterBtn icon={<Eye size={14} />} label={`${post.viewCount}`} />
+                    <FooterBtn icon={<Heart size={14} />} label="Thích" />
 
-                    {/* Bình luận — toggle CommentSection */}
                     <button
-                        onClick={() => setCommentOpen(v => !v)}
+                        type="button"
+                        onClick={handleToggleComment}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 5,
                             padding: '6px 10px', borderRadius: 6, border: 'none',
@@ -641,7 +686,7 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                             transition: 'background 0.12s',
                         }}
                     >
-                        <MessageCircle size={14}/>
+                        <MessageCircle size={14} />
                         Bình luận
                         {post.commentCount != null && post.commentCount > 0 && (
                             <span style={{
@@ -650,66 +695,18 @@ export default function PostCard({post: initialPost, onDeleted, onUpdated}: Prop
                                 fontSize: 11, fontWeight: 600,
                                 padding: '1px 7px', borderRadius: 9999, marginLeft: 2,
                             }}>
-            {post.commentCount}
-        </span>
+                                {post.commentCount}
+                            </span>
                         )}
                     </button>
 
-                    <FooterBtn icon={<Share2 size={14}/>} label="Chia sẻ"/>
+                    <FooterBtn icon={<Share2 size={14} />} label="Chia sẻ" />
                 </div>
 
-                {/* ── CommentSection xổ xuống khi click ── */}
                 {commentOpen && (
-                    <CommentSection
-                        postId={post.id}
-                        commentCount={post.commentCount}
-                    />
+                    <CommentSection postId={post.id} commentCount={post.commentCount} />
                 )}
             </div>
         </>
-    );
-}
-
-
-function MenuItem({icon, label, onClick, color, danger}: {
-    icon: React.ReactNode; label: string;
-    onClick: () => void; color: string; danger?: boolean;
-}) {
-    const [hovered, setHovered] = useState(false);
-    return (
-        <button
-            onClick={onClick}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 14px', border: 'none', cursor: 'pointer',
-                background: hovered ? (danger ? '#FEF2F2' : '#F9FAFB') : '#fff',
-                color, fontSize: 13, fontWeight: 500, textAlign: 'left',
-                transition: 'background 0.12s', fontFamily: 'Inter, sans-serif',
-            }}
-        >
-            {icon}{label}
-        </button>
-    );
-}
-
-function FooterBtn({icon, label}: { icon: React.ReactNode; label: string }) {
-    const [hovered, setHovered] = useState(false);
-    return (
-        <button
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '6px 10px', borderRadius: 6, border: 'none',
-                background: hovered ? '#F3F4F6' : 'transparent',
-                cursor: 'pointer', fontSize: 13, color: '#6B7280',
-                fontFamily: 'Inter, sans-serif', fontWeight: 500,
-                transition: 'background 0.12s',
-            }}
-        >
-            {icon}{label}
-        </button>
     );
 }

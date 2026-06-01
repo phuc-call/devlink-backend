@@ -66,9 +66,11 @@ public class LearningTemplate {
     @Column(columnDefinition = "JSON")
     private String topics;
 
+    @Builder.Default
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
 
+    @Builder.Default
     @Column(name = "fork_count", nullable = false)
     private Long forkCount = 0L;
 

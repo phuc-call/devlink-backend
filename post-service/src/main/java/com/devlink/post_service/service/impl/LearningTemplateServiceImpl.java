@@ -2,8 +2,13 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserInfoCacheClient;
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
+import com.devlink.post_service.dto.response.PagedResponse;
+import com.devlink.post_service.dto.response.TemplateCardResponse;
+import com.devlink.post_service.dto.response.TemplateFileTyeAndDifficultlyResponse;
 import com.devlink.post_service.dto.response.TemplateResponse;
 import com.devlink.post_service.entity.LearningTemplate;
+import com.devlink.post_service.entity.enums.Difficulty;
+import com.devlink.post_service.entity.enums.FileType;
 import com.devlink.post_service.entity.enums.TemplateFileType;
 import com.devlink.post_service.entity.enums.TemplateStatus;
 import com.devlink.post_service.exception.AppException;
@@ -17,11 +22,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -186,4 +195,46 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
             throw new AppException(ErrorCode.TEMPLATE_FILE_TYPE_MISMATCH);
         }
     }
+
+    @Override
+    public TemplateFileTyeAndDifficultlyResponse getFileTypeAndDifficulty(){
+        TemplateFileTyeAndDifficultlyResponse dto=new TemplateFileTyeAndDifficultlyResponse();
+        dto.setDifficultly(Arrays.stream(Difficulty.values())
+                .map(Enum::name).toList());
+        dto.setFileType(Arrays.stream(FileType.values())
+                .map(Enum::name).toList());
+        return dto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<TemplateCardResponse> getMyTemplates(int page, int size,
+                                                              Difficulty difficulty, String tag) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        List<String> languages = userInfoCacheClient.getUserLanguages(userId);
+
+        if (languages.isEmpty()) {
+            return PagedResponse.empty(
+                    "Bạn chưa cài đặt ngôn ngữ lập trình. Hãy cập nhật profile để xem template phù hợp."
+            );
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<TemplateCardResponse> result = templateRepository
+                .findTemplates(userId, List.of(TemplateStatus.ACTIVE), languages, difficulty, tag, pageable);
+
+        return PagedResponse.of(result);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<TemplateCardResponse> getTemplates(int page, int size,
+                                                              Difficulty difficulty, String tag) {
+        Pageable pageable=PageRequest.of(page,size);
+        List<String> allLanguages=userInfoCacheClient.getSupportedLanguages();
+        Page<TemplateCardResponse> result=templateRepository.getTemplatesForAdmin(
+                List.of(TemplateStatus.ACTIVE,TemplateStatus.DELETED,TemplateStatus.DELETED),allLanguages,difficulty,tag,pageable);
+        return PagedResponse.of(result);
+    }
+
 }

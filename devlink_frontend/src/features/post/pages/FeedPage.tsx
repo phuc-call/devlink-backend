@@ -10,63 +10,66 @@ import PostCard from '../components/PostCard';
 import { getCurrentUserInfo } from '../../../utils/auth';
 
 export default function FeedPage() {
-    const { showModal, closeModal } = useProfileSetup();
+    const { showModal, closeModal }           = useProfileSetup();
     const [showCreatePost, setShowCreatePost] = useState(false);
-    const [posts, setPosts]     = useState<FeedPostResponse[]>([]);
-    const [page, setPage]       = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const [loading, setLoading] = useState(false);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [displayName, setDisplayName] = useState<string | undefined>(undefined);
+    const [posts, setPosts]                   = useState<FeedPostResponse[]>([]);
+    const [page, setPage]                     = useState(0);
+    const [hasMore, setHasMore]               = useState(true);
+    const [loading, setLoading]               = useState(false);
+    const [avatarUrl, setAvatarUrl]           = useState<string | null>(null);
+    const [displayName, setDisplayName]       = useState<string | undefined>(undefined);
+
+    // ── Chỉ 1 PostCard được mở comment tại một thời điểm ──
+    const [openCommentPostId, setOpenCommentPostId] = useState<number | null>(null);
+
     const loadingRef = useRef(false);
 
     // Load user info for avatar
     useEffect(() => {
-        getCurrentUserInfo().then(info => {
-            if (info) {
-                setAvatarUrl(info.avatar);
-                setDisplayName(info.userName);
-            }
-        });
+        getCurrentUserInfo()
+            .then(info => {
+                if (info) {
+                    setAvatarUrl(info.avatar);
+                    setDisplayName(info.userName);
+                }
+            })
+            .catch(() => { /* silently ignore */ });
     }, []);
 
-    const loadFeed = useCallback(async (pageNum: number, reset = false) => {
+    const loadFeed = useCallback((pageNum: number, reset = false) => {
         if (loadingRef.current) return;
         loadingRef.current = true;
+
+        getFeedApi.getFeed(pageNum, 20)
+            .then(res => {
+                const data = res.data.data;
+                if (reset || pageNum === 0) {
+                    setPosts(data.content);
+                } else {
+                    setPosts(prev => [...prev, ...data.content]);
+                }
+                setHasMore(!data.last);
+                setPage(pageNum);
+            })
+            .catch(err => { console.error('Lỗi load feed:', err); })
+            .finally(() => {
+                loadingRef.current = false;
+                setLoading(false);
+            });
+
         setLoading(true);
-
-        try {
-            const res  = await getFeedApi.getFeed(pageNum, 20);
-            const data = res.data.data;
-
-            if (reset || pageNum === 0) {
-                setPosts(data.content);
-            } else {
-                setPosts(prev => [...prev, ...data.content]);
-            }
-            setHasMore(!data.last);
-        } catch (err) {
-            console.error('Lỗi load feed:', err);
-        } finally {
-            loadingRef.current = false;
-            setLoading(false);
-        }
     }, []);
 
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        void loadFeed(0);
-    }, [loadFeed]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { loadFeed(0); }, [loadFeed]);
 
     const handleLoadMore = () => {
-        const next = page + 1;
-        setPage(next);
-        void loadFeed(next);
+        loadFeed(page + 1);
     };
 
     const handlePostCreated = () => {
         setPage(0);
-        void loadFeed(0, true);
+        loadFeed(0, true);
     };
 
     const handlePostDeleted = useCallback((id: number) => {
@@ -77,6 +80,10 @@ export default function FeedPage() {
         setPosts(prev => prev.map(p => (p.id === updated.id ? updated : p)));
     }, []);
 
+    const handleToggleComment = useCallback((id: number | null) => {
+        setOpenCommentPostId(prev => (prev === id ? null : id));
+    }, []);
+
     const renderFeedContent = () => {
         if (loading && posts.length === 0) {
             return (
@@ -85,11 +92,7 @@ export default function FeedPage() {
                     alignItems: 'center', justifyContent: 'center',
                     minHeight: '40vh', color: '#6B7280', gap: 12,
                 }}>
-                    <Loader2
-                        size={32}
-                        color="#3B82F6"
-                        style={{ animation: 'spin 1s linear infinite' }}
-                    />
+                    <Loader2 size={32} color="#3B82F6" style={{ animation: 'spin 1s linear infinite' }} />
                     <p style={{ margin: 0, fontSize: 14 }}>Đang tải bài viết...</p>
                     <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
                 </div>
@@ -122,20 +125,18 @@ export default function FeedPage() {
                         post={post}
                         onDeleted={handlePostDeleted}
                         onUpdated={handlePostUpdated}
+                        openCommentPostId={openCommentPostId}
+                        onToggleComment={handleToggleComment}
                     />
                 ))}
 
                 {loading && (
                     <div style={{
                         display: 'flex', alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '16px', gap: 8,
+                        justifyContent: 'center', padding: '16px', gap: 8,
                         color: '#6B7280', fontSize: 13,
                     }}>
-                        <Loader2
-                            size={16}
-                            style={{ animation: 'spin 1s linear infinite' }}
-                        />
+                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                         Đang tải thêm...
                         <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
                     </div>
@@ -159,10 +160,7 @@ export default function FeedPage() {
                 )}
 
                 {!loading && !hasMore && (
-                    <div style={{
-                        textAlign: 'center', padding: '16px',
-                        color: '#9CA3AF', fontSize: 13,
-                    }}>
+                    <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
                         Đã xem hết bài viết
                     </div>
                 )}
@@ -195,18 +193,14 @@ export default function FeedPage() {
                     padding: '10px 16px', marginBottom: 12,
                     border: '1px solid #E4E6EB',
                     display: 'flex', alignItems: 'center', gap: 10,
-                    cursor: 'pointer', width: '100%',
-                    textAlign: 'left',
+                    cursor: 'pointer', width: '100%', textAlign: 'left',
                 }}
             >
                 {avatarUrl ? (
                     <img
                         src={avatarUrl}
                         alt="avatar"
-                        style={{
-                            width: 38, height: 38, borderRadius: '50%',
-                            objectFit: 'cover', flexShrink: 0,
-                        }}
+                        style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                     />
                 ) : (
                     <div style={{
