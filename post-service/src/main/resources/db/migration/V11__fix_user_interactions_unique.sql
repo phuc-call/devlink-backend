@@ -1,0 +1,1 @@
+ALTER TABLE user_interactions DROP INDEX uk_ui_interaction;

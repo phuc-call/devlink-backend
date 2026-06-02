@@ -68,6 +68,11 @@ public enum ErrorCode {
             "Không tìm thấy template",
             HttpStatus.NOT_FOUND),
 
+    INVALID_TEMPLATE_TYPE(
+            "Loại xử lý này đã được xử lý",
+            HttpStatus.BAD_REQUEST),
+
+
     TEMPLATE_LANGUAGE_NOT_SUPPORTED(
             "Ngôn ngữ lập trình không được hỗ trợ",
             HttpStatus.BAD_REQUEST),
@@ -83,7 +88,9 @@ public enum ErrorCode {
     TEMPLATE_FORK_NOT_FOUND(
             "Không tìm thấy bản fork",
             HttpStatus.NOT_FOUND),
-
+    FORK_NOT_ALLOWED(
+            "Không chấp nhận video",
+            HttpStatus.NOT_FOUND),
     TEMPLATE_FORK_NOT_OWNER(
             "Bạn không có quyền chỉnh sửa bản fork này",
             HttpStatus.FORBIDDEN),

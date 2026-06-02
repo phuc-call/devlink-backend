@@ -28,6 +28,7 @@ import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
 import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
+import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkeditorpage.tsx';
 
 const router = createBrowserRouter([
 
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
                     {path: '/profile/:userId', element: <UserProfilePage/>},
                 ],
             },
+            {path: '/forks/:forkId/edit', element: <ForkEditorPage/>},
         ],
     },
 

@@ -32,6 +32,7 @@ public class UserTemplateFork {
     @Column(length = 255, nullable = false)
     private String title;
 
+
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 

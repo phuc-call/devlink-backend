@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LearningTemplateRepository extends JpaRepository<LearningTemplate, Long> {
@@ -70,4 +71,10 @@ public interface LearningTemplateRepository extends JpaRepository<LearningTempla
             @Param("tag") String tag,
             Pageable pageable);
 
+
+    Optional<LearningTemplate> findByIdAndStatus(Long id, TemplateStatus status);
+
+    @Modifying
+    @Query("UPDATE LearningTemplate lt SET lt.forkCount = lt.forkCount + 1 WHERE lt.id = :id")
+    void incrementForkCount(@Param("id") Long id);
 }

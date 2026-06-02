@@ -6,7 +6,15 @@ import type {
     TemplateResponse,
     MyTemplateListResponse,
     GetMyTemplatesParams,
+    AdminTemplateListResponse,
+    GetAdminTemplatesParams,
+    TemplateDetailResponse
 } from '../../types/template.types';
+
+import type {
+    ForkResponse
+} from '../../types/fork.types';
+
 
 /**
  * [ADMIN] Lấy danh sách difficulty + fileType
@@ -60,5 +68,23 @@ export const getMyTemplates = async (
     params: GetMyTemplatesParams = {},
 ): Promise<MyTemplateListResponse> => {
     const res = await axiosInstance.get('/api/posts/me', {params});
+    return res.data.data;
+};
+
+export const getAdminTemplates = async (
+    params: GetAdminTemplatesParams = {},
+): Promise<AdminTemplateListResponse> => {
+    const res = await axiosInstance.get('/api/posts/admin/template', { params });
+    return res.data.data;
+};
+
+export const getTemplateDetail = async (id: number): Promise<TemplateDetailResponse> => {
+    const res = await axiosInstance.get(`/api/posts/template/${id}`);
+    return res.data.data;
+};
+
+
+export const forkTemplate = async (templateId: number): Promise<ForkResponse> => {
+    const res = await axiosInstance.post(`/api/posts/${templateId}/fork`);
     return res.data.data;
 };

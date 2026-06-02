@@ -7,6 +7,8 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.SneakyThrows;
+import org.apache.tika.Tika;
+import org.apache.tika.config.TikaConfig;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Value;
@@ -125,6 +127,11 @@ public class AppConfig {
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
+    }
+
+    @Bean
+    public Tika tika() throws Exception {
+        return new Tika(TikaConfig.getDefaultConfig());
     }
 
 }

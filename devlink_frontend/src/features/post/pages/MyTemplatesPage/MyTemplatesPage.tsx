@@ -5,24 +5,22 @@ import {
     SlidersHorizontal, FileCode, FileText, Film,
     Table, File,
 } from 'lucide-react';
-import { getMyTemplates, getTemplateMetaOptions } from '../../../../api/post-service/learningTemplateApi';
+import { useNavigate } from 'react-router-dom';
+import { getMyTemplates, getTemplateMetaOptions, forkTemplate } from '../../../../api/post-service/learningTemplateApi';
 import type { MyTemplateResponse, TemplateMetaOptions } from '../../../../types/template.types';
 import styles from './MyTemplatesPage.module.css';
+import TemplateDetailModal from '../../../post/components/TemplateDetailModal.tsx';
+import { getMyForks } from '../../../../api/post-service/userTemplateForkApi.ts';
 
-// ─── helpers — lấy từ API, không hardcode ────────────────────────────────────
-
-// Label difficulty: backend trả BEGINNER/INTERMEDIATE/ADVANCED
-// Map sang tiếng Việt để hiển thị — nếu backend thêm mới sẽ fallback về chính giá trị đó
 function getDifficultyLabel(d: string): string {
     const map: Record<string, string> = {
         BEGINNER: 'Cơ bản',
         INTERMEDIATE: 'Trung bình',
         ADVANCED: 'Nâng cao',
     };
-    return map[d] ?? d; // fallback: hiển thị đúng tên backend trả về
+    return map[d] ?? d;
 }
 
-// CSS class difficulty
 function getDiffClass(difficulty: string): string {
     const map: Record<string, string> = {
         BEGINNER: styles.diffBeginner,
@@ -32,8 +30,6 @@ function getDiffClass(difficulty: string): string {
     return map[difficulty] ?? styles.diffBeginner;
 }
 
-// Icon fileType: backend trả CODE/PDF/DOCX/XLSX/VIDEO
-// Nếu backend thêm type mới → fallback về File icon
 function getFileTypeIcon(fileType: string): React.ReactNode {
     const map: Record<string, React.ReactNode> = {
         CODE:  <FileCode size={13} />,
@@ -61,12 +57,26 @@ function formatSize(bytes: number): string {
 
 interface TemplateCardProps {
     tpl: MyTemplateResponse;
+    forkId: number | undefined;
+    onDetail: (id: number) => void;
+    onFork: (id: number) => Promise<void>;
 }
 
-function TemplateCard({ tpl }: TemplateCardProps) {
+function TemplateCard({ tpl, forkId, onDetail, onFork }: TemplateCardProps) {
+    const [forking, setForking] = useState(false);
+    const navigate = useNavigate();
+
+    const handleFork = async () => {
+        setForking(true);
+        try {
+            await onFork(tpl.id);
+        } finally {
+            setForking(false);
+        }
+    };
+
     return (
         <div className={styles.card}>
-            {/* badges — tất cả giá trị đều từ tpl, không hardcode */}
             <div className={styles.cardTop}>
                 <span className={`${styles.badge} ${styles.badgeLang}`}>
                     {tpl.language}
@@ -88,15 +98,12 @@ function TemplateCard({ tpl }: TemplateCardProps) {
                 </div>
             </div>
 
-            {/* title */}
             <h3 className={styles.cardTitle}>{tpl.title}</h3>
 
-            {/* summary / desc */}
             {(tpl.aiSummary ?? tpl.description) && (
                 <p className={styles.cardDesc}>{tpl.aiSummary ?? tpl.description}</p>
             )}
 
-            {/* filename */}
             <p className={styles.cardFileName}>
                 {getFileTypeIcon(tpl.fileType)}
                 <span className={styles.fileNameText}>{tpl.fileName}</span>
@@ -105,7 +112,6 @@ function TemplateCard({ tpl }: TemplateCardProps) {
                 )}
             </p>
 
-            {/* meta */}
             <div className={styles.cardMeta}>
                 <span><Eye size={12} />{tpl.viewCount}</span>
                 <span><GitFork size={12} />{tpl.forkCount}</span>
@@ -114,64 +120,47 @@ function TemplateCard({ tpl }: TemplateCardProps) {
 
             <div className={styles.cardDivider} />
 
-            {/* actions */}
             <div className={styles.actions}>
-                {/* 3.3 getTemplateDetail */}
                 <button
                     className={`${styles.btn} ${styles.btnPrimary}`}
-                    title="3.3 · getTemplateDetail"
+                    onClick={() => onDetail(tpl.id)}
                 >
                     <Eye size={13} /> Xem chi tiết
                 </button>
 
-                {/* 3.4 forkTemplate | 3.5 updateFork */}
                 {tpl.isFork ? (
                     <button
                         className={`${styles.btn} ${styles.btnSuccess}`}
-                        title="3.5 · updateFork"
+                        onClick={() => navigate(`/forks/${forkId}/edit`)}
+                        disabled={!forkId}
                     >
                         <BookOpen size={13} /> Sửa fork
                     </button>
                 ) : (
                     <button
                         className={`${styles.btn} ${styles.btnOutline}`}
-                        title="3.4 · forkTemplate"
+                        onClick={handleFork}
+                        disabled={forking || tpl.fileType === 'VIDEO'}
                     >
-                        <GitFork size={13} /> Fork
+                        <GitFork size={13} /> {forking ? 'Đang fork...' : 'Fork'}
                     </button>
                 )}
 
-                {/* 3.7 downloadTemplate */}
-                <button
-                    className={`${styles.btn} ${styles.btnOutline}`}
-                    title="3.7 · downloadTemplate"
-                >
+                <button className={`${styles.btn} ${styles.btnOutline}`}>
                     <Download size={13} /> Tải xuống
                 </button>
 
-                {/* 3.6 resetFork — chỉ khi đã fork */}
                 {tpl.isFork && (
-                    <button
-                        className={`${styles.btn} ${styles.btnDanger}`}
-                        title="3.6 · resetFork"
-                    >
+                    <button className={`${styles.btn} ${styles.btnDanger}`}>
                         <RotateCcw size={13} /> Reset fork
                     </button>
                 )}
 
-                {/* 3.9 createSuggestion */}
-                <button
-                    className={`${styles.btn} ${styles.btnOutline}`}
-                    title="3.9 · createSuggestion"
-                >
+                <button className={`${styles.btn} ${styles.btnOutline}`}>
                     <MessageSquare size={13} /> Đề xuất sửa
                 </button>
 
-                {/* 3.8 askTemplateAI */}
-                <button
-                    className={`${styles.btn} ${styles.btnAI}`}
-                    title="3.8 · askTemplateAI"
-                >
+                <button className={`${styles.btn} ${styles.btnAI}`}>
                     <Sparkles size={13} /> Hỏi Gemini AI
                 </button>
             </div>
@@ -196,23 +185,36 @@ function SkeletonCard() {
 // ─── MyTemplatesPage ──────────────────────────────────────────────────────────
 
 export default function MyTemplatesPage() {
-    const [templates, setTemplates] = useState<MyTemplateResponse[]>([]);
-    // meta lấy từ API: { difficultly: string[], fileType: string[] }
-    const [meta, setMeta]           = useState<TemplateMetaOptions | null>(null);
-    const [loading, setLoading]     = useState(true);
-    const [error, setError]         = useState<string | null>(null);
-    const [hint, setHint]           = useState<string | null>(null);
-    const [total, setTotal]         = useState(0);
-
-    // filter state — giá trị đều từ meta API, không hardcode
+    const [templates, setTemplates]     = useState<MyTemplateResponse[]>([]);
+    const [meta, setMeta]               = useState<TemplateMetaOptions | null>(null);
+    const [loading, setLoading]         = useState(true);
+    const [error, setError]             = useState<string | null>(null);
+    const [hint, setHint]               = useState<string | null>(null);
+    const [total, setTotal]             = useState(0);
     const [difficulty, setDifficulty]   = useState('');
     const [fileTypeFilter, setFileType] = useState('');
     const [forkOnly, setForkOnly]       = useState(false);
+    const [detailId, setDetailId]       = useState<number | null>(null);
+    const [forkMap, setForkMap]         = useState<Record<number, number>>({});
 
-    // fetch meta từ GET /api/posts một lần khi mount
     useEffect(() => {
         getTemplateMetaOptions().then(setMeta).catch(() => undefined);
     }, []);
+
+    const fetchForkMap = useCallback(async () => {
+        try {
+            const forks = await getMyForks();
+            const map: Record<number, number> = {};
+            forks.forEach(f => { map[f.templateId] = f.forkId; });
+            setForkMap(map);
+        } catch {
+            // bỏ qua lỗi forkMap
+        }
+    }, []);
+
+    useEffect(() => {
+        void fetchForkMap();
+    }, [fetchForkMap]);
 
     const fetchTemplates = useCallback(async () => {
         setLoading(true);
@@ -237,8 +239,16 @@ export default function MyTemplatesPage() {
         void fetchTemplates();
     }, [fetchTemplates]);
 
-    // client-side filter fileType + forkOnly
-    // fileType filter dùng đúng giá trị backend trả về (CODE/PDF/DOCX/XLSX/VIDEO)
+    const handleFork = async (templateId: number) => {
+        try {
+            await forkTemplate(templateId);
+            await fetchTemplates();
+            await fetchForkMap();
+        } catch {
+            alert('Fork thất bại. Vui lòng thử lại.');
+        }
+    };
+
     const displayed = templates.filter(t => {
         if (fileTypeFilter && t.fileType !== fileTypeFilter) return false;
         if (forkOnly && !t.isFork) return false;
@@ -248,7 +258,6 @@ export default function MyTemplatesPage() {
     return (
         <div className={styles.page}>
 
-            {/* hint */}
             {!loading && hint && (
                 <div className={styles.hintBar}>
                     <BookOpen size={15} />
@@ -256,7 +265,6 @@ export default function MyTemplatesPage() {
                 </div>
             )}
 
-            {/* header */}
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.pageTitle}>Tài liệu học tập của tôi</h1>
@@ -276,11 +284,9 @@ export default function MyTemplatesPage() {
                 </button>
             </div>
 
-            {/* filter bar — options đến từ meta API, không hardcode */}
             <div className={styles.filterBar}>
                 <SlidersHorizontal size={15} color="#9CA3AF" />
 
-                {/* difficulty từ meta.difficultly */}
                 <select
                     className={styles.select}
                     value={difficulty}
@@ -289,13 +295,10 @@ export default function MyTemplatesPage() {
                 >
                     <option value="">Tất cả độ khó</option>
                     {meta?.difficultly.map(d => (
-                        <option key={d} value={d}>
-                            {getDifficultyLabel(d)}
-                        </option>
+                        <option key={d} value={d}>{getDifficultyLabel(d)}</option>
                     ))}
                 </select>
 
-                {/* fileType từ meta.fileType */}
                 <select
                     className={styles.select}
                     value={fileTypeFilter}
@@ -322,7 +325,6 @@ export default function MyTemplatesPage() {
                 )}
             </div>
 
-            {/* error */}
             {!loading && error && (
                 <div className={styles.errorBox}>
                     <span>{error}</span>
@@ -330,7 +332,6 @@ export default function MyTemplatesPage() {
                 </div>
             )}
 
-            {/* loading skeletons */}
             {loading && (
                 <div className={styles.grid}>
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -339,7 +340,6 @@ export default function MyTemplatesPage() {
                 </div>
             )}
 
-            {/* empty */}
             {!loading && !error && displayed.length === 0 && (
                 <div className={styles.empty}>
                     <BookOpen size={40} strokeWidth={1.5} color="#D1D5DB" />
@@ -350,13 +350,26 @@ export default function MyTemplatesPage() {
                 </div>
             )}
 
-            {/* grid */}
             {!loading && !error && displayed.length > 0 && (
                 <div className={styles.grid}>
                     {displayed.map(tpl => (
-                        <TemplateCard key={tpl.id} tpl={tpl} />
+                        <TemplateCard
+                            key={tpl.id}
+                            tpl={tpl}
+                            forkId={forkMap[tpl.id]}
+                            onDetail={setDetailId}
+                            onFork={handleFork}
+                        />
                     ))}
                 </div>
+            )}
+
+            {detailId !== null && (
+                <TemplateDetailModal
+                    templateId={detailId}
+                    meta={meta}
+                    onClose={() => setDetailId(null)}
+                />
             )}
         </div>
     );

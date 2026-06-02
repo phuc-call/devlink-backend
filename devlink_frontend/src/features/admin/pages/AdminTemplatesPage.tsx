@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BookOpen, Flag, Plus, X } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder.tsx';
 import CreateTemplateForm from '../components/CreateTemplateForm.tsx';
+import TemplateList from '../components/TemplateList.tsx';
 
 export default function AdminTemplatesPage() {
     const [showUploadModal, setShowUploadModal] = useState(false);
@@ -32,28 +33,10 @@ export default function AdminTemplatesPage() {
                 </button>
             </div>
 
-            {/* Filter */}
-            <div style={{ marginTop: 16 }}>
-                <SectionPlaceholder
-                    tag="Thanh loc"
-                    title="Loc template"
-                    description="Filter theo: language, difficulty, fileType, status. Search theo title. Sort theo: viewCount, forkCount, createdAt."
-                    height={80}
-                />
-            </div>
+            {/* Filter + Danh sach — thay 2 SectionPlaceholder bằng TemplateList thực */}
+            <TemplateList />
 
-            {/* Danh sach */}
-            <div style={{ marginTop: 16 }}>
-                <SectionPlaceholder
-                    tag="Grid / Table"
-                    title="Danh sach template"
-                    description="Card grid hoac table: thumbnail loai file | Title | Language | Difficulty | fileType | viewCount | forkCount | AI summary status | Status | Ngay tao | Hanh dong."
-                    height={380}
-                    icon={<BookOpen size={32} aria-hidden="true" />}
-                />
-            </div>
-
-            {/* Bottom section */}
+            {/* Bottom section — giữ nguyên như cũ */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
                 <SectionPlaceholder
                     tag="De xuat cho duyet (3.10)"

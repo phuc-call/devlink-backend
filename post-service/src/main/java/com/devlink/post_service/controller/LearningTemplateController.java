@@ -1,5 +1,6 @@
 package com.devlink.post_service.controller;
 
+import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
 import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.enums.Difficulty;
@@ -39,7 +40,7 @@ public class LearningTemplateController {
         TemplateFileTyeAndDifficultlyResponse response=learningTemplateService.getFileTypeAndDifficulty();
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok(response,"Success"));
+                .body(ApiResponse.ok(response,Constants.SUCCESSS));
     }
 
     @GetMapping("/me")
@@ -50,7 +51,7 @@ public class LearningTemplateController {
             @RequestParam(required = false) String tag
     ) {
         PagedResponse<TemplateCardResponse> result = learningTemplateService.getMyTemplates( page, size, difficulty, tag);
-        return ResponseEntity.ok(ApiResponse.ok(result, "Success"));
+        return ResponseEntity.ok(ApiResponse.ok(result, Constants.SUCCESSS));
     }
 
     @GetMapping("/admin/template")
@@ -63,6 +64,27 @@ public class LearningTemplateController {
         PagedResponse<TemplateCardResponse> result = learningTemplateService.getTemplates( page, size, difficulty, tag);
         return ResponseEntity.ok(ApiResponse.ok(result, "Success"));
     }
+    @GetMapping("template/{id}")
+    public ResponseEntity<ApiResponse<TemplateDetailResponse>> getTemplateDetail(
+            @PathVariable Long id
+    ) {
+
+        TemplateDetailResponse response = learningTemplateService.getTemplateDetail(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.ok(response, Constants.SUCCESSS));
+    }
+
+    @PostMapping("/{id}/fork")
+    public ResponseEntity<ApiResponse<ForkResponse>> forkTemplate(
+            @PathVariable Long id
+    ) {
+        ForkResponse response = learningTemplateService.forkTemplate(id);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(response));
+    }
+
 
 
 }

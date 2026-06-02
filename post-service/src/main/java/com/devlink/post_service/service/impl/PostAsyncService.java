@@ -2,24 +2,25 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.PostFile;
+import com.devlink.post_service.entity.PostMedia;
 import com.devlink.post_service.entity.UserSavedPost;
-import com.devlink.post_service.entity.UserStorageConfig;
 import com.devlink.post_service.entity.enums.*;
 import com.devlink.post_service.repository.*;
 import com.devlink.post_service.service.GeminiModerationService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,9 @@ public class PostAsyncService {
     private final ObjectMapper objectMapper;
     private final LearningTemplateRepository templateRepository;
     private final ApplicationContext applicationContext;
-
+    private final Tika tika;
+    private final PostMediaRepository postMediaRepository;
+    private static final int MAX_CHARS = 50_000;
 
     private PostAsyncService self() {
         return applicationContext.getBean(PostAsyncService.class);
@@ -84,15 +87,21 @@ public class PostAsyncService {
      * [ASYNC] Extract text từ file PDF/DOCX + tạo AI summary
      */
     @Async("postAsyncExecutor")
-
     public void processPostFile(Long postFileId) {
         PostFile postFile = postFileRepository.findById(postFileId).orElse(null);
         if (postFile == null) return;
 
         log.info("[Async][FileProcess] postFileId={}", postFileId);
         try {
-            // TODO: Apache PDFBox / POI để extract text thực tế
-            String extractedText = extractTextPlaceholder(postFile);
+            // Lấy PostMedia qua mediaId
+            PostMedia media = postMediaRepository.findById(postFile.getMediaId()).orElse(null);
+            if (media == null) return;
+
+            String fileUrl  = media.getUrl();
+            String ext      = media.getFileExtension();
+            TemplateFileType fileType = resolveFileType(ext);
+
+            String extractedText = extractText(fileUrl, fileType);
             if (extractedText != null) {
                 String summary = geminiModerationService.summarizeFileContent(extractedText);
                 postFile.setExtractedText(extractedText);
@@ -104,6 +113,7 @@ public class PostAsyncService {
             log.error("[Async][FileProcess] postFileId={} lỗi: {}", postFileId, e.getMessage());
         }
     }
+
 
     /**
      * [ASYNC] Auto-save bài PUBLIC vào storage của follower nếu topic/interest khớp
@@ -129,7 +139,6 @@ public class PostAsyncService {
             return;
         }
 
-        // 1 query duy nhất — DB tự filter match + chưa save
         List<Long> userIds = storageConfigRepository.findUserIdsToAutoSave(
                 post.getAuthorId(), post.getId(), tagsJson
         );
@@ -139,7 +148,7 @@ public class PostAsyncService {
             return;
         }
 
-        // Batch insert thay vì loop save từng cái
+
         List<UserSavedPost> toSave = userIds.stream()
                 .map(userId -> UserSavedPost.builder()
                         .userId(userId)
@@ -153,29 +162,27 @@ public class PostAsyncService {
         log.info("[Async][AutoSave] postId={} → auto-saved cho {} users", post.getId(), toSave.size());
     }
 
-    // helpers
 
-    private boolean isMatching(UserStorageConfig config, Set<String> postTags) {
-        return Stream.concat(
-                parseJson(config.getMatchTopics()).stream(),
-                parseJson(config.getMatchInterests()).stream()
-        ).map(String::toLowerCase).anyMatch(postTags::contains);
-    }
 
-    private List<String> parseJson(String json) {
-        if (json == null || json.isBlank()) return List.of();
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {
-            });
-        } catch (Exception e) {
-            return List.of();
+
+    public String extractText(String fileUrl, TemplateFileType fileType) {
+        if (fileType != TemplateFileType.PDF
+                && fileType != TemplateFileType.DOCX
+                && fileType != TemplateFileType.XLSX) {
+            return null;
         }
-    }
-
-    private String extractTextPlaceholder(PostFile postFile) {
-        // TODO: implement PDFBox / Apache POI
-        log.info("[FileExtract][PLACEHOLDER] mediaId={}", postFile.getMediaId());
-        return null;
+        try {
+            URL url = URI.create(fileUrl).toURL();
+            try (InputStream stream = url.openStream()) {
+                String text = tika.parseToString(stream,
+                        new org.apache.tika.metadata.Metadata(), MAX_CHARS);
+                return text.isBlank() ? null : text.trim();
+            }
+        } catch (Exception e) {
+            log.error("[Tika] extract failed | type={} url={} err={}",
+                    fileType, fileUrl, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -186,8 +193,7 @@ public class PostAsyncService {
     public void extractAndSummarizeTemplate(Long templateId, String fileUrl, TemplateFileType fileType) {
         log.info("[Async][Template] extract start id={}", templateId);
         try {
-            // TODO: implement với Apache Tika
-            String extractedText = null;
+            String extractedText = extractText(fileUrl, fileType);
 
             final String aiSummary = (extractedText != null && !extractedText.isBlank())
                     ? geminiModerationService.summarizeFileContent(extractedText)
@@ -197,10 +203,22 @@ public class PostAsyncService {
                 t.setExtractedText(extractedText);
                 t.setAiSummary(aiSummary);
                 templateRepository.save(t);
-                log.info("[Async][Template] done id={}", templateId);
+                log.info("[Async][Template] done id={} | summary={}",
+                        templateId, aiSummary != null ? "yes" : "no");
             });
         } catch (Exception e) {
             log.error("[Async][Template] failed id={}", templateId, e);
         }
+    }
+
+    private TemplateFileType resolveFileType(String ext) {
+        if (ext == null) return TemplateFileType.PDF;
+        return switch (ext.toLowerCase()) {
+            case "pdf" -> TemplateFileType.PDF;
+            case "docx", "doc" -> TemplateFileType.DOCX;
+            case "xlsx", "xls" -> TemplateFileType.XLSX;
+            case "mp4", "mov", "avi" -> TemplateFileType.VIDEO;
+            default -> TemplateFileType.CODE;
+        };
     }
 }
