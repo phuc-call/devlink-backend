@@ -34,8 +34,8 @@ public class CreateTemplateRequest {
 
     @NotNull(message = "File can not be null")
     private MultipartFile file;
-
+    @Size(max = 10, message = "Tags list cannot exceed 10 items")
     private List<String> tags;
-
+    @Size(max = 10, message = "Topics list cannot exceed 10 items")
     private List<String> topics;
 }

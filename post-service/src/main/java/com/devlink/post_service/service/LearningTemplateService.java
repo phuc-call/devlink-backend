@@ -71,14 +71,12 @@ public interface LearningTemplateService {
     ForkResponse forkTemplate(Long templateId);
 
     /**
-     * Change the template state and implement its correct functionally
-
-     * Input:  templateId , TemplateStatus
-     * Output: function
-
-     * Notes:
-     * reduce code complexity by using a switch statement
+     * Change the status of specific learning template
+     *This method validation the state transition rules before updating the template status
+     * @param templateId the unique ID of the template to be updated
+     * @param newStatus the new status to apply (ACTIVE, HIDDEN, or DELETE)
+     * @throws com.devlink.post_service.exception.AppException if the template is not found or the state transition is invalid
      */
-     void updateTemplateStatus(Long templateId, TemplateStatus statusParam);
+     void updateTemplateStatus(Long templateId, TemplateStatus newStatus);
 
 }

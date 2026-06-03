@@ -363,35 +363,18 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     }
 
     @Override
-    public void updateTemplateStatus(Long templateId, TemplateStatus statusParam){
+    public void updateTemplateStatus(Long templateId, TemplateStatus newStatus){
         LearningTemplate learningTemplate = templateRepository.findById(templateId)
                 .orElseThrow(() -> new AppException(ErrorCode.TEMPLATE_NOT_FOUND));
-        TemplateStatus currentStatus = learningTemplate.getStatus();
 
-        switch (statusParam){
-            case ACTIVE -> {
-                if(learningTemplate.getStatus().equals(TemplateStatus.HIDDEN)){
-                    learningTemplate.setStatus(statusParam);
-                    templateRepository.save(learningTemplate);
-                }else {
-                    throw new AppException(ErrorCode.INVALID_TEMPLATE_TYPE);
-                }
-            }
-            case HIDDEN -> {
-                if(learningTemplate.getStatus().equals(TemplateStatus.ACTIVE)){
-                    learningTemplate.setStatus(statusParam);
-                    templateRepository.save(learningTemplate);
-                }else {
-                    throw new AppException(ErrorCode.INVALID_TEMPLATE_TYPE);
-                }
-
-            }
-            case DELETED -> {
-                templateRepository.deleteById(templateId);
-            }
+        if(!newStatus.isValidTransitionFrom(learningTemplate.getStatus())){
+            throw new AppException(ErrorCode.INVALID_TEMPLATE_TYPE);
         }
-
+        if(newStatus.equals(TemplateStatus.DELETED)){
+            templateRepository.deleteById(templateId);
+            return;
+        }
+        learningTemplate.setStatus(newStatus);
+        templateRepository.save(learningTemplate);
     }
-    
-
 }

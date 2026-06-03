@@ -16,22 +16,24 @@ export interface UpdateForkRequest {
     title?: string;
 }
 
-// 3.3 — Lấy chi tiết fork của user theo forkId
+// 1. Lấy chi tiết Fork (Sửa lại trả về res.data)
 export const getForkDetail = async (forkId: number): Promise<ForkDetailResponse> => {
-    const res = await axiosInstance.get(`/api/posts/forks/${forkId}`);
-    return res.data.data;
+    const res = await axiosInstance.get(`/api/templates/forks/${forkId}`);
+    return res.data; // Đã fix xong tầng dữ liệu
 };
-// 3.5 — Chỉnh sửa nội dung fork
+
+// 2. Cập nhật bản Fork (Đổi từ .put sang .patch cho đúng Swagger)
 export const updateFork = async (forkId: number, data: UpdateForkRequest): Promise<ForkDetailResponse> => {
-    const res = await axiosInstance.put(`/api/posts/forks/${forkId}`, data);
+    const res = await axiosInstance.patch(`/api/templates/forks/${forkId}`, data);
     return res.data.data;
 };
 
-// 3.6 — Reset fork về nội dung gốc
+// 3. Reset bản Fork (Đổi từ .post sang .put cho đúng Swagger)
 export const resetFork = async (forkId: number): Promise<ForkDetailResponse> => {
-    const res = await axiosInstance.post(`/api/posts/forks/${forkId}/reset`);
+    const res = await axiosInstance.put(`/api/templates/forks/${forkId}/reset`);
     return res.data.data;
 };
+
 export interface ForkResponse {
     forkId: number;
     templateId: number;
@@ -39,8 +41,8 @@ export interface ForkResponse {
     isModified: boolean;
 }
 
-// Lấy danh sách tất cả fork của current user
+// 4. Lấy danh sách Fork (Giữ nguyên vì Backend bọc ApiResponse)
 export const getMyForks = async (): Promise<ForkResponse[]> => {
-    const res = await axiosInstance.get('/api/posts/forks/user/forks');
+    const res = await axiosInstance.get('/api/templates/forks/user/forks');
     return res.data.data;
 };

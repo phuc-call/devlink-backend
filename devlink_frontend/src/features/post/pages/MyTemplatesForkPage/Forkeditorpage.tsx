@@ -33,27 +33,30 @@ interface ForkResponse {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 const getForkDetail = async (forkId: number): Promise<ForkDetail> => {
-    const res = await axiosInstance.get(`/api/posts/forks/${forkId}`);
+    const res = await axiosInstance.get(`/api/templates/forks/${forkId}`);
     // backend trả thẳng ForkDetailResponse (không wrap data)
     return res.data;
 };
 
 const updateFork = async (forkId: number, content: string, title?: string): Promise<ForkResponse> => {
-    const res = await axiosInstance.patch(`/api/posts/forks/${forkId}`, { content, title });
-    return res.data.data;
+    // ĐÃ SỬA: Đổi sang /api/templates và bóc tách res.data trực tiếp để đồng bộ với cấu trúc trả về mới
+    const res = await axiosInstance.patch(`/api/templates/forks/${forkId}`, { content, title });
+    return res.data;
 };
 
 const resetFork = async (forkId: number): Promise<ForkResponse> => {
-    const res = await axiosInstance.put(`/api/posts/forks/${forkId}/reset`);
-    return res.data.data;
+    // ĐÃ SỬA: Đổi sang /api/templates và bóc tách res.data trực tiếp
+    const res = await axiosInstance.put(`/api/templates/forks/${forkId}/reset`);
+    return res.data;
 };
 
 const askAI = async (templateId: number, question: string, contextCode?: string) => {
-    const res = await axiosInstance.post(`/api/posts/templates/${templateId}/ask`, {
+    // ĐÃ SỬA: Đổi đầu /api/posts sang /api/templates
+    const res = await axiosInstance.post(`/api/templates/templates/${templateId}/ask`, {
         question,
         contextCode: contextCode || undefined,
     });
-    return res.data.data;
+    return res.data;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

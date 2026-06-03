@@ -81,7 +81,7 @@ spring:
             - id: post-service
               uri: lb://post-service
               predicates:
-                - Path=/api/posts/**
+                - Path=/api/templates/**, /api/posts/**
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
