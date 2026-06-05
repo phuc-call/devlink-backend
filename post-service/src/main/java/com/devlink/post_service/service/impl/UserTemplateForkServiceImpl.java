@@ -37,7 +37,7 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
     private String minioPublicEndpoint;
 
     @Override
-    public ForkResponse updateFork(Long forkId, UpdateForkRequest request){
+    public ForkResponse updateFork(Long forkId, UpdateForkRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
         UserTemplateFork fork = forkRepository.findById(forkId)
@@ -146,12 +146,13 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
     }
 
     @Override
-    public List<ForkResponse> getMyForks(){
-        Long userId=SecurityUtils.getCurrentUserId();
-        List<ForkResponse>responses=forkRepository.findForkOfCurrentUser(userId);
-        if(responses.isEmpty()){
+    public List<ForkResponse> getMyForks() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        List<ForkResponse> responses = forkRepository.findForkOfCurrentUser(userId);
+        if (responses.isEmpty()) {
             return List.of();
         }
         return responses;
     }
+
 }

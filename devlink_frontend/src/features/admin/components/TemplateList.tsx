@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
-    Eye, GitFork, Edit2, Trash2, ToggleLeft,
+    Eye, EyeOff, GitFork, Edit2, Trash2, ToggleRight,
     FileCode, FileText, Film, Table, File,
     RefreshCw, SlidersHorizontal, BookOpen,
     ChevronLeft, ChevronRight, AlertCircle,
@@ -10,6 +10,8 @@ import {
     getAdminTemplates,
     getTemplateMetaOptions,
     getSupportedLanguages,
+    getTemplateStatuses,
+    updateTemplateStatus,
 } from '../../../api/post-service/learningTemplateApi';
 import type {
     TemplateCardResponse,
@@ -20,6 +22,7 @@ import type {
 } from '../../../types/template.types';
 import styles from './TemplateList.module.css';
 import TemplateDetailModal from '../../post/components/TemplateDetailModal';
+
 
 const DIFF_LABEL: Record<string, string> = {
     BEGINNER: 'Cơ bản',
@@ -58,15 +61,8 @@ function formatDate(iso: string): string {
     });
 }
 
-interface StatCardProps { readonly label: string; readonly value: number | string; readonly color?: string }
-function StatCard({ label, value, color }: StatCardProps) {
-    return (
-        <div className={styles.statCard}>
-            <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statVal} style={color ? { color } : undefined}>{value}</span>
-        </div>
-    );
-}
+
+
 
 interface BadgeProps { readonly children: React.ReactNode; readonly className: string }
 function Badge({ children, className }: BadgeProps) {
@@ -81,9 +77,7 @@ interface ModalProps {
 function Modal({ title, onClose, children }: ModalProps) {
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
+            if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
@@ -117,6 +111,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ tpl, onDetail, onEdit, onStatus, onDelete }: TemplateCardProps) {
+    const isActive = tpl.status === 'ACTIVE';
     return (
         <div className={styles.card}>
             <div className={styles.cardTop}>
@@ -160,8 +155,14 @@ function TemplateCard({ tpl, onDetail, onEdit, onStatus, onDelete }: TemplateCar
                 <button className={`${styles.btn} ${styles.btnDefault}`} onClick={() => onEdit(tpl)}>
                     <Edit2 size={12} /> Sửa
                 </button>
-                <button className={`${styles.btn} ${styles.btnDefault}`} onClick={() => onStatus(tpl)}>
-                    <ToggleLeft size={12} /> Trạng thái
+                <button
+                    className={`${styles.btn} ${isActive ? styles.btnDefault : styles.btnSuccess}`}
+                    onClick={() => onStatus(tpl)}
+                >
+                    {isActive
+                        ? <><EyeOff size={12} /> Ẩn</>
+                        : <><ToggleRight size={12} /> Hiện</>
+                    }
                 </button>
                 <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => onDelete(tpl)}>
                     <Trash2 size={12} /> Xóa
@@ -189,6 +190,7 @@ export default function TemplateList() {
     const [templates, setTemplates] = useState<TemplateCardResponse[]>([]);
     const [meta, setMeta] = useState<TemplateMetaOptions | null>(null);
     const [langOptions, setLangOptions] = useState<string[]>([]);
+    const [statusOptions, setStatusOptions] = useState<string[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -210,19 +212,18 @@ export default function TemplateList() {
 
     const isInitialMount = useRef(true);
 
-    const stats = {
-        total: totalElements,
-        active: templates.filter(t => t.status === 'ACTIVE').length,
-        hidden: templates.filter(t => t.status === 'HIDDEN').length,
-        deleted: templates.filter(t => t.status === 'DELETED').length,
-    };
 
     useEffect(() => {
         let isMounted = true;
         Promise.all([
-            getTemplateMetaOptions().then((res) => { if (isMounted) setMeta(res); }).catch(() => undefined),
+            getTemplateMetaOptions()
+                .then((res) => { if (isMounted) setMeta(res); })
+                .catch(() => undefined),
             getSupportedLanguages()
                 .then((r: LanguageOptions) => { if (isMounted) setLangOptions(r.languages ?? []); })
+                .catch(() => undefined),
+            getTemplateStatuses()
+                .then((statuses) => { if (isMounted) setStatusOptions(statuses); })
                 .catch(() => undefined),
         ]);
         return () => { isMounted = false; };
@@ -236,9 +237,9 @@ export default function TemplateList() {
                 page,
                 size: PAGE_SIZE,
                 difficulty: filterDiff || undefined,
+                status: filterStatus || undefined,
             };
             const data: AdminTemplateListResponse = await getAdminTemplates(params);
-
             setTemplates(data.content);
             setTotalElements(data.totalElements);
             setTotalPages(data.totalPages);
@@ -276,33 +277,36 @@ export default function TemplateList() {
         setEditModal(null);
     }
 
-    async function handleChangeStatus(tpl: TemplateCardResponse, newStatus: string) {
-        if (tpl && newStatus) {
+    async function handleToggleStatus(tpl: TemplateCardResponse) {
+        const newStatus = tpl.status === 'ACTIVE' ? 'HIDDEN' : 'ACTIVE';
+        try {
+            await updateTemplateStatus(tpl.id, newStatus);
+            setTemplates(prev =>
+                prev.map(t => t.id === tpl.id ? { ...t, status: newStatus } : t)
+            );
             setStatusModal(null);
+        } catch {
+            // optionally show error toast here
         }
     }
 
     async function handleDelete(tpl: TemplateCardResponse) {
-        if (tpl.id) {
+        try {
+            await updateTemplateStatus(tpl.id, 'DELETED');
+            setTemplates(prev => prev.filter(t => t.id !== tpl.id));
             setDeleteModal(null);
+        } catch {
+            // optionally show error toast here
         }
-    }
-
-    function getStatusBtnClassName(s: string): string {
-        if (s === 'ACTIVE') return styles.btnSuccess;
-        if (s === 'HIDDEN') return styles.btnDefault;
-        return styles.btnDanger;
     }
 
     return (
         <div className={styles.wrap}>
-            <div className={styles.statsRow}>
-                <StatCard label="Tổng template" value={stats.total} />
-                <StatCard label="Đang hoạt động" value={stats.active} color="#16A34A" />
-                <StatCard label="Đã ẩn" value={stats.hidden} color="#F59E0B" />
-                <StatCard label="Đã xóa" value={stats.deleted} color="#DC2626" />
-            </div>
 
+
+
+
+            {/* ── Filter Bar ── */}
             <div className={styles.filterBar}>
                 <SlidersHorizontal size={15} color="#9CA3AF" aria-hidden="true" />
 
@@ -340,9 +344,11 @@ export default function TemplateList() {
                     aria-label="Chọn trạng thái"
                 >
                     <option value="">Tất cả trạng thái</option>
-                    <option value="ACTIVE">Hoạt động</option>
-                    <option value="HIDDEN">Đã ẩn</option>
-                    <option value="DELETED">Đã xóa</option>
+                    {statusOptions
+                        .filter(s => s !== 'DELETED')
+                        .map(s => (
+                            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
+                        ))}
                 </select>
 
                 <button
@@ -359,6 +365,7 @@ export default function TemplateList() {
                 )}
             </div>
 
+            {/* ── Error ── */}
             {!loading && error && (
                 <div className={styles.errorBox}>
                     <AlertCircle size={15} />
@@ -369,6 +376,7 @@ export default function TemplateList() {
                 </div>
             )}
 
+            {/* ── Skeleton ── */}
             {loading && (
                 <div className={styles.grid}>
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -377,6 +385,7 @@ export default function TemplateList() {
                 </div>
             )}
 
+            {/* ── Empty ── */}
             {!loading && !error && displayed.length === 0 && (
                 <div className={styles.empty}>
                     <BookOpen size={40} strokeWidth={1.5} color="#D1D5DB" aria-hidden="true" />
@@ -385,6 +394,7 @@ export default function TemplateList() {
                 </div>
             )}
 
+            {/* ── Grid ── */}
             {!loading && !error && displayed.length > 0 && (
                 <div className={styles.grid}>
                     {displayed.map(tpl => (
@@ -400,6 +410,7 @@ export default function TemplateList() {
                 </div>
             )}
 
+            {/* ── Pagination ── */}
             {!loading && totalPages > 1 && (
                 <div className={styles.pagination}>
                     <span className={styles.pageInfo}>
@@ -435,6 +446,7 @@ export default function TemplateList() {
                 </div>
             )}
 
+            {/* ── Modals ── */}
             {detailId !== null && (
                 <TemplateDetailModal
                     templateId={detailId}
@@ -477,28 +489,33 @@ export default function TemplateList() {
             )}
 
             {statusModal && (
-                <Modal title="Thay đổi trạng thái" onClose={() => setStatusModal(null)}>
+                <Modal
+                    title={statusModal.status === 'ACTIVE' ? 'Ẩn template' : 'Hiện template'}
+                    onClose={() => setStatusModal(null)}
+                >
                     <div className={styles.modalDesc}>
                         Trạng thái hiện tại:{' '}
                         <Badge className={getStatusClass(statusModal.status)}>
                             {STATUS_LABEL[statusModal.status] ?? statusModal.status}
                         </Badge>
                     </div>
-                    <div className={styles.statusBtnGroup}>
-                        {(['ACTIVE', 'HIDDEN', 'DELETED'] as const)
-                            .filter(s => s !== statusModal.status)
-                            .map(s => (
-                                <button
-                                    key={s}
-                                    className={`${styles.btn} ${getStatusBtnClassName(s)}`}
-                                    onClick={() => handleChangeStatus(statusModal, s)}
-                                >
-                                    → {STATUS_LABEL[s]}
-                                </button>
-                            ))}
-                    </div>
+                    <p className={styles.modalDescSub}>
+                        {statusModal.status === 'ACTIVE'
+                            ? 'Template sẽ bị ẩn, sinh viên sẽ không thể tìm thấy template này.'
+                            : 'Template sẽ được hiển thị lại, sinh viên có thể truy cập.'
+                        }
+                    </p>
                     <div className={styles.modalFooter}>
                         <button className={styles.btnCancel} onClick={() => setStatusModal(null)}>Hủy</button>
+                        <button
+                            className={`${styles.btn} ${statusModal.status === 'ACTIVE' ? styles.btnDefault : styles.btnSuccess}`}
+                            onClick={() => handleToggleStatus(statusModal)}
+                        >
+                            {statusModal.status === 'ACTIVE'
+                                ? <><EyeOff size={12} /> Xác nhận ẩn</>
+                                : <><ToggleRight size={12} /> Xác nhận hiện</>
+                            }
+                        </button>
                     </div>
                 </Modal>
             )}
@@ -510,7 +527,7 @@ export default function TemplateList() {
                         <strong>"{deleteModal.title}"</strong>?
                     </div>
                     <p className={styles.modalDescSub}>
-                        Template sẽ bị đánh dấu DELETED, sinh viên không thể truy cập.
+                        Template sẽ bị xóa vĩnh viễn khỏi hệ thống, sinh viên không thể truy cập.
                     </p>
                     <div className={styles.modalFooter}>
                         <button className={styles.btnCancel} onClick={() => setDeleteModal(null)}>Hủy</button>

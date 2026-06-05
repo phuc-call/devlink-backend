@@ -7,6 +7,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  resolve: {
+    alias: {
+      recharts: 'recharts/es6',
+    },
+  },
+  optimizeDeps: {
+    include: ['recharts'],
+    force: true,
+  },
   server: {
     proxy: {
       '/api': {

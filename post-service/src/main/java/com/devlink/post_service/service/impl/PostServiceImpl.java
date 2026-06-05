@@ -23,6 +23,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.internal.util.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,7 +46,11 @@ import java.util.stream.Collectors;
 public class PostServiceImpl implements PostService {
 
 
+    @Value("${minio.public-endpoint}")
+    private String publicEndpoint;
 
+    @Value("${minio.bucket}")
+    private String bucket;
     private final PostRepository postRepository;
     private final AccountRestrictionRepository restrictionRepository;
     private final PostFileRepository postFileRepository;
@@ -177,7 +185,7 @@ public class PostServiceImpl implements PostService {
                 .tags(post.getTags().stream().map(PostTag::getTag).toList())
                 .mediaList(mediaList.stream().map(m -> MediaResponse.builder()
                         .id(m.getId()).mediaType(m.getMediaType())
-                        .url(m.getUrl()).originalName(m.getOriginalName())
+                        .url(publicEndpoint + "/" + bucket + "/" + m.getUrl())
                         .fileExtension(m.getFileExtension())
                         .fileSize(m.getFileSize()).orderIndex(m.getOrderIndex())
                         .build()).toList())

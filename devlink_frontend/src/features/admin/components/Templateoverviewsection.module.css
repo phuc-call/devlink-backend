@@ -1,0 +1,341 @@
+/* ─── Wrap ───────────────────────────────────────────────────────────────────── */
+.wrap {
+    background: #FFFFFF;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+.title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+.subtitle {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: #9CA3AF;
+}
+
+/* ─── Refresh ────────────────────────────────────────────────────────────────── */
+.refreshBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 8px;
+    background: #F9FAFB;
+    color: #9CA3AF;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.refreshBtn:hover:not(:disabled) { background: #F3F4F6; color: #374151; border-color: #D1D5DB; }
+.refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.spinning { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Error ──────────────────────────────────────────────────────────────────── */
+.errorBox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #FEF2F2;
+    border: 0.5px solid #FECACA;
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #DC2626;
+    font-size: 13px;
+}
+.btnRetry {
+    margin-left: auto;
+    height: 28px;
+    padding: 0 12px;
+    border: 0.5px solid #FECACA;
+    border-radius: 6px;
+    background: #FFFFFF;
+    color: #DC2626;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+}
+.btnRetry:hover { background: #FEE2E2; }
+
+/* ─── Stat Grid ──────────────────────────────────────────────────────────────── */
+.statGrid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
+.statCard {
+    background: #FAFAFA;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.statLabel {
+    font-size: 11px;
+    color: #9CA3AF;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.statVal {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* ─── Chart Grid ─────────────────────────────────────────────────────────────── */
+.chartGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.chartCard {
+    background: #FAFAFA;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.chartCardTitle {
+    margin: 0 0 14px;          /* ← tăng breathing room giữa title và chart */
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.01em;
+}
+
+/* ─── Lang Legend (dưới chart) ───────────────────────────────────────────────── */
+.langLegend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 0.5px solid #F3F4F6;
+}
+.langDot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #6B7280;
+    font-weight: 500;
+}
+.langDotCircle {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ─── Tooltip ────────────────────────────────────────────────────────────────── */
+.tooltip {
+    background: #1F2937;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.tooltipLabel { margin: 0 0 2px; color: #9CA3AF; font-weight: 600; font-size: 11px; }
+.tooltipVal   { margin: 0; color: #FFFFFF; font-weight: 700; }
+
+/* ─── Table Wrap ─────────────────────────────────────────────────────────────── */
+.tableWrap {
+    background: #FAFAFA;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 16px;
+}
+.tableHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.tableTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.tableCount {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9CA3AF;
+}
+.tableScroll { overflow-x: auto; }
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 680px;
+}
+.table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #9CA3AF;
+    border-bottom: 0.5px solid #E5E7EB;
+    white-space: nowrap;
+    background: #F9FAFB;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.table th:first-child { border-radius: 8px 0 0 8px; }
+.table th:last-child  { border-radius: 0 8px 8px 0; }
+
+.table td {
+    padding: 10px 12px;
+    border-bottom: 0.5px solid #F3F4F6;
+    color: #374151;
+    vertical-align: middle;
+}
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: #F9FAFB; transition: background 0.1s; }
+
+.tdMuted  { color: #9CA3AF !important; font-size: 11px; }
+.tdTitle  { font-weight: 600; color: #111827 !important; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tdNum    { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.tdCenter { text-align: center; }
+
+/* ─── Rank Badges ────────────────────────────────────────────────────────────── */
+.rankBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+}
+.rankGold   { background: #FEF9C3; font-size: 16px; }
+.rankSilver { background: #F1F5F9; font-size: 16px; }
+.rankBronze { background: #FEF3E2; font-size: 16px; }
+
+/* ─── Status Badges ──────────────────────────────────────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+/* Pastel/muted tones — không chói */
+.badgeActive  { background: #ECFDF5; color: #059669; }
+.badgeHidden  { background: #FFFBEB; color: #B45309; }
+.badgeDeleted { background: #FFF1F2; color: #BE123C; }
+
+/* Language & Difficulty tags — màu derive từ colorMap (inline style) */
+.badgeLang {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.badgeDiff {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ─── Show More Button ───────────────────────────────────────────────────────── */
+.showMoreWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 12px;
+    margin-top: 4px;
+    border-top: 0.5px solid #F3F4F6;
+}
+.btnShowMore {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: #6B7280;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btnShowMore:hover {
+    background: #F9FAFB;
+    color: #374151;
+    border-color: #D1D5DB;
+}
+
+/* ─── Skeleton ───────────────────────────────────────────────────────────────── */
+.sk {
+    border-radius: 14px;
+    background: linear-gradient(90deg, #F3F4F6 25%, #E9EBEE 50%, #F3F4F6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skStatGrid  { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.skStat      { height: 72px; }
+.skChartGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.skChart     { height: 200px; }
+.skTable     { height: 200px; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .statGrid   { grid-template-columns: repeat(3, 1fr); }
+    .skStatGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+    .chartGrid   { grid-template-columns: 1fr 1fr; }
+    .skChartGrid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+    .statGrid    { grid-template-columns: repeat(2, 1fr); }
+    .skStatGrid  { grid-template-columns: repeat(2, 1fr); }
+    .chartGrid   { grid-template-columns: 1fr; }
+    .skChartGrid { grid-template-columns: 1fr; }
+}

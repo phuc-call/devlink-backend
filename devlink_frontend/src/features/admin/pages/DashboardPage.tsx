@@ -4,6 +4,7 @@ import {
     TrendingUp, MessageSquare, Eye, Activity,
 } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder';
+import TemplateOverviewSection from '../components/TemplateOverviewSection';
 
 interface StatCardProps {
     label: string;
@@ -44,13 +45,12 @@ function StatCard({ label, description, icon, color, bg }: Readonly<StatCardProp
     );
 }
 
-
 export default function DashboardPage() {
     return (
-        <div style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Page title */}
-            <div style={{ marginBottom: 24 }}>
+            <div>
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
                     Dashboard
                 </h1>
@@ -60,34 +60,29 @@ export default function DashboardPage() {
             </div>
 
             {/* ── Stat cards row ── */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 16, marginBottom: 24,
-            }}>
-                <StatCard label="Tổng người dùng"      description="Hiển thị tổng số tài khoản"          icon={<Users size={20}/>}        color="#3B82F6" bg="#EFF6FF"/>
-                <StatCard label="Bài viết hôm nay"     description="Số bài đăng trong 24h"               icon={<FileText size={20}/>}     color="#22C55E" bg="#F0FDF4"/>
-                <StatCard label="Template học tập"     description="Tổng template đang active"           icon={<BookOpen size={20}/>}     color="#F59E0B" bg="#FFFBEB"/>
-                <StatCard label="Báo cáo chờ duyệt"   description="Số vi phạm chưa xử lý"              icon={<ShieldAlert size={20}/>}  color="#EF4444" bg="#FEF2F2"/>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                <StatCard label="Tổng người dùng"    description="Hiển thị tổng số tài khoản"  icon={<Users size={20}/>}       color="#3B82F6" bg="#EFF6FF"/>
+                <StatCard label="Bài viết hôm nay"   description="Số bài đăng trong 24h"        icon={<FileText size={20}/>}    color="#22C55E" bg="#F0FDF4"/>
+                <StatCard label="Template học tập"   description="Tổng template đang active"    icon={<BookOpen size={20}/>}    color="#F59E0B" bg="#FFFBEB"/>
+                <StatCard label="Báo cáo chờ duyệt" description="Số vi phạm chưa xử lý"        icon={<ShieldAlert size={20}/>} color="#EF4444" bg="#FEF2F2"/>
             </div>
 
-            {/* ── Main grid: chart + recent ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
+            {/* ── Template Overview: stat cards + charts + items table ── */}
+            <TemplateOverviewSection />
 
-                {/* Chart area */}
+            {/* ── Main grid: chart + recent ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                 <SectionPlaceholder
                     tag="Biểu đồ"
                     title="Hoạt động theo ngày"
-                    description="Biểu đồ line/bar hiển thị số bài đăng mới, người dùng đăng ký, lượt xem theo từng ngày trong 30 ngày gần nhất. Tích hợp recharts."
+                    description="Biểu đồ line/bar hiển thị số bài đăng mới, người dùng đăng ký, lượt xem theo từng ngày trong 30 ngày gần nhất."
                     height={280}
                     icon={<TrendingUp size={32}/>}
                 />
-
-                {/* Quick stats */}
                 <SectionPlaceholder
                     tag="Thống kê nhanh"
                     title="Top metrics hôm nay"
-                    description="Lượt xem toàn site, bài viết đang review AI, comment mới, template được fork. Hiển thị dạng list số liệu nhanh."
+                    description="Lượt xem toàn site, bài viết đang review AI, comment mới, template được fork."
                     height={280}
                     icon={<Activity size={32}/>}
                 />
@@ -95,7 +90,6 @@ export default function DashboardPage() {
 
             {/* ── Bottom grid ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-
                 <SectionPlaceholder
                     tag="Người dùng"
                     title="Tài khoản đăng ký gần đây"
@@ -103,30 +97,28 @@ export default function DashboardPage() {
                     height={220}
                     icon={<Users size={28}/>}
                 />
-
                 <SectionPlaceholder
                     tag="Nội dung"
                     title="Bài viết chờ kiểm duyệt"
-                    description="Danh sách bài viết có AI moderation status = PENDING hoặc FLAGGED, cần admin xem xét thủ công."
+                    description="Danh sách bài viết có AI moderation status = PENDING hoặc FLAGGED."
                     height={220}
                     icon={<FileText size={28}/>}
                 />
-
                 <SectionPlaceholder
                     tag="Báo cáo"
                     title="Vi phạm mới nhất"
-                    description="Danh sách comment/bài viết bị báo cáo gần đây nhất. Click để điều hướng tới trang Reports."
+                    description="Danh sách comment/bài viết bị báo cáo gần đây nhất."
                     height={220}
                     icon={<ShieldAlert size={28}/>}
                 />
             </div>
 
             {/* ── Engagement row ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <SectionPlaceholder
                     tag="Tương tác"
                     title="Bình luận & lượt thích theo giờ"
-                    description="Biểu đồ area chart theo giờ trong ngày hôm nay. Cho thấy giờ nào cao điểm tương tác."
+                    description="Biểu đồ area chart theo giờ trong ngày hôm nay."
                     height={180}
                     icon={<MessageSquare size={28}/>}
                 />

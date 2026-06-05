@@ -8,7 +8,8 @@ import type {
     GetMyTemplatesParams,
     AdminTemplateListResponse,
     GetAdminTemplatesParams,
-    TemplateDetailResponse
+    TemplateDetailResponse,
+    OverviewOfTemplate
 } from '../../types/template.types';
 
 import type {
@@ -92,3 +93,55 @@ export const forkTemplate = async (templateId: number): Promise<ForkResponse> =>
     const res = await axiosInstance.post(`/api/templates/${templateId}/fork`);
     return res.data.data;
 };
+
+/**
+ * [ADMIN] Lấy danh sách trạng thái template
+ */
+export const getTemplateStatuses = async (): Promise<string[]> => {
+    const res = await axiosInstance.get('/api/templates/admin/status');
+    return res.data.data;
+};
+
+/**
+ * [ADMIN] Cập nhật trạng thái template
+ */
+export const updateTemplateStatus = async (
+    templateId: number,
+    status: string,
+): Promise<void> => {
+    await axiosInstance.patch(`/api/templates/${templateId}/status`, null, {
+        params: { status },
+    });
+};
+
+export const updateAdminTemplate = async (
+    templateId: number,
+    title: string,
+    difficulty: string
+): Promise<void> => {
+    // Matches your PATCH controller definition from the Swagger spec image
+    await axiosInstance.patch(`/api/templates/admin/${templateId}`, {
+        title,
+        difficulty
+    });
+};
+
+export const getTemplateOverview = async (
+    startDate: string, // ISO string, VD: "2026-05-01T00:00:00.000Z"
+    endDate: string,   // ISO string, VD: "2026-05-07T23:59:59.000Z"
+): Promise<OverviewOfTemplate> => {
+    const res = await axiosInstance.get('/api/templates/admin/overview', {
+        params: { startDate, endDate },
+    });
+    // API trả về { success, data: { data: OverviewOfTemplate } } hoặc { success, data: OverviewOfTemplate }
+    return res.data.data?.data ?? res.data.data;
+};
+
+
+
+
+
+
+
+
+

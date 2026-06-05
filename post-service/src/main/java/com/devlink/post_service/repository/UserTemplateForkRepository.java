@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 @Repository
@@ -21,5 +22,23 @@ public interface UserTemplateForkRepository extends JpaRepository<UserTemplateFo
                                                 WHERE t.userId=:userId""")
     List<ForkResponse> findForkOfCurrentUser(@Param("userId") Long userId);
 
+    @Query("""
+    SELECT f.templateId, COUNT(f.id)
+    FROM UserTemplateFork f
+    WHERE f.createdAt BETWEEN :start AND :end
+    GROUP BY f.templateId
+""")
+    List<Object[]> countForksByTemplateIdBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
+    @Query(value = "SELECT f.template_id FROM user_template_forks f " +
+            "WHERE f.created_at >= :startLocal AND f.created_at <= :endLocal " +
+            "GROUP BY f.template_id " +
+            "ORDER BY COUNT(f.id) DESC LIMIT 1", nativeQuery = true)
+    Optional<Long> findMostForkedTemplateIdInPeriod(
+            @Param("startLocal") LocalDateTime startLocal,
+            @Param("endLocal") LocalDateTime endLocal
+    );
 }

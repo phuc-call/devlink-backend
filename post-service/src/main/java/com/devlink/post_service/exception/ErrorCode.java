@@ -7,127 +7,144 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     POST_CONTENT_EMPTY(
-            "Bài viết phải có nội dung hoặc file đính kèm",
+            "Post must have content or at least one attachment",
             HttpStatus.BAD_REQUEST),
 
     POST_FILE_REQUIRED(
-            "Bài viết kiểu FILE phải đính kèm ít nhất 1 file",
+            "FILE type post must have at least one attachment",
             HttpStatus.BAD_REQUEST),
 
     POST_FILE_TOO_LARGE(
-            "File vượt quá giới hạn 50MB",
+            "File exceeds the 50MB limit",
             HttpStatus.BAD_REQUEST),
 
     FILE_UPLOAD_FAILED(
-            "File hiện tại không hợp lệ vui lòng thử lại sao",
+            "File is invalid, please try again",
             HttpStatus.BAD_REQUEST),
+
     POST_FILE_UNSUPPORTED_FORMAT(
-            "Định dạng file không được hỗ trợ",
+            "File format is not supported",
             HttpStatus.BAD_REQUEST),
 
     POST_ACCOUNT_RESTRICTED(
-            "Tài khoản của bạn đang bị hạn chế đăng bài",
+            "Your account has been restricted from posting",
             HttpStatus.FORBIDDEN),
 
     POST_NOT_FOUND(
-            "Không tìm thấy bài viết",
+            "Post not found",
             HttpStatus.NOT_FOUND),
+
     COMMENT_NOT_FOUND(
-            "Không tìm thấy bình luận",
+            "Comment not found",
             HttpStatus.NOT_FOUND),
+
     FORBIDDEN(
-            "Bạn không có quyền thực hiện thao tác này",
+            "You do not have permission to perform this action",
             HttpStatus.FORBIDDEN),
 
     POST_ALREADY_DELETED(
-            "Bài viết đã bị xoá",
+            "Post has already been deleted",
             HttpStatus.BAD_REQUEST),
 
     POST_FORBIDDEN(
-            "Bạn không có quyền thực hiện thao tác này",
+            "You do not have permission to perform this action",
             HttpStatus.FORBIDDEN),
 
     AI_SERVICE_UNAVAILABLE(
-            "Dịch vụ AI tạm thời không khả dụng, vui lòng thử lại sau",
+            "AI service is temporarily unavailable, please try again later",
             HttpStatus.SERVICE_UNAVAILABLE),
+
     POST_FILE_EMPTY(
-    "File không được rỗng",
-    HttpStatus.BAD_REQUEST),
+            "File must not be empty",
+            HttpStatus.BAD_REQUEST),
 
     INVALID_POST_TYPE(
-            "Loại bài viết không hợp lệ",
+            "Invalid post type",
             HttpStatus.BAD_REQUEST),
 
     POST_TOO_MANY_FILES(
-    "Tối đa 10 file mỗi bài viết",
-    HttpStatus.BAD_REQUEST),
-
-
+            "Maximum 10 files per post",
+            HttpStatus.BAD_REQUEST),
 
     TEMPLATE_NOT_FOUND(
-            "Không tìm thấy template",
+            "Template not found",
             HttpStatus.NOT_FOUND),
 
     INVALID_TEMPLATE_TYPE(
-            "Loại xử lý này đã được xử lý",
+            "This type has already been processed",
             HttpStatus.BAD_REQUEST),
 
-
     TEMPLATE_LANGUAGE_NOT_SUPPORTED(
-            "Ngôn ngữ lập trình không được hỗ trợ",
+            "Programming language is not supported",
             HttpStatus.BAD_REQUEST),
 
     TEMPLATE_FILE_TYPE_MISMATCH(
-            "Loại file không khớp với định dạng file thực tế",
+            "File type does not match the actual file format",
             HttpStatus.BAD_REQUEST),
 
     TEMPLATE_FILE_TOO_LARGE(
-            "File template vượt quá giới hạn 100MB",
+            "Template file exceeds the 100MB limit",
             HttpStatus.BAD_REQUEST),
 
     TEMPLATE_FORK_NOT_FOUND(
-            "Không tìm thấy bản fork",
+            "Fork not found",
             HttpStatus.NOT_FOUND),
+
     FORK_NOT_ALLOWED(
-            "Không chấp nhận video",
+            "Video files are not accepted",
             HttpStatus.NOT_FOUND),
+
     TEMPLATE_FORK_NOT_OWNER(
-            "Bạn không có quyền chỉnh sửa bản fork này",
+            "You do not have permission to edit this fork",
             HttpStatus.FORBIDDEN),
 
     TEMPLATE_VIDEO_CANNOT_FORK(
-            "File VIDEO không thể fork",
+            "VIDEO files cannot be forked",
             HttpStatus.BAD_REQUEST),
 
     TEMPLATE_TOO_MANY_PENDING_SUGGESTIONS(
-            "Bạn đã có 3 đề xuất đang chờ duyệt cho template này",
+            "You already have 3 pending suggestions for this template",
             HttpStatus.TOO_MANY_REQUESTS),
 
     TEMPLATE_SUGGESTION_NOT_FOUND(
-            "Không tìm thấy đề xuất",
+            "Suggestion not found",
             HttpStatus.NOT_FOUND),
 
     TEMPLATE_SUGGESTION_ALREADY_REVIEWED(
-            "Đề xuất này đã được xử lý rồi",
+            "This suggestion has already been reviewed",
             HttpStatus.BAD_REQUEST),
 
-
     POST_FILE_TOTAL_SIZE_EXCEEDED(
-    "Tổng dung lượng file không được vượt quá 200MB",
-    HttpStatus.BAD_REQUEST),
+            "Total file size must not exceed 200MB",
+            HttpStatus.BAD_REQUEST),
 
-    PARENT_COMMENT_NOT_FOUND( "Comment cha không tồn tại trong bài viết này", HttpStatus.BAD_REQUEST),
-    COMMENT_GLOBALLY_LOCKED("Tài khoản của bạn đang bị khóa chức năng bình luận", HttpStatus.FORBIDDEN),
-    COMMENT_POST_LOCKED("Bài viết này đang bị khóa bình luận với tài khoản của bạn", HttpStatus.FORBIDDEN),
-    CONTENT_REJECTED_BY_AI("Nội dung bình luận vi phạm tiêu chuẩn cộng đồng", HttpStatus.BAD_REQUEST),
+    PARENT_COMMENT_NOT_FOUND(
+            "Parent comment does not exist in this post",
+            HttpStatus.BAD_REQUEST),
 
+    COMMENT_GLOBALLY_LOCKED(
+            "Your account has been banned from commenting",
+            HttpStatus.FORBIDDEN),
 
-    POST_COMMENT_COUNT_UPDATE_FAILED(  "Cập nhật số lượng comment thất bại",HttpStatus.BAD_REQUEST),
+    COMMENT_POST_LOCKED(
+            "This post has been locked for commenting on your account",
+            HttpStatus.FORBIDDEN),
+
+    CONTENT_REJECTED_BY_AI(
+            "Comment content violates community standards",
+            HttpStatus.BAD_REQUEST),
+
+    POST_COMMENT_COUNT_UPDATE_FAILED(
+            "Failed to update comment count",
+            HttpStatus.BAD_REQUEST),
+
     POST_NOT_YOURSELF(
-    "Chỉ dược xóa bài viết của bạn",
-    HttpStatus.BAD_REQUEST);
+            "You can only delete your own posts",
+            HttpStatus.BAD_REQUEST),
 
-
+    INVALID_DATE_RANGE(
+            "Invalid date range: start date must be before end date and follow the correct format (yyyy-MM-dd)",
+            HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;
@@ -136,5 +153,4 @@ public enum ErrorCode {
         this.message = message;
         this.httpStatus = httpStatus;
     }
-
 }

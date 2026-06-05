@@ -87,6 +87,7 @@ export interface GetAdminTemplatesParams {
     size?: number;
     difficulty?: string;
     tag?: string;
+    status?: string;
 }
 
 export interface TemplateDetailResponse {
@@ -116,4 +117,51 @@ export interface TemplateDetailResponse {
 export interface TemplateAuthorInfo {
     userName: string;
     avatar: string | null;
+}
+
+
+export interface OverviewOfTemplate {
+    overviewHidden: number;
+    overviewAction: number;
+    overviewTemplate: number;
+    overviewFork: number;
+    overviewWatch: number;
+    overviewFileType: number;
+    overviewOldDate: string;
+    overviewNewDate: string;
+}
+
+export interface TemplateOverviewItem {
+    id: number;
+    title: string;
+    language: string;
+    difficulty: string;
+    fileType: string;
+    status: string;
+    viewCount: number;
+    forkCount: number;
+    createdAt: string;
+}
+
+export interface OverviewOfTemplate {
+    overviewHidden: number;
+    overviewAction: number;
+    overviewTemplate: number;
+    overviewFork: number;
+    overviewWatch: number;
+    overviewFileType: number;
+    overviewOldDate: string;
+    overviewNewDate: string;
+    items: TemplateOverviewItem[];
+    byLanguage: Record<string, number>;
+    byFileType: Record<string, number>;
+    byDifficulty: Record<string, number>;
+}
+
+export interface ApiResponse<T> {
+    success: boolean;
+    code: string | null;
+    message: string | null;
+    data: T;
+    localDateTime: string;
 }

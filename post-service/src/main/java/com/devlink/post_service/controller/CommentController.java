@@ -14,9 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * CommentType dùng để điều phối để update comment parent và comment chilrent
- */
+
 @RestController
 @RequestMapping("/api/posts/comments")
 @RequiredArgsConstructor
