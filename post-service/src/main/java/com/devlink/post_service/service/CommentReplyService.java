@@ -14,6 +14,6 @@ public interface CommentReplyService {
      * @return
      */
     CommentReplyResponse createReply(CreateCommentReplyRequest request);
-    Page<CommentReplySummaryResponse> getReplies(Long commentId, int page);
+    Page<CommentReplySummaryResponse> getReplies(Long commentId, int page,int size);
 
 }

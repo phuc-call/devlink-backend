@@ -10,8 +10,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
 @Repository
-public interface UserTemplateForkRepository extends JpaRepository<UserTemplateFork,Long> {
+public interface UserTemplateForkRepository extends JpaRepository<UserTemplateFork, Long> {
     Optional<UserTemplateFork> findByUserIdAndTemplateId(Long userId, Long templateId);
 
     @Query("""
@@ -23,11 +24,11 @@ public interface UserTemplateForkRepository extends JpaRepository<UserTemplateFo
     List<ForkResponse> findForkOfCurrentUser(@Param("userId") Long userId);
 
     @Query("""
-    SELECT f.templateId, COUNT(f.id)
-    FROM UserTemplateFork f
-    WHERE f.createdAt BETWEEN :start AND :end
-    GROUP BY f.templateId
-""")
+                SELECT f.templateId, COUNT(f.id)
+                FROM UserTemplateFork f
+                WHERE f.createdAt BETWEEN :start AND :end
+                GROUP BY f.templateId
+            """)
     List<Object[]> countForksByTemplateIdBetween(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
@@ -41,4 +42,18 @@ public interface UserTemplateForkRepository extends JpaRepository<UserTemplateFo
             @Param("startLocal") LocalDateTime startLocal,
             @Param("endLocal") LocalDateTime endLocal
     );
+
+    @Query("""
+                SELECT f
+                FROM UserTemplateFork f
+                JOIN LearningTemplate t ON t.id = f.templateId
+                WHERE f.userId = :userId
+                AND f.templateId = :templateId
+                AND t.status = 'ACTIVE'
+            """)
+    Optional<UserTemplateFork> findForkStatusByUserIdAndTemplateId(
+            @Param("userId") Long userId,
+            @Param("templateId") Long templateId
+    );
+
 }

@@ -8,6 +8,7 @@ import com.devlink.post_service.dto.response.CommentSummaryResponse;
 import com.devlink.post_service.entity.enums.CommentType;
 import com.devlink.post_service.service.CommentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -39,13 +40,14 @@ public class CommentController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CommentSummaryResponse>>> getComments(
             @RequestParam Long postId,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(50) int size
     ) {
-        Page<CommentSummaryResponse> response = commentService.getComments(postId, page);
+        Page<CommentSummaryResponse> response = commentService.getComments(postId, page, size);
         return ResponseEntity.ok(
                 ApiResponse.<Page<CommentSummaryResponse>>builder()
                         .success(true)
-                        .message("Lấy danh sách bình luận thành công")
+                        .message("Comments retrieved successfully")
                         .data(response)
                         .build()
         );

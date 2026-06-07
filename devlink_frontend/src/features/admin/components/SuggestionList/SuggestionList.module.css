@@ -1,0 +1,206 @@
+.wrap {
+    background: #FFFFFF;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid #E5E7EB;
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: #DBEAFE;
+    color: #1D4ED8;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9999px;
+}
+
+.refreshBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #6B7280;
+}
+.refreshBtn:hover { background: #F3F4F6; }
+.refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+
+.error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #FEF2F2;
+    color: #DC2626;
+    font-size: 13px;
+}
+.error button {
+    background: none;
+    border: none;
+    color: #DC2626;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+}
+
+.skeletonWrap { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.skeletonRow {
+    height: 40px;
+    background: #F3F4F6;
+    border-radius: 6px;
+    animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 13px;
+}
+
+.tableWrap { overflow-x: auto; }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.table thead tr {
+    border-bottom: 0.5px solid #E5E7EB;
+}
+.table thead th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B7280;
+    white-space: nowrap;
+}
+
+.row {
+    border-bottom: 0.5px solid #F3F4F6;
+    transition: background 0.1s;
+}
+.row:hover { background: #F9FAFB; }
+.row td { padding: 10px 16px; }
+
+.userCell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.avatarFallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    background: #DBEAFE;
+    color: #1D4ED8;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.userName {
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.idCell {
+    color: #6B7280;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.dateCell {
+    color: #6B7280;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.statusPending   { background: #FFFBEB; color: #92400E; }
+.statusReviewing { background: #DBEAFE; color: #1D4ED8; }
+
+.viewBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: none;
+    border: 0.5px solid #D1D5DB;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #374151;
+    cursor: pointer;
+}
+.viewBtn:hover { background: #F3F4F6; border-color: #9CA3AF; }
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 0.5px solid #E5E7EB;
+}
+.pageBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: 0.5px solid #E5E7EB;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #6B7280;
+}
+.pageBtn:hover:not(:disabled) { background: #F3F4F6; }
+.pageBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pageInfo { font-size: 12px; color: #6B7280; }

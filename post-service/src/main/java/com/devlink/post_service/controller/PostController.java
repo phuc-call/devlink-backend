@@ -6,6 +6,7 @@ import com.devlink.post_service.dto.response.ApiResponse;
 import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.PostResponse;
 import com.devlink.post_service.service.PostService;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,7 +39,7 @@ public class PostController {
     @GetMapping("/feed")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "20") @Max(40) int size,
             @RequestParam(required = false) String postType) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFeed(page, size, postType), "Success")

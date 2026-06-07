@@ -2,7 +2,6 @@ package com.devlink.post_service.service.impl;
 
 
 import com.devlink.post_service.client.UserInfoCacheClient;
-import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.dto.request.CreateCommentReplyRequest;
@@ -20,19 +19,16 @@ import com.devlink.post_service.repository.CommentRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentReplyService;
 import com.devlink.post_service.service.GeminiModerationService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,9 +38,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
     private final CommentRepository commentRepository;
     private final CommentReplyRepository commentReplyRepository;
     private final GeminiModerationService geminiModerationService;
-    private final UserServiceClient userServiceClient;
-    private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
+
     private final UserInfoCacheClient userInfoCacheClient;
 
 
@@ -113,7 +107,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentReplySummaryResponse> getReplies(Long commentId, int page) {
+    public Page<CommentReplySummaryResponse> getReplies(Long commentId, int page,int size) {
 
         if (!commentRepository.existsById(commentId)) {
             throw new AppException(ErrorCode.PARENT_COMMENT_NOT_FOUND);
@@ -131,7 +125,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
         List<Long> authorIds = replies.stream()
                 .map(CommentReplyProcedureResult::getAuthorId)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         Map<Long, UserInfoForCommentClient> userInfoMap =
                 userInfoCacheClient.getBasicInfo(authorIds);
@@ -154,7 +148,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                     .fullName(user != null ? user.getFullName() : null)
                     .avatarUrl(user != null ? user.getAvatarUrl() : null)
                     .build();
-        }).collect(Collectors.toList());
+        }).toList();
 
         return new PageImpl<>(content, PageRequest.of(page, limit), total);
     }

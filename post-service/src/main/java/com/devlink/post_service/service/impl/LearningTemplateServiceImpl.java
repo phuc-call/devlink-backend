@@ -71,7 +71,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
             try {
                 codeContent = new String(file.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
             } catch (Exception e) {
-                log.warn("[LearningTemplate] Không đọc được content file CODE");
+                log.warn("[LearningTemplate]can not content file CODE");
             }
         }
 
@@ -255,7 +255,15 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
             forkFileUrl = template.getFileUrl();
         }
 
-        UserTemplateFork newFork = UserTemplateFork.builder().userId(currentUserId).templateId(templateId).title(template.getTitle()).content(forkContent).fileUrl(forkFileUrl).isModified(false).build();
+        UserTemplateFork newFork = UserTemplateFork.builder()
+                .userId(currentUserId)
+                .templateId(templateId)
+                .title(template.getTitle())
+                .content(forkContent)
+                .fileUrl(forkFileUrl)
+                .isProposed(false)
+                .isModified(false)
+                .build();
 
         UserTemplateFork saved = forkRepository.save(newFork);
 
@@ -394,7 +402,6 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
 
         return buildOverview(stats, items, start, end);
     }
-
 
 
     private Instant[] resolveRange(Instant start, Instant end) {

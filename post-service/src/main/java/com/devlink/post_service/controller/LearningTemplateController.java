@@ -7,6 +7,7 @@ import com.devlink.post_service.entity.enums.Difficulty;
 import com.devlink.post_service.entity.enums.TemplateStatus;
 import com.devlink.post_service.service.LearningTemplateService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -50,7 +51,7 @@ public class LearningTemplateController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<PagedResponse<TemplateCardResponse>>> getMyTemplates(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "10") @Max(50) int size,
             @RequestParam(required = false) Difficulty difficulty,
             @RequestParam(required = false) String tag
     ) {
@@ -62,7 +63,7 @@ public class LearningTemplateController {
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<PagedResponse<TemplateCardResponse>>> getTemplateForAdmin(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "10") @Max(10) int size,
             @RequestParam(required = false) Difficulty difficulty,
             @RequestParam(required = false) String tag,
             @RequestParam(required = false) TemplateStatus status

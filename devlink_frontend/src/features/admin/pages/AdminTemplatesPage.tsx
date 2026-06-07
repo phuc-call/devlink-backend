@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { BookOpen, Flag, Plus, X } from 'lucide-react';
+import { BookOpen, Plus, X } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder.tsx';
 import CreateTemplateForm from '../components/CreateTemplateForm.tsx';
 import TemplateList from '../components/TemplateList.tsx';
+import SuggestionList from '../components/SuggestionList/SuggestionList.tsx';
+import SuggestionDetailModal from '../components/SuggestionDetailModal/SuggestionDetailModal.tsx';
 
 export default function AdminTemplatesPage() {
-    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [showUploadModal, setShowUploadModal]     = useState(false);
+    const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
+    const [refreshKey, setRefreshKey]               = useState(0);
+
+    const handleActionDone = () => setRefreshKey(k => k + 1);
 
     return (
         <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -13,14 +19,14 @@ export default function AdminTemplatesPage() {
             {/* Header */}
             <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>Template hoc tap</h1>
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6B7280' }}>Upload, quan ly file hoc tap theo ngon ngu lap trinh</p>
+                    <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>Template học tập</h1>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6B7280' }}>Upload, quản lý file học tập theo ngôn ngữ lập trình</p>
                 </div>
 
                 <button
                     type="button"
                     onClick={() => setShowUploadModal(true)}
-                    aria-label="Mo modal upload template moi"
+                    aria-label="Mở modal upload template mới"
                     style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         height: 40, padding: '0 20px', borderRadius: 8,
@@ -29,38 +35,37 @@ export default function AdminTemplatesPage() {
                     }}
                 >
                     <Plus size={16} aria-hidden="true" />
-                    Upload Template moi
+                    Upload Template mới
                 </button>
             </div>
 
-            {/* Filter + Danh sach — thay 2 SectionPlaceholder bằng TemplateList thực */}
+            {/* Danh sách template */}
             <TemplateList />
 
-            {/* Bottom section — giữ nguyên như cũ */}
+            {/* Bottom section */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
-                <SectionPlaceholder
-                    tag="De xuat cho duyet (3.10)"
-                    title="De xuat tu sinh vien"
-                    description="List cac suggestion co status PENDING/REVIEWING. Nut Duyet APPROVED / Tu choi REJECTED + adminNote."
-                    height={200}
-                    icon={<Flag size={24} aria-hidden="true" />}
+
+                {/* Đề xuất chờ duyệt — thay SectionPlaceholder */}
+                <SuggestionList
+                    key={refreshKey}
+                    onSelect={id => setSelectedSuggestion(id)}
                 />
+
                 <SectionPlaceholder
-                    tag="Chi tiet template"
-                    title="Modal xem / chinh sua template"
-                    description="Hien thi toan bo metadata, AI summary, extractedText, danh sach fork. Cho phep chinh sua + upload file moi (3.11)."
+                    tag="Chi tiết template"
+                    title="Modal xem / chỉnh sửa template"
+                    description="Hiển thị toàn bộ metadata, AI summary, extractedText, danh sách fork. Cho phép chỉnh sửa + upload file mới (3.11)."
                     height={200}
                     icon={<BookOpen size={24} aria-hidden="true" />}
                 />
             </div>
 
-            {/* Modal Upload */}
+            {/* Modal upload */}
             {showUploadModal && (
                 <>
-                    {/* Backdrop — button thực sự */}
                     <button
                         type="button"
-                        aria-label="Dong modal"
+                        aria-label="Đóng modal"
                         onClick={() => setShowUploadModal(false)}
                         style={{
                             position: 'fixed', inset: 0,
@@ -69,11 +74,9 @@ export default function AdminTemplatesPage() {
                             zIndex: 1000,
                         }}
                     />
-
-                    {/* Dialog native */}
                     <dialog
                         open
-                        aria-label="Upload template moi"
+                        aria-label="Upload template mới"
                         style={{
                             position: 'fixed',
                             top: '50%', left: '50%',
@@ -88,7 +91,7 @@ export default function AdminTemplatesPage() {
                         <button
                             type="button"
                             onClick={() => setShowUploadModal(false)}
-                            aria-label="Dong modal"
+                            aria-label="Đóng modal"
                             style={{
                                 position: 'absolute', top: 16, right: 16,
                                 background: 'none', border: 'none', cursor: 'pointer',
@@ -98,12 +101,19 @@ export default function AdminTemplatesPage() {
                         >
                             <X size={20} aria-hidden="true" />
                         </button>
-
                         <CreateTemplateForm onSuccess={() => setShowUploadModal(false)} />
                     </dialog>
                 </>
             )}
 
+            {/* Modal chi tiết suggestion */}
+            {selectedSuggestion !== null && (
+                <SuggestionDetailModal
+                    suggestionId={selectedSuggestion}
+                    onClose={() => setSelectedSuggestion(null)}
+                    onActionDone={handleActionDone}
+                />
+            )}
         </div>
     );
 }

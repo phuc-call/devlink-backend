@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
     Eye, GitFork, Download, MessageSquare,
-    Sparkles, RotateCcw, RefreshCw, BookOpen,
+    Sparkles, RefreshCw, BookOpen,
     SlidersHorizontal, FileCode, FileText, Film,
     Table, File,
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import type { MyTemplateResponse, TemplateMetaOptions } from '../../../../types/
 import styles from './MyTemplatesPage.module.css';
 import TemplateDetailModal from '../../../post/components/TemplateDetailModal.tsx';
 import { getMyForks } from '../../../../api/post-service/userTemplateForkApi.ts';
+import SuggestionModal from '../../components/Suggestionmodal.tsx';
 
 function getDifficultyLabel(d: string): string {
     const map: Record<string, string> = {
@@ -60,9 +61,10 @@ interface TemplateCardProps {
     forkId: number | undefined;
     onDetail: (id: number) => void;
     onFork: (id: number) => Promise<void>;
+    onSuggest: (templateId: number, forkId: number) => void; // thêm
 }
 
-function TemplateCard({ tpl, forkId, onDetail, onFork }: TemplateCardProps) {
+function TemplateCard({ tpl, forkId, onDetail, onFork, onSuggest }: TemplateCardProps) {
     const [forking, setForking] = useState(false);
     const navigate = useNavigate();
 
@@ -74,6 +76,7 @@ function TemplateCard({ tpl, forkId, onDetail, onFork }: TemplateCardProps) {
             setForking(false);
         }
     };
+
 
     return (
         <div className={styles.card}>
@@ -150,15 +153,15 @@ function TemplateCard({ tpl, forkId, onDetail, onFork }: TemplateCardProps) {
                     <Download size={13} /> Tải xuống
                 </button>
 
-                {tpl.isFork && (
-                    <button className={`${styles.btn} ${styles.btnDanger}`}>
-                        <RotateCcw size={13} /> Reset fork
+                {tpl.isFork && forkId && (
+                    <button
+                        className={`${styles.btn} ${styles.btnOutline}`}
+
+                        onClick={() => { if (forkId) onSuggest(tpl.id, forkId); }}
+                    >
+                        <MessageSquare size={13} /> Đề xuất sửa
                     </button>
                 )}
-
-                <button className={`${styles.btn} ${styles.btnOutline}`}>
-                    <MessageSquare size={13} /> Đề xuất sửa
-                </button>
 
                 <button className={`${styles.btn} ${styles.btnAI}`}>
                     <Sparkles size={13} /> Hỏi Gemini AI
@@ -212,8 +215,13 @@ export default function MyTemplatesPage() {
         }
     }, []);
 
+    const [suggestionTarget, setSuggestionTarget] = useState<{
+        templateId: number;
+        forkId: number;
+    } | null>(null);
+
     useEffect(() => {
-        void fetchForkMap();
+        (async () => { await fetchForkMap(); })();
     }, [fetchForkMap]);
 
     const fetchTemplates = useCallback(async () => {
@@ -236,9 +244,8 @@ export default function MyTemplatesPage() {
     }, [difficulty]);
 
     useEffect(() => {
-        void fetchTemplates();
+        (async () => { await fetchTemplates(); })();
     }, [fetchTemplates]);
-
     const handleFork = async (templateId: number) => {
         try {
             await forkTemplate(templateId);
@@ -359,6 +366,7 @@ export default function MyTemplatesPage() {
                             forkId={forkMap[tpl.id]}
                             onDetail={setDetailId}
                             onFork={handleFork}
+                            onSuggest={(templateId, forkId) => setSuggestionTarget({ templateId, forkId })}
                         />
                     ))}
                 </div>
@@ -369,6 +377,18 @@ export default function MyTemplatesPage() {
                     templateId={detailId}
                     meta={meta}
                     onClose={() => setDetailId(null)}
+                />
+            )}
+
+            {suggestionTarget !== null && (
+                <SuggestionModal
+                    templateId={suggestionTarget.templateId}
+                    forkId={suggestionTarget.forkId}
+                    onClose={() => setSuggestionTarget(null)}
+                    onSuccess={() => {
+                        setSuggestionTarget(null);
+                        // optional: hiện toast hoặc reload
+                    }}
                 />
             )}
         </div>

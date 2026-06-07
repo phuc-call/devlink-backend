@@ -1,7 +1,6 @@
 package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserInfoCacheClient;
-import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
 import com.devlink.post_service.dto.request.ModerationResult;
@@ -34,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -47,7 +45,6 @@ public class CommentServiceImpl implements CommentService {
     private final CommentLockRepository commentLockRepository;
     private final PostRepository postRepository;
     private final GeminiModerationService geminiModerationService;
-    private final UserServiceClient userServiceClient;
     private final CommentReplyRepository commentReplyRepository;
     private final UserInfoCacheClient userInfoCacheClient;
     private final PostServiceImpl postService;
@@ -105,25 +102,25 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentSummaryResponse> getComments(Long postId, int page) {
+    public Page<CommentSummaryResponse> getComments(Long postId, int page, int size) {
 
         Long postOwnerId = postRepository
                 .findAuthorIdByIdAndStatusNot(postId, PostStatus.DELETED)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
         List<CommentStatus> allowed = List.of(CommentStatus.ACTIVE);
-        Pageable pageable = PageRequest.of(page, 20);
+        Pageable pageable = PageRequest.of(page, size);
 
         long total = commentRepository.countTopLevelComments(postId, allowed);
 
-        Page<CommentProjection> commentPage = total > 20
+        Page<CommentProjection> commentPage = total > size
                 ? commentRepository.findTopLevelSortByLike(postId, postOwnerId, allowed, pageable)
                 : commentRepository.findTopLevelSortByDate(postId, postOwnerId, allowed, pageable);
 
         List<Long> authorIds = commentPage.getContent().stream()
                 .map(CommentProjection::getAuthorId)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         Map<Long, UserInfoForCommentClient> userInfoMap =
                 userInfoCacheClient.getBasicInfo(authorIds);

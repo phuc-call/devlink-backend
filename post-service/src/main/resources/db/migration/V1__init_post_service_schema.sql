@@ -384,7 +384,7 @@ CREATE TABLE template_suggestions
     user_id         BIGINT       NOT NULL,
     suggestion_type VARCHAR(20)  NOT NULL,
     description     TEXT         NOT NULL,
-    suggested_code  LONGTEXT     NULL,
+
     status          VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
     admin_note      VARCHAR(500) NULL,
     reviewed_by     BIGINT       NULL,

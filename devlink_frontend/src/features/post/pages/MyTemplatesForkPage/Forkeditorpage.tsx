@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../../../../api/axiosInstance';
 import styles from './ForkEditorPage.module.css';
-
+import SuggestionModal from '../../../post/components/Suggestionmodal.tsx';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ForkDetail {
@@ -204,6 +204,7 @@ export default function ForkEditorPage() {
     const [error, setError]         = useState<string | null>(null);
     const [saving, setSaving]       = useState(false);
     const [resetting, setResetting] = useState(false);
+    const [showSuggestion, setShowSuggestion] = useState(false);
     const [confirmReset, setConfirmReset] = useState(false);
     const [saveSuccess, setSaveSuccess]   = useState(false);
 
@@ -346,7 +347,12 @@ export default function ForkEditorPage() {
 
                 <div className={styles.topRight}>
                     {/* suggestion button — 3.9 */}
-                    <button className={`${styles.topBtn} ${styles.btnGhost}`} title="3.9 · Đề xuất sửa">
+                    <button
+                        className={`${styles.topBtn} ${styles.btnGhost}`}
+                        title="Đề xuất sửa"
+                        onClick={() => setShowSuggestion(true)}
+                        disabled={!fork}
+                    >
                         <MessageSquare size={14} /> Đề xuất sửa
                     </button>
 
@@ -471,6 +477,14 @@ export default function ForkEditorPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {showSuggestion && fork && (
+                <SuggestionModal
+                    templateId={fork.templateId}
+                    forkId={fork.id}
+                    onClose={() => setShowSuggestion(false)}
+                    onSuccess={() => setShowSuggestion(false)}
+                />
             )}
         </div>
     );

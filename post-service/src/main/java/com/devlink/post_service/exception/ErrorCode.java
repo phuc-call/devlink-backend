@@ -6,145 +6,75 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
-    POST_CONTENT_EMPTY(
-            "Post must have content or at least one attachment",
-            HttpStatus.BAD_REQUEST),
+    POST_CONTENT_EMPTY("Post must have content or at least one attachment", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_REQUIRED(
-            "FILE type post must have at least one attachment",
-            HttpStatus.BAD_REQUEST),
+    POST_FILE_REQUIRED("FILE type post must have at least one attachment", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_TOO_LARGE(
-            "File exceeds the 50MB limit",
-            HttpStatus.BAD_REQUEST),
+    POST_FILE_TOO_LARGE("File exceeds the 50MB limit", HttpStatus.BAD_REQUEST),
 
-    FILE_UPLOAD_FAILED(
-            "File is invalid, please try again",
-            HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAILED("File is invalid, please try again", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_UNSUPPORTED_FORMAT(
-            "File format is not supported",
-            HttpStatus.BAD_REQUEST),
+    POST_FILE_UNSUPPORTED_FORMAT("File format is not supported", HttpStatus.BAD_REQUEST),
 
-    POST_ACCOUNT_RESTRICTED(
-            "Your account has been restricted from posting",
-            HttpStatus.FORBIDDEN),
+    POST_ACCOUNT_RESTRICTED("Your account has been restricted from posting", HttpStatus.FORBIDDEN),
 
-    POST_NOT_FOUND(
-            "Post not found",
-            HttpStatus.NOT_FOUND),
+    POST_NOT_FOUND("Post not found", HttpStatus.NOT_FOUND),
 
-    COMMENT_NOT_FOUND(
-            "Comment not found",
-            HttpStatus.NOT_FOUND),
+    COMMENT_NOT_FOUND("Comment not found", HttpStatus.NOT_FOUND),
 
-    FORBIDDEN(
-            "You do not have permission to perform this action",
-            HttpStatus.FORBIDDEN),
+    FORBIDDEN("You do not have permission to perform this action", HttpStatus.FORBIDDEN),
 
-    POST_ALREADY_DELETED(
-            "Post has already been deleted",
-            HttpStatus.BAD_REQUEST),
+    POST_ALREADY_DELETED("Post has already been deleted", HttpStatus.BAD_REQUEST),
 
-    POST_FORBIDDEN(
-            "You do not have permission to perform this action",
-            HttpStatus.FORBIDDEN),
+    POST_FORBIDDEN("You do not have permission to perform this action", HttpStatus.FORBIDDEN),
 
-    AI_SERVICE_UNAVAILABLE(
-            "AI service is temporarily unavailable, please try again later",
-            HttpStatus.SERVICE_UNAVAILABLE),
+    AI_SERVICE_UNAVAILABLE("AI service is temporarily unavailable, please try again later", HttpStatus.SERVICE_UNAVAILABLE),
 
-    POST_FILE_EMPTY(
-            "File must not be empty",
-            HttpStatus.BAD_REQUEST),
+    POST_FILE_EMPTY("File must not be empty", HttpStatus.BAD_REQUEST),
 
-    INVALID_POST_TYPE(
-            "Invalid post type",
-            HttpStatus.BAD_REQUEST),
+    INVALID_POST_TYPE("Invalid post type", HttpStatus.BAD_REQUEST),
 
-    POST_TOO_MANY_FILES(
-            "Maximum 10 files per post",
-            HttpStatus.BAD_REQUEST),
+    POST_TOO_MANY_FILES("Maximum 10 files per post", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_NOT_FOUND(
-            "Template not found",
-            HttpStatus.NOT_FOUND),
+    TEMPLATE_NOT_FOUND("Template not found", HttpStatus.NOT_FOUND),
 
-    INVALID_TEMPLATE_TYPE(
-            "This type has already been processed",
-            HttpStatus.BAD_REQUEST),
+    INVALID_TEMPLATE_TYPE("This type has already been processed", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_LANGUAGE_NOT_SUPPORTED(
-            "Programming language is not supported",
-            HttpStatus.BAD_REQUEST),
+    TEMPLATE_LANGUAGE_NOT_SUPPORTED("Programming language is not supported", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_FILE_TYPE_MISMATCH(
-            "File type does not match the actual file format",
-            HttpStatus.BAD_REQUEST),
+    TEMPLATE_FILE_TYPE_MISMATCH("File type does not match the actual file format", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_FILE_TOO_LARGE(
-            "Template file exceeds the 100MB limit",
-            HttpStatus.BAD_REQUEST),
+    TEMPLATE_FILE_TOO_LARGE("Template file exceeds the 100MB limit", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_FORK_NOT_FOUND(
-            "Fork not found",
-            HttpStatus.NOT_FOUND),
+    TEMPLATE_FORK_NOT_FOUND("Fork not found", HttpStatus.NOT_FOUND),
 
-    FORK_NOT_ALLOWED(
-            "Video files are not accepted",
-            HttpStatus.NOT_FOUND),
+    FORK_NOT_ALLOWED("Video files are not accepted", HttpStatus.NOT_FOUND),
 
-    TEMPLATE_FORK_NOT_OWNER(
-            "You do not have permission to edit this fork",
-            HttpStatus.FORBIDDEN),
+    TEMPLATE_FORK_NOT_OWNER("You do not have permission to edit this fork", HttpStatus.FORBIDDEN),
 
-    TEMPLATE_VIDEO_CANNOT_FORK(
-            "VIDEO files cannot be forked",
-            HttpStatus.BAD_REQUEST),
+    TEMPLATE_VIDEO_CANNOT_FORK("VIDEO files cannot be forked", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_TOO_MANY_PENDING_SUGGESTIONS(
-            "You already have 3 pending suggestions for this template",
-            HttpStatus.TOO_MANY_REQUESTS),
+    TEMPLATE_TOO_MANY_PENDING_SUGGESTIONS("You already have 3 pending suggestions for this template", HttpStatus.TOO_MANY_REQUESTS),
 
-    TEMPLATE_SUGGESTION_NOT_FOUND(
-            "Suggestion not found",
-            HttpStatus.NOT_FOUND),
+    TEMPLATE_SUGGESTION_NOT_FOUND("Suggestion not found", HttpStatus.NOT_FOUND), TEMPLATE_FORK_NO_CHANGES("Fork has no modifications to suggest", HttpStatus.BAD_REQUEST),
 
-    TEMPLATE_SUGGESTION_ALREADY_REVIEWED(
-            "This suggestion has already been reviewed",
-            HttpStatus.BAD_REQUEST),
+    TEMPLATE_SUGGESTION_ALREADY_REVIEWED("This suggestion has already been reviewed", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_TOTAL_SIZE_EXCEEDED(
-            "Total file size must not exceed 200MB",
-            HttpStatus.BAD_REQUEST),
+    POST_FILE_TOTAL_SIZE_EXCEEDED("Total file size must not exceed 200MB", HttpStatus.BAD_REQUEST),
 
-    PARENT_COMMENT_NOT_FOUND(
-            "Parent comment does not exist in this post",
-            HttpStatus.BAD_REQUEST),
+    PARENT_COMMENT_NOT_FOUND("Parent comment does not exist in this post", HttpStatus.BAD_REQUEST),
 
-    COMMENT_GLOBALLY_LOCKED(
-            "Your account has been banned from commenting",
-            HttpStatus.FORBIDDEN),
+    COMMENT_GLOBALLY_LOCKED("Your account has been banned from commenting", HttpStatus.FORBIDDEN),
 
-    COMMENT_POST_LOCKED(
-            "This post has been locked for commenting on your account",
-            HttpStatus.FORBIDDEN),
+    COMMENT_POST_LOCKED("This post has been locked for commenting on your account", HttpStatus.FORBIDDEN),
 
-    CONTENT_REJECTED_BY_AI(
-            "Comment content violates community standards",
-            HttpStatus.BAD_REQUEST),
+    CONTENT_REJECTED_BY_AI("Comment content violates community standards", HttpStatus.BAD_REQUEST),
 
-    POST_COMMENT_COUNT_UPDATE_FAILED(
-            "Failed to update comment count",
-            HttpStatus.BAD_REQUEST),
+    POST_COMMENT_COUNT_UPDATE_FAILED("Failed to update comment count", HttpStatus.BAD_REQUEST),
 
-    POST_NOT_YOURSELF(
-            "You can only delete your own posts",
-            HttpStatus.BAD_REQUEST),
+    POST_NOT_YOURSELF("You can only delete your own posts", HttpStatus.BAD_REQUEST),
 
-    INVALID_DATE_RANGE(
-            "Invalid date range: start date must be before end date and follow the correct format (yyyy-MM-dd)",
-            HttpStatus.BAD_REQUEST);
+    INVALID_DATE_RANGE("Invalid date range: start date must be before end date and follow the correct format (yyyy-MM-dd)", HttpStatus.BAD_REQUEST), SUGGESTION_ALREADY_PROCESSED("The suggestion has already been processed.", HttpStatus.BAD_REQUEST), SUGGESTION_CANNOT_CANCEL("Cannot cancel a suggestion that has already been processed.", HttpStatus.BAD_REQUEST), REJECT_REASON_REQUIRED("Rejection reason is required and must not exceed 500 characters.", HttpStatus.BAD_REQUEST), ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN);
 
     private final String message;
     private final HttpStatus httpStatus;

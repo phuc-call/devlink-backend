@@ -21,7 +21,7 @@ public interface CommentService {
     CommentResponse createComment(CreateCommentRequest request);
 
 
-    Page<CommentSummaryResponse> getComments(Long postId, int page);
+    Page<CommentSummaryResponse> getComments(Long postId, int page, int size);
     /**
      * Delete a comment or reply by ID
      * Only the author can delete their own reply/comment

@@ -4,8 +4,9 @@ import {
     FileCode, FileText, Film, Table, File,
     RefreshCw, SlidersHorizontal, BookOpen,
     ChevronLeft, ChevronRight, AlertCircle,
-    Sparkles, X, Check,
+    Sparkles, X, MoreVertical,
 } from 'lucide-react';
+import UpdateTemplateModal from '../../../features/post/components/Updatetemplatemodal';
 import {
     getAdminTemplates,
     getTemplateMetaOptions,
@@ -23,6 +24,7 @@ import type {
 import styles from './TemplateList.module.css';
 import TemplateDetailModal from '../../post/components/TemplateDetailModal';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DIFF_LABEL: Record<string, string> = {
     BEGINNER: 'Cơ bản',
@@ -46,11 +48,11 @@ function getStatusClass(s: string): string {
 
 function getFileIcon(fileType: string) {
     const map: Record<string, React.ReactNode> = {
-        CODE: <FileCode size={12} />,
-        PDF: <FileText size={12} />,
-        DOCX: <File size={12} />,
-        XLSX: <Table size={12} />,
-        VIDEO: <Film size={12} />,
+        CODE:  <FileCode size={12} />,
+        PDF:   <FileText size={12} />,
+        DOCX:  <File     size={12} />,
+        XLSX:  <Table    size={12} />,
+        VIDEO: <Film     size={12} />,
     };
     return map[fileType] ?? <File size={12} />;
 }
@@ -61,13 +63,14 @@ function formatDate(iso: string): string {
     });
 }
 
-
-
+// ─── Badge ────────────────────────────────────────────────────────────────────
 
 interface BadgeProps { readonly children: React.ReactNode; readonly className: string }
 function Badge({ children, className }: BadgeProps) {
     return <span className={`${styles.badge} ${className}`}>{children}</span>;
 }
+
+// ─── Modal wrapper ────────────────────────────────────────────────────────────
 
 interface ModalProps {
     readonly title: string;
@@ -79,8 +82,8 @@ function Modal({ title, onClose, children }: ModalProps) {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
-        window.addEventListener('keydown', handleGlobalKeyDown);
-        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+        globalThis.addEventListener('keydown', handleGlobalKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleGlobalKeyDown);
     }, [onClose]);
 
     return (
@@ -102,6 +105,75 @@ function Modal({ title, onClose, children }: ModalProps) {
     );
 }
 
+// ─── Dropdown Menu (3 chấm) ───────────────────────────────────────────────────
+
+interface CardMenuProps {
+    tpl: TemplateCardResponse;
+    onEdit: () => void;
+    onStatus: () => void;
+    onDelete: () => void;
+}
+
+function CardMenu({ tpl, onEdit, onStatus, onDelete }: CardMenuProps) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    const isActive = tpl.status === 'ACTIVE';
+
+    // đóng khi click ngoài
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div className={styles.menuWrap} ref={ref}>
+            <button
+                className={styles.menuTrigger}
+                onClick={() => setOpen(v => !v)}
+                title="Thêm hành động"
+                aria-label="Mở menu"
+            >
+                <MoreVertical size={15} />
+            </button>
+
+            {open && (
+                <div className={styles.dropdown}>
+                    <button
+                        className={styles.dropdownItem}
+                        onClick={() => { onEdit(); setOpen(false); }}
+                    >
+                        <Edit2 size={13} /> Chỉnh sửa
+                    </button>
+                    <button
+                        className={styles.dropdownItem}
+                        onClick={() => { onStatus(); setOpen(false); }}
+                    >
+                        {isActive
+                            ? <><EyeOff size={13} /> Ẩn template</>
+                            : <><ToggleRight size={13} /> Hiện template</>
+                        }
+                    </button>
+                    <div className={styles.dropdownDivider} />
+                    <button
+                        className={`${styles.dropdownItem} ${styles.dropdownDanger}`}
+                        onClick={() => { onDelete(); setOpen(false); }}
+                    >
+                        <Trash2 size={13} /> Xóa template
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Template Card ────────────────────────────────────────────────────────────
+
 interface TemplateCardProps {
     readonly tpl: TemplateCardResponse;
     readonly onDetail: (t: TemplateCardResponse) => void;
@@ -111,35 +183,63 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ tpl, onDetail, onEdit, onStatus, onDelete }: TemplateCardProps) {
-    const isActive = tpl.status === 'ACTIVE';
     return (
         <div className={styles.card}>
+
+            {/* Top: badges + menu */}
             <div className={styles.cardTop}>
                 <div className={styles.badgeRow}>
+                    {/* ngôn ngữ — xám trung tính */}
                     <Badge className={styles.badgeLang}>{tpl.language}</Badge>
-                    <Badge className={getDiffClass(tpl.difficulty)}>{DIFF_LABEL[tpl.difficulty] ?? tpl.difficulty}</Badge>
+                    {/* file type — xám nhạt */}
                     <Badge className={styles.badgeFile}>
                         {getFileIcon(tpl.fileType)}{tpl.fileType}
                     </Badge>
-                    <Badge className={getStatusClass(tpl.status)}>{STATUS_LABEL[tpl.status] ?? tpl.status}</Badge>
                 </div>
+
+                {/* 3-dot menu thay cho 3 nút phụ */}
+                <CardMenu
+                    tpl={tpl}
+                    onEdit={() => onEdit(tpl)}
+                    onStatus={() => onStatus(tpl)}
+                    onDelete={() => onDelete(tpl)}
+                />
             </div>
 
+            {/* Tiêu đề */}
             <h3 className={styles.cardTitle}>{tpl.title}</h3>
 
-            {tpl.aiSummary ? (
-                <p className={styles.cardSummary}>{tpl.aiSummary}</p>
-            ) : (
-                <p className={styles.cardSummaryEmpty}>
-                    <Sparkles size={11} /> Chưa có AI tóm tắt
-                </p>
-            )}
-
-            <div className={styles.cardFile}>
-                {getFileIcon(tpl.fileType)}
-                <span className={styles.fileName}>{tpl.fileName}</span>
+            {/* Badges độ khó + trạng thái — chỉ 2 cái này mới dùng màu semantic */}
+            <div className={styles.badgeRowSub}>
+                <Badge className={getDiffClass(tpl.difficulty)}>
+                    {DIFF_LABEL[tpl.difficulty] ?? tpl.difficulty}
+                </Badge>
+                <Badge className={getStatusClass(tpl.status)}>
+                    {STATUS_LABEL[tpl.status] ?? tpl.status}
+                </Badge>
             </div>
 
+            {/* AI summary — chiều cao cố định, truncate 2 dòng */}
+            <div className={styles.summaryBlock}>
+                {tpl.aiSummary
+                    ? <p className={styles.cardSummary}>{tpl.aiSummary}</p>
+                    : (
+                        <p className={styles.cardSummaryEmpty}>
+                            <Sparkles size={11} /> Chưa có AI tóm tắt
+                        </p>
+                    )
+                }
+            </div>
+
+            {/* Tên file — truncate */}
+            <div className={styles.cardFile}>
+                {getFileIcon(tpl.fileType)}
+                <span className={styles.fileName} title={tpl.fileName}>
+                    {tpl.fileName}
+                </span>
+            </div>
+
+            {/* Meta: view, fork, ngày */}
             <div className={styles.cardMeta}>
                 <span><Eye size={12} />{tpl.viewCount ?? 0}</span>
                 <span><GitFork size={12} />{tpl.forkCount ?? 0}</span>
@@ -148,29 +248,18 @@ function TemplateCard({ tpl, onDetail, onEdit, onStatus, onDelete }: TemplateCar
 
             <div className={styles.cardDivider} />
 
-            <div className={styles.cardActions}>
-                <button className={`${styles.btn} ${styles.btnBlue}`} onClick={() => onDetail(tpl)}>
-                    <Eye size={12} /> Chi tiết
-                </button>
-                <button className={`${styles.btn} ${styles.btnDefault}`} onClick={() => onEdit(tpl)}>
-                    <Edit2 size={12} /> Sửa
-                </button>
-                <button
-                    className={`${styles.btn} ${isActive ? styles.btnDefault : styles.btnSuccess}`}
-                    onClick={() => onStatus(tpl)}
-                >
-                    {isActive
-                        ? <><EyeOff size={12} /> Ẩn</>
-                        : <><ToggleRight size={12} /> Hiện</>
-                    }
-                </button>
-                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => onDelete(tpl)}>
-                    <Trash2 size={12} /> Xóa
-                </button>
-            </div>
+            {/* Chỉ 1 nút chính */}
+            <button
+                className={styles.btnPrimary}
+                onClick={() => onDetail(tpl)}
+            >
+                <Eye size={13} /> Xem chi tiết
+            </button>
         </div>
     );
 }
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 interface SkeletonCardProps { readonly idKey: string }
 function SkeletonCard({ idKey }: SkeletonCardProps) {
@@ -184,46 +273,44 @@ function SkeletonCard({ idKey }: SkeletonCardProps) {
     );
 }
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 const PAGE_SIZE = 10;
 
 export default function TemplateList() {
-    const [templates, setTemplates] = useState<TemplateCardResponse[]>([]);
-    const [meta, setMeta] = useState<TemplateMetaOptions | null>(null);
+    const [templates, setTemplates]     = useState<TemplateCardResponse[]>([]);
+    const [meta, setMeta]               = useState<TemplateMetaOptions | null>(null);
     const [langOptions, setLangOptions] = useState<string[]>([]);
     const [statusOptions, setStatusOptions] = useState<string[]>([]);
 
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading]       = useState(true);
+    const [error, setError]           = useState<string | null>(null);
     const [totalElements, setTotalElements] = useState(0);
-    const [currentPage, setCurrentPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
+    const [currentPage, setCurrentPage]     = useState(0);
+    const [totalPages, setTotalPages]       = useState(1);
 
-    const [filterLang, setFilterLang] = useState('');
-    const [filterDiff, setFilterDiff] = useState('');
+    const [filterLang, setFilterLang]     = useState('');
+    const [filterDiff, setFilterDiff]     = useState('');
     const [filterStatus, setFilterStatus] = useState('');
 
-    const [detailId, setDetailId] = useState<number | null>(null);
-    const [editModal, setEditModal] = useState<TemplateCardResponse | null>(null);
+    const [detailId, setDetailId]       = useState<number | null>(null);
+    const [editModal, setEditModal]     = useState<TemplateCardResponse | null>(null);
     const [statusModal, setStatusModal] = useState<TemplateCardResponse | null>(null);
     const [deleteModal, setDeleteModal] = useState<TemplateCardResponse | null>(null);
 
-    const [editTitle, setEditTitle] = useState('');
-    const [editDiff, setEditDiff] = useState('');
-
     const isInitialMount = useRef(true);
-
 
     useEffect(() => {
         let isMounted = true;
-        Promise.all([
+        void Promise.all([
             getTemplateMetaOptions()
-                .then((res) => { if (isMounted) setMeta(res); })
+                .then(res => { if (isMounted) setMeta(res); })
                 .catch(() => undefined),
             getSupportedLanguages()
                 .then((r: LanguageOptions) => { if (isMounted) setLangOptions(r.languages ?? []); })
                 .catch(() => undefined),
             getTemplateStatuses()
-                .then((statuses) => { if (isMounted) setStatusOptions(statuses); })
+                .then(statuses => { if (isMounted) setStatusOptions(statuses); })
                 .catch(() => undefined),
         ]);
         return () => { isMounted = false; };
@@ -252,12 +339,8 @@ export default function TemplateList() {
     }, [filterDiff]);
 
     useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            void fetchTemplates(0);
-        } else {
-            void fetchTemplates(0);
-        }
+        if (isInitialMount.current) { isInitialMount.current = false; }
+        void fetchTemplates(0);
     }, [fetchTemplates]);
 
     const displayed = templates.filter(t => {
@@ -266,28 +349,13 @@ export default function TemplateList() {
         return true;
     });
 
-    function handleOpenEdit(t: TemplateCardResponse) {
-        setEditTitle(t.title);
-        setEditDiff(t.difficulty);
-        setEditModal(t);
-    }
-
-    async function handleSubmitEdit() {
-        if (!editModal) return;
-        setEditModal(null);
-    }
-
     async function handleToggleStatus(tpl: TemplateCardResponse) {
         const newStatus = tpl.status === 'ACTIVE' ? 'HIDDEN' : 'ACTIVE';
         try {
             await updateTemplateStatus(tpl.id, newStatus);
-            setTemplates(prev =>
-                prev.map(t => t.id === tpl.id ? { ...t, status: newStatus } : t)
-            );
+            setTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, status: newStatus } : t));
             setStatusModal(null);
-        } catch {
-            // optionally show error toast here
-        }
+        } catch { /* toast nếu cần */ }
     }
 
     async function handleDelete(tpl: TemplateCardResponse) {
@@ -295,77 +363,47 @@ export default function TemplateList() {
             await updateTemplateStatus(tpl.id, 'DELETED');
             setTemplates(prev => prev.filter(t => t.id !== tpl.id));
             setDeleteModal(null);
-        } catch {
-            // optionally show error toast here
-        }
+        } catch { /* toast nếu cần */ }
     }
 
     return (
         <div className={styles.wrap}>
 
-
-
-
-            {/* ── Filter Bar ── */}
+            {/* Filter Bar */}
             <div className={styles.filterBar}>
                 <SlidersHorizontal size={15} color="#9CA3AF" aria-hidden="true" />
 
-                <select
-                    className={styles.select}
-                    value={filterLang}
-                    onChange={e => setFilterLang(e.target.value)}
-                    disabled={loading}
-                    aria-label="Chọn ngôn ngữ"
-                >
+                <select className={styles.select} value={filterLang}
+                        onChange={e => setFilterLang(e.target.value)} disabled={loading} aria-label="Chọn ngôn ngữ">
                     <option value="">Tất cả ngôn ngữ</option>
-                    {langOptions.map(l => (
-                        <option key={l} value={l}>{l}</option>
-                    ))}
+                    {langOptions.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
 
-                <select
-                    className={styles.select}
-                    value={filterDiff}
-                    onChange={e => setFilterDiff(e.target.value)}
-                    disabled={loading}
-                    aria-label="Chọn độ khó"
-                >
+                <select className={styles.select} value={filterDiff}
+                        onChange={e => setFilterDiff(e.target.value)} disabled={loading} aria-label="Chọn độ khó">
                     <option value="">Tất cả độ khó</option>
                     {(meta?.difficultly ?? []).map(d => (
                         <option key={d} value={d}>{DIFF_LABEL[d] ?? d}</option>
                     ))}
                 </select>
 
-                <select
-                    className={styles.select}
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                    disabled={loading}
-                    aria-label="Chọn trạng thái"
-                >
+                <select className={styles.select} value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value)} disabled={loading} aria-label="Chọn trạng thái">
                     <option value="">Tất cả trạng thái</option>
-                    {statusOptions
-                        .filter(s => s !== 'DELETED')
-                        .map(s => (
-                            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
-                        ))}
+                    {statusOptions.filter(s => s !== 'DELETED').map(s => (
+                        <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
+                    ))}
                 </select>
 
-                <button
-                    className={styles.refreshBtn}
-                    onClick={() => void fetchTemplates(currentPage)}
-                    disabled={loading}
-                    aria-label="Tải lại"
-                >
+                <button className={styles.refreshBtn}
+                        onClick={() => void fetchTemplates(currentPage)} disabled={loading} aria-label="Tải lại">
                     <RefreshCw size={14} className={loading ? styles.spinning : ''} />
                 </button>
 
-                {!loading && (
-                    <span className={styles.resultCount}>{displayed.length} kết quả</span>
-                )}
+                {!loading && <span className={styles.resultCount}>{displayed.length} kết quả</span>}
             </div>
 
-            {/* ── Error ── */}
+            {/* Error */}
             {!loading && error && (
                 <div className={styles.errorBox}>
                     <AlertCircle size={15} />
@@ -376,16 +414,16 @@ export default function TemplateList() {
                 </div>
             )}
 
-            {/* ── Skeleton ── */}
+            {/* Skeleton */}
             {loading && (
                 <div className={styles.grid}>
                     {Array.from({ length: 6 }).map((_, i) => (
-                        <SkeletonCard idKey={`skeleton-${i}`} key={`skeleton-${i}`} />
+                        <SkeletonCard key={`skeleton-${i}`} idKey={`skeleton-${i}`} />
                     ))}
                 </div>
             )}
 
-            {/* ── Empty ── */}
+            {/* Empty */}
             {!loading && !error && displayed.length === 0 && (
                 <div className={styles.empty}>
                     <BookOpen size={40} strokeWidth={1.5} color="#D1D5DB" aria-hidden="true" />
@@ -394,15 +432,15 @@ export default function TemplateList() {
                 </div>
             )}
 
-            {/* ── Grid ── */}
+            {/* Grid */}
             {!loading && !error && displayed.length > 0 && (
                 <div className={styles.grid}>
                     {displayed.map(tpl => (
                         <TemplateCard
                             key={tpl.id}
                             tpl={tpl}
-                            onDetail={(t) => setDetailId(t.id)}
-                            onEdit={handleOpenEdit}
+                            onDetail={t => setDetailId(t.id)}
+                            onEdit={setEditModal}
                             onStatus={setStatusModal}
                             onDelete={setDeleteModal}
                         />
@@ -410,82 +448,46 @@ export default function TemplateList() {
                 </div>
             )}
 
-            {/* ── Pagination ── */}
+            {/* Pagination */}
             {!loading && totalPages > 1 && (
                 <div className={styles.pagination}>
                     <span className={styles.pageInfo}>
                         Trang {currentPage + 1} / {totalPages} · {totalElements} template
                     </span>
                     <div className={styles.pageBtns}>
-                        <button
-                            className={styles.pageBtn}
-                            disabled={currentPage === 0}
-                            onClick={() => void fetchTemplates(currentPage - 1)}
-                            aria-label="Trang trước"
-                        >
+                        <button className={styles.pageBtn} disabled={currentPage === 0}
+                                onClick={() => void fetchTemplates(currentPage - 1)} aria-label="Trang trước">
                             <ChevronLeft size={14} />
                         </button>
                         {Array.from({ length: totalPages }).map((_, i) => (
-                            <button
-                                key={`page-btn-${i}`}
-                                className={`${styles.pageBtn} ${i === currentPage ? styles.pageBtnActive : ''}`}
-                                onClick={() => void fetchTemplates(i)}
-                            >
+                            <button key={`page-btn-${i}`}
+                                    className={`${styles.pageBtn} ${i === currentPage ? styles.pageBtnActive : ''}`}
+                                    onClick={() => void fetchTemplates(i)}>
                                 {i + 1}
                             </button>
                         ))}
-                        <button
-                            className={styles.pageBtn}
-                            disabled={currentPage >= totalPages - 1}
-                            onClick={() => void fetchTemplates(currentPage + 1)}
-                            aria-label="Trang sau"
-                        >
+                        <button className={styles.pageBtn} disabled={currentPage >= totalPages - 1}
+                                onClick={() => void fetchTemplates(currentPage + 1)} aria-label="Trang sau">
                             <ChevronRight size={14} />
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* ── Modals ── */}
+            {/* Modals */}
             {detailId !== null && (
-                <TemplateDetailModal
-                    templateId={detailId}
-                    meta={meta}
-                    onClose={() => setDetailId(null)}
-                />
+                <TemplateDetailModal templateId={detailId} meta={meta} onClose={() => setDetailId(null)} />
             )}
 
             {editModal && (
-                <Modal title="Chỉnh sửa template" onClose={() => setEditModal(null)}>
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel} htmlFor="edit-title-input">Tiêu đề</label>
-                        <input
-                            id="edit-title-input"
-                            className={styles.formInput}
-                            value={editTitle}
-                            onChange={e => setEditTitle(e.target.value)}
-                        />
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel} htmlFor="edit-diff-select">Độ khó</label>
-                        <select
-                            id="edit-diff-select"
-                            className={styles.formSelect}
-                            value={editDiff}
-                            onChange={e => setEditDiff(e.target.value)}
-                        >
-                            {(meta?.difficultly ?? ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).map(d => (
-                                <option key={d} value={d}>{DIFF_LABEL[d] ?? d}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className={styles.modalFooter}>
-                        <button className={styles.btnCancel} onClick={() => setEditModal(null)}>Hủy</button>
-                        <button className={`${styles.btn} ${styles.btnBlue}`} onClick={handleSubmitEdit}>
-                            <Check size={12} /> Lưu thay đổi
-                        </button>
-                    </div>
-                </Modal>
+                <UpdateTemplateModal
+                    template={editModal}
+                    meta={meta}
+                    onClose={() => setEditModal(null)}
+                    onSuccess={updated => {
+                        setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
+                    }}
+                />
             )}
 
             {statusModal && (
@@ -509,7 +511,7 @@ export default function TemplateList() {
                         <button className={styles.btnCancel} onClick={() => setStatusModal(null)}>Hủy</button>
                         <button
                             className={`${styles.btn} ${statusModal.status === 'ACTIVE' ? styles.btnDefault : styles.btnSuccess}`}
-                            onClick={() => handleToggleStatus(statusModal)}
+                            onClick={() => void handleToggleStatus(statusModal)}
                         >
                             {statusModal.status === 'ACTIVE'
                                 ? <><EyeOff size={12} /> Xác nhận ẩn</>
@@ -531,7 +533,8 @@ export default function TemplateList() {
                     </p>
                     <div className={styles.modalFooter}>
                         <button className={styles.btnCancel} onClick={() => setDeleteModal(null)}>Hủy</button>
-                        <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => handleDelete(deleteModal)}>
+                        <button className={`${styles.btn} ${styles.btnDanger}`}
+                                onClick={() => void handleDelete(deleteModal)}>
                             <Trash2 size={12} /> Xác nhận xóa
                         </button>
                     </div>

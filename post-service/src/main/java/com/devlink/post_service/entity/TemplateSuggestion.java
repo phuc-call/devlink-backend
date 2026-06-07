@@ -30,8 +30,7 @@ public class TemplateSuggestion {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Column(name = "suggested_code", columnDefinition = "LONGTEXT")
-    private String suggestedCode;
+
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)

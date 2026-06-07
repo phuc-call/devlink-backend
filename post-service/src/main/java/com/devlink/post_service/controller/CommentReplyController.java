@@ -6,6 +6,7 @@ import com.devlink.post_service.dto.response.CommentReplyResponse;
 import com.devlink.post_service.dto.response.CommentReplySummaryResponse;
 import com.devlink.post_service.service.CommentReplyService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -34,10 +35,12 @@ public class CommentReplyController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CommentReplySummaryResponse>>> getReplies(
             @RequestParam Long commentId,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(50) int size
+
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
-                commentReplyService.getReplies(commentId, page),
+                commentReplyService.getReplies(commentId, page,size),
                 "Get a list of successful replies"
         ));
     }

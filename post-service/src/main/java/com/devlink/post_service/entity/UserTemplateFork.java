@@ -3,6 +3,7 @@ package com.devlink.post_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,7 +39,11 @@ public class UserTemplateFork {
 
     @Column(name = "file_url", length = 500)
     private String fileUrl;
+    @Column(name = "is_proposed", nullable = false)
+    private Boolean isProposed = false;
 
+    @Column(name = "proposed_at")
+    private Instant proposedAt;
     @Column(name = "is_modified", nullable = false)
     private Boolean isModified = false;
 
