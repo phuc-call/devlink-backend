@@ -9,6 +9,7 @@ import com.devlink.post_service.entity.enums.TemplateFileType;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.LearningTemplateRepository;
+import com.devlink.post_service.repository.TemplateSuggestionRepository;
 import com.devlink.post_service.repository.UserTemplateForkRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.UserTemplateForkService;
@@ -30,6 +31,7 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
     private final LearningTemplateRepository learningTemplateRepository;
     private final PostAsyncService postAsyncService; // inject
     private final LearningTemplateRepository templateRepository;
+    private final TemplateSuggestionRepository templateSuggestionRepository;
     @Value("${minio.endpoint}")
     private String minioInternalEndpoint; // http://minio:9000
 
@@ -107,6 +109,9 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
             content = postAsyncService.extractText(internalUrl, fileType);
             log.info("[getForkDetail] forkId={} content={}", forkId, content != null ? "OK" : "NULL");
         }
+        Long suggestionId = templateSuggestionRepository
+                .findActiveSuggestionId(fork.getUserId(), fork.getTemplateId())
+                .orElse(null);
 
         return ForkDetailResponse.builder()
                 .id(fork.getId())
@@ -114,7 +119,9 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
                 .title(fork.getTitle())
                 .content(content)
                 .fileUrl(fork.getFileUrl())
+                .isProposed(fork.getIsProposed())
                 .isModified(fork.getIsModified())
+                .suggestionId(suggestionId)
                 .lastEditedAt(fork.getLastEditedAt())
                 .createdAt(fork.getCreatedAt())
                 .build();

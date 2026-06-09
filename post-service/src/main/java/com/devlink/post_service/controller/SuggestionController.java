@@ -2,10 +2,8 @@ package com.devlink.post_service.controller;
 
 import com.devlink.post_service.dto.request.CreateSuggestionRequest;
 import com.devlink.post_service.dto.request.RejectSuggestionRequest;
-import com.devlink.post_service.dto.response.ApiResponse;
-import com.devlink.post_service.dto.response.SuggestionActionResponse;
-import com.devlink.post_service.dto.response.SuggestionResponse;
-import com.devlink.post_service.dto.response.SuggestionSummary;
+import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.entity.enums.SuggestionStatus;
 import com.devlink.post_service.service.SuggestionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -13,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/templates/suggestions")
@@ -51,6 +51,32 @@ public class SuggestionController {
     public ResponseEntity<ApiResponse<SuggestionActionResponse>> cancelSuggestion(
             @PathVariable Long suggestionId) {
         return ResponseEntity.ok(ApiResponse.ok(suggestionService.cancelSuggestion(suggestionId)));
+    }
+
+    @GetMapping("/{suggestionId}")
+    public ResponseEntity<ApiResponse<SuggestionDetailResponse>>getDetailSuggestion(
+            @PathVariable Long suggestionId,
+            @RequestParam(value = "showInfoStatus", defaultValue = "false") boolean showInfoStatus
+    ){
+        return ResponseEntity.ok(ApiResponse.ok(suggestionService.getSuggestionDetail(suggestionId,showInfoStatus)));
+    }
+
+    @GetMapping("/admin/grouped")
+    public ResponseEntity<ApiResponse<Map<String, SuggestionGroupResponse>>> getGroupedByStatus() {
+        return ResponseEntity.ok(ApiResponse.ok(suggestionService.getGroupedByStatus()));
+    }
+    @GetMapping("/admin/group")
+    public ResponseEntity<ApiResponse<Page<SuggestionSummary>>> getSuggestionsByStatus(
+            @RequestParam SuggestionStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(50) int size) {
+        return ResponseEntity.ok(ApiResponse.ok(suggestionService.getSuggestionsByStatus(status, page, size)));
+    }
+
+    @DeleteMapping("/admin/{suggestionId}")
+    public ResponseEntity<ApiResponse<Void>>deleteSuggestion(@PathVariable Long suggestionId){
+        suggestionService.deleteSuggestion(suggestionId);
+        return ResponseEntity.ok(ApiResponse.ok(null,"Delete successful"));
     }
 
 }

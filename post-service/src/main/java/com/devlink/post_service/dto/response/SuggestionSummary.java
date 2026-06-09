@@ -15,4 +15,5 @@ public class SuggestionSummary {
     private Long templateId;
     private SuggestionStatus status;
     private Instant createdAt;
+
 }

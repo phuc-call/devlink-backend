@@ -1,15 +1,15 @@
 package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.dto.request.CreateSuggestionRequest;
+import com.devlink.post_service.dto.request.PeriodRequest;
 import com.devlink.post_service.dto.request.RejectSuggestionRequest;
-import com.devlink.post_service.dto.response.SuggestionActionResponse;
-import com.devlink.post_service.dto.response.SuggestionDetailResponse;
-import com.devlink.post_service.dto.response.SuggestionResponse;
-import com.devlink.post_service.dto.response.SuggestionSummary;
+import com.devlink.post_service.dto.request.SuggestionOverviewRequest;
+import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.LearningTemplate;
 import com.devlink.post_service.entity.TemplateSuggestion;
 import com.devlink.post_service.entity.UserTemplateFork;
 import com.devlink.post_service.entity.enums.SuggestionStatus;
+import com.devlink.post_service.entity.enums.SuggestionType;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.LearningTemplateRepository;
@@ -17,15 +17,28 @@ import com.devlink.post_service.repository.TemplateSuggestionRepository;
 import com.devlink.post_service.repository.UserTemplateForkRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.SuggestionService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.devlink.post_service.config.Constants.CACHE_TTL_HOURS;
+import static com.devlink.post_service.config.Constants.MAX_PERIOD_DAYS;
 
 @Service
 @Transactional
@@ -34,6 +47,10 @@ public class SuggestionServiceImpl implements SuggestionService {
     private final UserTemplateForkRepository userTemplateForkRepository;
     private final TemplateSuggestionRepository templateSuggestionRepository;
     private final LearningTemplateRepository learningTemplateRepository;
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private final RedisTemplate<String, Object> objectRedisTemplate;
+    private final ObjectMapper objectMapper;
     @Override
     public SuggestionResponse createSuggestion(CreateSuggestionRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -246,5 +263,148 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .id(suggestionId)
                 .status(null)
                 .build();
+    }
+
+
+
+    @Override
+    public void deleteSuggestion(Long suggestionId){
+        TemplateSuggestion suggestion = templateSuggestionRepository.findById(suggestionId)
+                .orElseThrow(() -> new AppException(ErrorCode.TEMPLATE_SUGGESTION_NOT_FOUND));
+        templateSuggestionRepository.delete(suggestion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, SuggestionGroupResponse> getGroupedByStatus(){
+        Map<String, List<SuggestionSummary>>group=new HashMap<>();
+        List<SuggestionSummary> all=templateSuggestionRepository.findAllGroupedByStatus();
+
+        for(SuggestionSummary item:all){
+            group.computeIfAbsent(item.getStatus().name(),k->new ArrayList<>())
+                    .add(item);
+        }
+        Map<String, SuggestionGroupResponse> result=new HashMap<>();
+        group.forEach((status, items)->
+                result.put(status,new SuggestionGroupResponse(items.size(),items)));
+
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SuggestionSummary> getSuggestionsByStatus(SuggestionStatus status, int page, int size){
+        Pageable pageable=PageRequest.of(page,size);
+        return templateSuggestionRepository.findByStatus(status,pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PeriodOverviewRepose> getOverview(SuggestionOverviewRequest request) {
+        // default: 1 period = last 30 days
+        if (request.getPeriods() == null || request.getPeriods().isEmpty()) {
+            LocalDate today = LocalDate.now();
+            request.setPeriods(List.of(new PeriodRequest(today.minusDays(30), today)));
+        }
+
+        validatePeriods(request.getPeriods());
+
+        String cacheKey = buildCacheKey(request.getPeriods());
+
+        // check cache
+        Object cached = objectRedisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            try {
+                return objectMapper.convertValue(cached,
+                        new TypeReference<>() {});
+            } catch (Exception e) {
+                log.warn("Failed to deserialize overview cache, re-querying. Key={}", cacheKey);
+            }
+        }
+
+        // query + build response
+        List<PeriodOverviewRepose> result = request.getPeriods().stream()
+                .map(this::buildPeriodOverview)
+                .collect(Collectors.toList());
+
+        // save cache 24h
+        objectRedisTemplate.opsForValue().set(cacheKey, result, CACHE_TTL_HOURS, TimeUnit.HOURS);
+
+        return result;
+    }
+
+    private void validatePeriods(List<PeriodRequest> periods) {
+        LocalDate today = LocalDate.now();
+
+        for (PeriodRequest p : periods) {
+            if (p.getFrom().isAfter(p.getTo())) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+            if (p.getTo().isAfter(today)) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+            long days = ChronoUnit.DAYS.between(p.getFrom(), p.getTo());
+            if (days > MAX_PERIOD_DAYS) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+        }
+
+        // check no two periods are completely identical
+        Set<String> seen = new HashSet<>();
+        for (PeriodRequest p : periods) {
+            String key = p.getFrom() + "_" + p.getTo();
+            if (!seen.add(key)) {
+                throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+            }
+        }
+    }
+
+    private PeriodOverviewRepose buildPeriodOverview(PeriodRequest period) {
+        Instant from = period.getFrom().atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant to   = period.getTo().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        List<Object[]> rows = templateSuggestionRepository
+                .findCountByTypeAndDateBetween(from, to);
+
+        // map: date -> type -> count
+        Map<String, Map<String, Long>> dateTypeMap = new LinkedHashMap<>();
+
+        // pre-fill all dates in range with 0
+        LocalDate cursor = period.getFrom();
+        while (!cursor.isAfter(period.getTo())) {
+            dateTypeMap.put(cursor.format(DATE_FMT), new HashMap<>());
+            cursor = cursor.plusDays(1);
+        }
+
+        for (Object[] row : rows) {
+            SuggestionType type = (SuggestionType) row[0];
+            String date = row[1].toString().substring(0, 10);
+            long count = ((Number) row[2]).longValue();
+            dateTypeMap.computeIfAbsent(date, k -> new HashMap<>())
+                    .put(type.name(), count);
+        }
+
+        List<DatePointResponse> data = dateTypeMap.entrySet().stream()
+                .map(e -> new DatePointResponse(
+                        e.getKey(),
+                        e.getValue().getOrDefault(SuggestionType.CONTENT_FIX.name(), 0L),
+                        e.getValue().getOrDefault(SuggestionType.ADD_EXPLANATION.name(), 0L),
+                        e.getValue().getOrDefault(SuggestionType.REPORT_ERROR.name(), 0L),
+                        e.getValue().getOrDefault(SuggestionType.OTHER.name(), 0L)
+                ))
+                .collect(Collectors.toList());
+
+        return new PeriodOverviewRepose(
+                period.getFrom().format(DATE_FMT),
+                period.getTo().format(DATE_FMT),
+                data
+        );
+    }
+
+    private String buildCacheKey(List<PeriodRequest> periods) {
+        String joined = periods.stream()
+                .map(p -> p.getFrom() + "_" + p.getTo())
+                .collect(Collectors.joining("|"));
+        return "suggestion:overview:" + joined;
     }
 }

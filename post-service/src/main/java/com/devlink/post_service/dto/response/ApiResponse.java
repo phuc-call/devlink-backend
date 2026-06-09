@@ -25,6 +25,12 @@ public class ApiResponse<T> {
                 .build();
     }
 
+    public static <T> ApiResponse<T> error(String message) {
+        return ApiResponse.<T>builder()
+                .message(message)
+                .success(false)
+                .build();
+    }
     public static <T> ApiResponse<T> ok(T data, String message) {
         return ApiResponse.<T>builder()
                 .success(true)
@@ -33,11 +39,5 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(String message) {
-        return ApiResponse.<T>builder()
-                .message(message)
-                .success(false)
-                .build();
-    }
 
 }

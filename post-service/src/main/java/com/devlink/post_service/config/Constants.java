@@ -51,4 +51,7 @@ public final class Constants {
     );
     public static final String SUCCESSS="Success";
 
+    public static final long CACHE_TTL_HOURS = 24;
+    public static final int MAX_PERIOD_DAYS = 30;
+
 }

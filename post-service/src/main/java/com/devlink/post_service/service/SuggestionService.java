@@ -2,11 +2,13 @@ package com.devlink.post_service.service;
 
 import com.devlink.post_service.dto.request.CreateSuggestionRequest;
 import com.devlink.post_service.dto.request.RejectSuggestionRequest;
-import com.devlink.post_service.dto.response.SuggestionActionResponse;
-import com.devlink.post_service.dto.response.SuggestionDetailResponse;
-import com.devlink.post_service.dto.response.SuggestionResponse;
-import com.devlink.post_service.dto.response.SuggestionSummary;
+import com.devlink.post_service.dto.request.SuggestionOverviewRequest;
+import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.entity.enums.SuggestionStatus;
 import org.springframework.data.domain.Page;
+
+import java.util.List;
+import java.util.Map;
 
 public interface SuggestionService {
     /**
@@ -90,5 +92,59 @@ public interface SuggestionService {
      * - Hard delete the suggestion record from template_suggestions table
      */
     SuggestionActionResponse cancelSuggestion(Long suggestionId);
+
+    /**
+     * Admin gets all suggestions grouped by status.
+     *
+     * Input  : none
+     * Output : Map<String, SuggestionGroupDto>
+     *key = status name (PENDING, REVIEWING, APPROVED, REJECTED, CANCELLED)
+     * value = SuggestionGroupDto{ count of suggestion of this status, and value List<SuggestionSummary>}
+     * Flow:
+     * - Fetch all suggestions from DB
+     * - Group by status into Map
+     * - Status with no suggestions will not appear as key in Map
+     */
+    Map<String, SuggestionGroupResponse> getGroupedByStatus();
+
+    /**
+     * Admin gets paginated list of suggestions filtered by a specific status.
+
+     * Input : status SuggestionStatus (PENDING | REVIEWING | APPROVED | REJECTED)
+     * page index, 0-based
+     * size page size, max 50
+     * Output : Page<SuggestionSummary> { id, forkId, userId, templateId, status, createdAt }
+
+     * Flow:
+     * - Query all suggestions with matching status
+     * - Return paginated result ordered by createdAt ASC
+     */
+    Page<SuggestionSummary> getSuggestionsByStatus(SuggestionStatus status, int page, int size);
+
+    /**
+     * Admin hard deletes a suggestion by ID.
+     * Input  : suggestionId
+     * Output : void
+     * Flow:
+     * - Suggestion must exist, else throw TEMPLATE_SUGGESTION_NOT_FOUND (404)
+     * - Hard delete from DB
+     */
+    void deleteSuggestion(Long suggestionId);
+
+    /**
+     * Admin gets suggestion overview grouped by day and type for N periods.
+     *
+     * Input: SuggestionOverviewRequest { periods: [{from, to}, ...] }
+     *          - Each period max 30 days
+     *          - Periods must not overlap completely
+     *          - Default: current date minus 1 month if not provided
+     * Output: List<PeriodOverviewDto> — one entry per period
+     *          each entry contains daily breakdown by SuggestionType
+     *
+     * Cache : Redis, TTL 24h, key = "suggestion:overview:{hash of periods}"
+     */
+
+    List<PeriodOverviewRepose> getOverview(SuggestionOverviewRequest request);
+
 
 }

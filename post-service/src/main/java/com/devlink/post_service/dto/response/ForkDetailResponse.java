@@ -11,6 +11,8 @@ public class ForkDetailResponse {
     private String title;
     private String content;
     private String fileUrl;
+    private boolean isProposed;
+    private Long suggestionId;
     private Boolean isModified;
     private LocalDateTime lastEditedAt;
     private LocalDateTime createdAt;

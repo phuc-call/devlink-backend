@@ -30,8 +30,6 @@ public class TemplateSuggestion {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-
-
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private SuggestionStatus status = SuggestionStatus.PENDING;
