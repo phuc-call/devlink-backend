@@ -29,6 +29,7 @@ import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
 import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkeditorpage.tsx';
+import SavedPage from '../features/saved/pages/SavedPage';
 
 const router = createBrowserRouter([
 
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
                     {path: '/notifications', element: <NotificationPage/>},
                     {path: '/chat', element: <ChatPage/>},
                     {path: '/feature-1', element: <MyTemplatesPage/>},
+                    {path: '/saved', element: <SavedPage/>},
                 ],
             },
             {

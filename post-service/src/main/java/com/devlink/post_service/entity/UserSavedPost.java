@@ -1,6 +1,5 @@
 package com.devlink.post_service.entity;
 
-import com.devlink.post_service.entity.enums.SaveType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,9 +26,6 @@ public class UserSavedPost {
     @Column(name = "post_id", nullable = false)
     private Long postId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "save_type", length = 20, nullable = false)
-    private SaveType saveType = SaveType.MANUAL;
 
     @Column(name = "saved_at", nullable = false, updatable = false)
     private Instant savedAt;

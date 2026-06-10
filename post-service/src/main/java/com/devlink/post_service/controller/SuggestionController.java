@@ -2,6 +2,7 @@ package com.devlink.post_service.controller;
 
 import com.devlink.post_service.dto.request.CreateSuggestionRequest;
 import com.devlink.post_service.dto.request.RejectSuggestionRequest;
+import com.devlink.post_service.dto.request.SuggestionOverviewRequest;
 import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.enums.SuggestionStatus;
 import com.devlink.post_service.service.SuggestionService;
@@ -12,7 +13,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+
+import static com.devlink.post_service.config.Constants.SUCCESSS;
 
 @RestController
 @RequestMapping("/api/templates/suggestions")
@@ -54,17 +58,18 @@ public class SuggestionController {
     }
 
     @GetMapping("/{suggestionId}")
-    public ResponseEntity<ApiResponse<SuggestionDetailResponse>>getDetailSuggestion(
+    public ResponseEntity<ApiResponse<SuggestionDetailResponse>> getDetailSuggestion(
             @PathVariable Long suggestionId,
             @RequestParam(value = "showInfoStatus", defaultValue = "false") boolean showInfoStatus
-    ){
-        return ResponseEntity.ok(ApiResponse.ok(suggestionService.getSuggestionDetail(suggestionId,showInfoStatus)));
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(suggestionService.getSuggestionDetail(suggestionId, showInfoStatus)));
     }
 
     @GetMapping("/admin/grouped")
     public ResponseEntity<ApiResponse<Map<String, SuggestionGroupResponse>>> getGroupedByStatus() {
         return ResponseEntity.ok(ApiResponse.ok(suggestionService.getGroupedByStatus()));
     }
+
     @GetMapping("/admin/group")
     public ResponseEntity<ApiResponse<Page<SuggestionSummary>>> getSuggestionsByStatus(
             @RequestParam SuggestionStatus status,
@@ -74,9 +79,17 @@ public class SuggestionController {
     }
 
     @DeleteMapping("/admin/{suggestionId}")
-    public ResponseEntity<ApiResponse<Void>>deleteSuggestion(@PathVariable Long suggestionId){
+    public ResponseEntity<ApiResponse<Void>> deleteSuggestion(@PathVariable Long suggestionId) {
         suggestionService.deleteSuggestion(suggestionId);
-        return ResponseEntity.ok(ApiResponse.ok(null,"Delete successful"));
+        return ResponseEntity.ok(ApiResponse.ok(null, "Delete successful"));
+    }
+
+    @PostMapping("/admin/overview/template")
+    public ResponseEntity<ApiResponse<List<PeriodOverviewRepose>>> overview(
+            @RequestBody SuggestionOverviewRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(suggestionService.getOverviewSuggestion(request), SUCCESSS)
+        );
     }
 
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { BookOpen, Plus, X } from 'lucide-react';
-import { SectionPlaceholder } from '../components/PagePlaceholder.tsx';
+import { Plus, X } from 'lucide-react';
+
 import CreateTemplateForm from '../components/CreateTemplateForm.tsx';
 import TemplateList from '../components/TemplateList.tsx';
 import SuggestionList from '../components/SuggestionList/SuggestionList.tsx';
 import SuggestionDetailModal from '../components/SuggestionDetailModal/SuggestionDetailModal.tsx';
+import SuggestionGroupPanel from '../components/SuggestionList/SuggestionGroupPanel.tsx';
+
 
 export default function AdminTemplatesPage() {
     const [showUploadModal, setShowUploadModal]     = useState(false);
@@ -51,13 +53,7 @@ export default function AdminTemplatesPage() {
                     onSelect={id => setSelectedSuggestion(id)}
                 />
 
-                <SectionPlaceholder
-                    tag="Chi tiết template"
-                    title="Modal xem / chỉnh sửa template"
-                    description="Hiển thị toàn bộ metadata, AI summary, extractedText, danh sách fork. Cho phép chỉnh sửa + upload file mới (3.11)."
-                    height={200}
-                    icon={<BookOpen size={24} aria-hidden="true" />}
-                />
+                <SuggestionGroupPanel />
             </div>
 
             {/* Modal upload */}

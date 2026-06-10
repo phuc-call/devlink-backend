@@ -10,6 +10,7 @@ import type { FeedPostResponse, MediaResponse, Visibility } from '../../../types
 import { getCurrentUserId } from '../../../utils/auth';
 import { postApi } from '../../../api/post-service/postApi';
 import CommentSection from './CommentSection';
+import { savedPostApi } from '../../../api/post-service/savedPostApi';
 
 interface Props {
     post: FeedPostResponse;
@@ -17,6 +18,7 @@ interface Props {
     onUpdated?: (post: FeedPostResponse) => void;
     openCommentPostId: number | null;
     onToggleComment: (id: number | null) => void;
+    isSaved?: boolean;
 }
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
@@ -428,7 +430,7 @@ function FooterBtn({ icon, label }: FooterBtnProps) {
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 export default function PostCard({
                                      post: initialPost, onDeleted, onUpdated,
-                                     openCommentPostId, onToggleComment,
+                                     openCommentPostId, onToggleComment,isSaved = false,
                                  }: Props) {
     const [post, setPost]                   = useState(initialPost);
     const [menuOpen, setMenuOpen]           = useState(false);
@@ -436,6 +438,9 @@ export default function PostCard({
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    const [saved, setSaved] = useState(isSaved);
+    const [saveLoading, setSaveLoading] = useState(false);
 
     const currentUserId = getCurrentUserId();
     const isOwner       = currentUserId !== null && post.authorId === currentUserId;
@@ -464,6 +469,26 @@ export default function PostCard({
             setDeleteLoading(false);
         }
     }, [post.id, onDeleted]);
+
+    const handleSave = useCallback(async () => {
+        if (saveLoading) return;
+        setSaveLoading(true);
+        try {
+            if (saved) {
+                await savedPostApi.unsavePost(post.id);
+                setSaved(false);
+                onDeleted?.(post.id);   // ← THÊM: xóa khỏi danh sách SavedPage ngay
+            } else {
+                await savedPostApi.savePost(post.id);
+                setSaved(true);
+            }
+        } catch {
+            // giữ nguyên state nếu lỗi
+        } finally {
+            setSaveLoading(false);
+            setMenuOpen(false);
+        }
+    }, [saved, saveLoading, post.id, onDeleted]);
 
     const handleUpdated = useCallback((updated: FeedPostResponse) => {
         setPost(updated);
@@ -579,8 +604,8 @@ export default function PostCard({
                                     <>
                                         <MenuItem
                                             icon={<Bookmark size={15} />}
-                                            label="Lưu vào thư viện"
-                                            onClick={() => setMenuOpen(false)}
+                                            label={saveLoading ? 'Đang xử lý...' : saved ? 'Bỏ lưu khỏi thư viện' : 'Lưu vào thư viện'}
+                                            onClick={() => { void handleSave(); }}
                                             color="#374151"
                                         />
                                         <MenuItem

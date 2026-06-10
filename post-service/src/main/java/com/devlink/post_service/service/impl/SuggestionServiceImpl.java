@@ -300,7 +300,7 @@ public class SuggestionServiceImpl implements SuggestionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PeriodOverviewRepose> getOverview(SuggestionOverviewRequest request) {
+    public List<PeriodOverviewRepose> getOverviewSuggestion(SuggestionOverviewRequest request) {
         // default: 1 period = last 30 days
         if (request.getPeriods() == null || request.getPeriods().isEmpty()) {
             LocalDate today = LocalDate.now();

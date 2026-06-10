@@ -15,7 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+
 public class FeedPostResponse {
     private Long id;
     private Long authorId;
@@ -32,10 +32,11 @@ public class FeedPostResponse {
     private Long commentCount;
     private List<TagResponse> tags;
     private List<MediaResponse> mediaList;
-
+    private Instant savedAt;
     // Author info — lấy từ user-service
     private UserFeedInfoClient author;
 
+    @Builder
     // Constructor cho JPQL — không có tags và mediaList
     public FeedPostResponse(Long id, Long authorId, String content,
                             PostStatus status, Visibility visibility, PostType postType,
@@ -55,4 +56,5 @@ public class FeedPostResponse {
         this.updatedAt = updatedAt;
         this.commentCount = commentCount;
     }
+
 }

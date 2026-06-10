@@ -463,3 +463,47 @@
 /* ── Spin ── */
 .spin { animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
+.btnWarning {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FCD34D;
+}
+
+.btnWarning:hover:not(:disabled) {
+    background: #FEF3C7;
+    border-color: #F59E0B;
+}
+
+/* Badge "Đang chờ duyệt" hiện khi proposed = true */
+.proposedBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px;
+    height: 32px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #2563EB;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+/* Badge "Đã thu hồi" sau khi cancel thành công */
+.cancelSuccessBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px;
+    height: 32px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #16A34A;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 6px;
+    white-space: nowrap;
+}

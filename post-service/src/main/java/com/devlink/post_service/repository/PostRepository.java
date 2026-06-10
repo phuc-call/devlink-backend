@@ -1,6 +1,7 @@
 package com.devlink.post_service.repository;
 
 import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
+import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
@@ -58,4 +59,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p.authorId FROM Post p WHERE p.id = :id AND p.status <> :status")
     Optional<Long> findAuthorIdByIdAndStatusNot(@Param("id") Long id, @Param("status") PostStatus status);
+
+    @Query("""
+    SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
+           p.id, p.authorId, p.content, p.status, p.visibility,
+           p.postType, p.viewCount, p.isPinned, p.aiModerationStatus,
+           p.createdAt, p.updatedAt, p.commentCount)
+    FROM Post p
+    WHERE p.id IN :ids
+      AND p.status <> 'DELETED'
+      AND p.deletedAt IS NULL
+""")
+    List<FeedPostResponse> findSavedPostProjections(@Param("ids") List<Long> ids);
+
+
 }

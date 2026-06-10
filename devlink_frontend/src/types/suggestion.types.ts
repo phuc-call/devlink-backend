@@ -43,3 +43,27 @@ export interface UserInfo {
     userName: string;
     avatar: string | null;
 }
+
+export interface PeriodRequest {
+    from: string; // "YYYY-MM-DD"
+    to: string;   // "YYYY-MM-DD"
+}
+
+export interface SuggestionOverviewRequest {
+    periods: PeriodRequest[];
+}
+
+// Response
+export interface DatePointResponse {
+    date: string;
+    contentFix: number;
+    addExplanation: number;
+    reportError: number;
+    other: number;
+}
+
+export interface PeriodOverviewResponse {
+    from: string;
+    to: string;
+    data: DatePointResponse[];
+}

@@ -74,7 +74,17 @@ public enum ErrorCode {
 
     POST_NOT_YOURSELF("You can only delete your own posts", HttpStatus.BAD_REQUEST),
 
-    INVALID_DATE_RANGE("Invalid date range: start date must be before end date and follow the correct format (yyyy-MM-dd)", HttpStatus.BAD_REQUEST), SUGGESTION_ALREADY_PROCESSED("The suggestion has already been processed.", HttpStatus.BAD_REQUEST), SUGGESTION_CANNOT_CANCEL("Cannot cancel a suggestion that has already been processed.", HttpStatus.BAD_REQUEST), REJECT_REASON_REQUIRED("Rejection reason is required and must not exceed 500 characters.", HttpStatus.BAD_REQUEST), ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN);
+    INVALID_DATE_RANGE("Invalid date range: start date must be before end date and follow the correct format (yyyy-MM-dd)", HttpStatus.BAD_REQUEST),
+    SUGGESTION_ALREADY_PROCESSED("The suggestion has already been processed.", HttpStatus.BAD_REQUEST),
+    SUGGESTION_CANNOT_CANCEL("Cannot cancel a suggestion that has already been processed.", HttpStatus.BAD_REQUEST),
+    REJECT_REASON_REQUIRED("Rejection reason is required and must not exceed 500 characters.", HttpStatus.BAD_REQUEST),
+    // Saved post
+    POST_ALREADY_SAVED("Post already saved", HttpStatus.CONFLICT),
+    POST_NOT_SAVED("Post not in saved list", HttpStatus.NOT_FOUND),
+    POST_SAVE_NOT_ALLOWED("You are not allowed to save this post", HttpStatus.FORBIDDEN),
+    POST_UNAVAILABLE("Post is no longer available", HttpStatus.GONE),
+    POST_VIOLATED("Post has been removed due to a policy violation", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS),
+    ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN);
 
     private final String message;
     private final HttpStatus httpStatus;

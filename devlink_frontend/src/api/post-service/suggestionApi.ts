@@ -4,6 +4,8 @@ import type {
     SuggestionDetailResponse,
     SuggestionActionResponse,
     RejectSuggestionRequest,
+    SuggestionOverviewRequest,
+    PeriodOverviewResponse,
 } from '../../types/suggestion.types';
 
 export interface PageResponse<T> {
@@ -108,5 +110,15 @@ export async function createSuggestion(
     request: CreateSuggestionRequest,
 ): Promise<SuggestionResponse> {
     const res = await axiosInstance.post('/api/templates/suggestions', request);
+    return res.data.data;
+}
+// POST /api/templates/suggestions/admin/overview/template
+export async function getSuggestionOverview(
+    request: SuggestionOverviewRequest,
+): Promise<PeriodOverviewResponse[]> {
+    const res = await axiosInstance.post<{ data: PeriodOverviewResponse[] }>(
+        '/api/templates/suggestions/admin/overview/template',
+        request,
+    );
     return res.data.data;
 }

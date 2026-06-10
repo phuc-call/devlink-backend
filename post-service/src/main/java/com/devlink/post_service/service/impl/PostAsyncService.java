@@ -153,7 +153,7 @@ public class PostAsyncService {
                 .map(userId -> UserSavedPost.builder()
                         .userId(userId)
                         .postId(post.getId())
-                        .saveType(SaveType.AUTO)
+
                         .build())
                 .toList();
 

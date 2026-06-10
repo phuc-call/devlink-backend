@@ -22,10 +22,21 @@ import java.util.Map;
         configuration = FeignClientConfig.class
 )
 public interface UserServiceClient {
-
+    /**
+     * Returns friend IDs of the given user.
+     * Checks Redis first; on miss calls user-service and re-caches.
+     *
+     * @return list of friend user IDs, empty list if unavailable
+     */
     @GetMapping("/internal/users/me/friends/ids")
     ApiResponse<List<Long>> getFriendIds();
 
+    /**
+     * Returns blocked user IDs of the given user.
+     * Checks Redis first; on miss calls user-service and re-caches.
+     *
+     * @return list of blocked user IDs, empty list if unavailable
+     */
     @GetMapping("/internal/users/me/blocked/ids")
     ApiResponse<List<Long>> getBlockedIds();
 

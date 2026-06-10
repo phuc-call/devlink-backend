@@ -1,6 +1,7 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.UserInfoCacheClient;
+
+import com.devlink.post_service.client.cache.UserLanguageCacheClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
 import com.devlink.post_service.dto.response.*;
@@ -46,7 +47,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     private final LearningTemplateRepository templateRepository;
     private final FileStorageService fileStorageService;
     private final GeminiModerationService geminiService;
-    private final UserInfoCacheClient userInfoCacheClient;
+    private final UserLanguageCacheClient userLanguageCacheClient;
     private final ObjectMapper objectMapper;
     private final UserTemplateForkRepository forkRepository;
     private final UserInteractionRepository interactionRepository;
@@ -76,7 +77,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
         }
 
         String lang = request.getLanguage().toUpperCase().trim();
-        List<String> supportedLanguages = userInfoCacheClient.getSupportedLanguages();
+        List<String> supportedLanguages = userLanguageCacheClient.getSupportedLanguages();
         if (supportedLanguages.isEmpty() || !supportedLanguages.contains(lang)) {
             log.warn("[LearningTemplate] Language not supported: {} | supported={}", lang, supportedLanguages);
             throw new AppException(ErrorCode.TEMPLATE_LANGUAGE_NOT_SUPPORTED);
@@ -181,7 +182,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     @Transactional(readOnly = true)
     public PagedResponse<TemplateCardResponse> getMyTemplates(int page, int size, Difficulty difficulty, String tag) {
         Long userId = SecurityUtils.getCurrentUserId();
-        List<String> languages = userInfoCacheClient.getUserLanguages(userId);
+        List<String> languages = userLanguageCacheClient.getUserLanguages(userId);
 
         if (languages.isEmpty()) {
             return PagedResponse.empty("Bạn chưa cài đặt ngôn ngữ lập trình. Hãy cập nhật profile để xem template phù hợp.");
@@ -197,7 +198,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     @Transactional(readOnly = true)
     public PagedResponse<TemplateCardResponse> getTemplates(int page, int size, Difficulty difficulty, String tag, TemplateStatus status) {
         Pageable pageable = PageRequest.of(page, size);
-        List<String> allLanguages = userInfoCacheClient.getSupportedLanguages();
+        List<String> allLanguages = userLanguageCacheClient.getSupportedLanguages();
 
         List<TemplateStatus> statuses = (status != null) ? List.of(status) : List.of(TemplateStatus.ACTIVE, TemplateStatus.HIDDEN);
 
@@ -365,7 +366,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     private void updateLanguageAndMetadata(LearningTemplate learningTemplate, CreateTemplateRequest request) {
         if (request.getLanguage() != null && !request.getLanguage().trim().isEmpty()) {
             String lang = request.getLanguage().toUpperCase().trim();
-            List<String> supportedLanguages = userInfoCacheClient.getSupportedLanguages();
+            List<String> supportedLanguages = userLanguageCacheClient.getSupportedLanguages();
             if (supportedLanguages.isEmpty() || !supportedLanguages.contains(lang)) {
                 log.warn("[LearningTemplate] Language not supported during update: {} | supported={}", lang, supportedLanguages);
                 throw new AppException(ErrorCode.TEMPLATE_LANGUAGE_NOT_SUPPORTED);
@@ -430,7 +431,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
                         .forkCount(forkMap.getOrDefault(t.getId(), 0L))
                         .build())
                 .sorted(Comparator.comparingLong(TemplateOverviewItemResponse::getViewCount).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private OverviewOfTemplate buildOverview(

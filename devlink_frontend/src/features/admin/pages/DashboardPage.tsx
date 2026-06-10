@@ -4,6 +4,7 @@ import {
     TrendingUp, MessageSquare, Eye, Activity,
 } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder';
+import SuggestionOverviewChart from '../components/SuggestionOverviewChart';
 import TemplateOverviewSection from '../components/TemplateOverviewSection';
 
 interface StatCardProps {
@@ -72,13 +73,7 @@ export default function DashboardPage() {
 
             {/* ── Main grid: chart + recent ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-                <SectionPlaceholder
-                    tag="Biểu đồ"
-                    title="Hoạt động theo ngày"
-                    description="Biểu đồ line/bar hiển thị số bài đăng mới, người dùng đăng ký, lượt xem theo từng ngày trong 30 ngày gần nhất."
-                    height={280}
-                    icon={<TrendingUp size={32}/>}
-                />
+                <SuggestionOverviewChart />
                 <SectionPlaceholder
                     tag="Thống kê nhanh"
                     title="Top metrics hôm nay"

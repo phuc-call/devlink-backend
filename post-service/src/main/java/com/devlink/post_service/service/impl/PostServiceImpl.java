@@ -1,12 +1,16 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.UserServiceClient;
+import com.devlink.post_service.client.cache.UserInfoCacheClient;
+import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
-import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.dto.response.FeedPostResponse;
+import com.devlink.post_service.dto.response.MediaResponse;
+import com.devlink.post_service.dto.response.PostResponse;
+import com.devlink.post_service.dto.response.TagResponse;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.PostFile;
 import com.devlink.post_service.entity.PostMedia;
@@ -19,7 +23,6 @@ import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
 import com.devlink.post_service.service.PostService;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
-import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.internal.util.StringUtils;
@@ -56,9 +59,12 @@ public class PostServiceImpl implements PostService {
     private final PostFileRepository postFileRepository;
     private final FileStorageService fileStorageService;
     private final PostAsyncService postAsyncService;
-    private final UserServiceClient userServiceClient;
+
     private final PostTagRepository postTagRepository;
     private final PostMediaRepository postMediaRepository;
+
+    private final UserRelationCacheClient userRelationCacheClient;
+    private final UserInfoCacheClient userInfoCacheClient;
 
 
     @Override
@@ -223,8 +229,8 @@ public class PostServiceImpl implements PostService {
     public Page<FeedPostResponse> getFeed(int page, int size, String postType) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
-        List<Long> friendIds = fetchFriendIds();
-        List<Long> blockedIds = fetchBlockedIds();
+        List<Long> friendIds = userRelationCacheClient.getFriendIds(currentUserId);
+        List<Long> blockedIds = userRelationCacheClient.getBlockedIds(currentUserId);
 
         PostType postTypeEnum = null;
         if (postType != null && !postType.isBlank()) {
@@ -279,7 +285,8 @@ public class PostServiceImpl implements PostService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserFeedInfoClient> authorMap = fetchUserFeedInfo(authorIds);
+        Map<Long, UserFeedInfoClient> authorMap = userInfoCacheClient.getUserFeedInfo(authorIds);
+
 
         posts.forEach(p -> {
             p.setTags(tagsMap.getOrDefault(p.getId(), List.of()));
@@ -298,57 +305,8 @@ public class PostServiceImpl implements PostService {
         return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
     }
 
-    //  Circuit Breaker methods
 
-    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
-            name = "user-service-friends",
-            fallbackMethod = "fetchFriendIdsFallback"
-    )
-    @Retry(name = "user-service-friends")
-    public List<Long> fetchFriendIds() {
-        log.info("[PostService] Calling getFriendIds");
-        ApiResponse<List<Long>> res = userServiceClient.getFriendIds();
-        return res.getData() != null ? res.getData() : List.of(-1L);
-    }
 
-    public List<Long> fetchFriendIdsFallback(Throwable t) {
-        log.warn("[CB-friends] fallback: {}", t.getMessage());
-        return List.of(-1L);
-    }
-
-    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
-            name = "user-service-blocked",
-            fallbackMethod = "fetchBlockedIdsFallback"
-    )
-    @Retry(name = "user-service-blocked")
-    public List<Long> fetchBlockedIds() {
-        log.info("[PostService] Calling getBlockedIds");
-        ApiResponse<List<Long>> res = userServiceClient.getBlockedIds();
-        return res.getData() != null ? res.getData() : List.of(-1L);
-    }
-
-    public List<Long> fetchBlockedIdsFallback(Throwable t) {
-        log.warn("[CB-blocked] fallback: {}", t.getMessage());
-        return List.of(-1L);
-    }
-
-    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
-            name = "user-service-feed-info",
-            fallbackMethod = "fetchUserFeedInfoFallback"
-    )
-    @Retry(name = "user-service-feed-info")
-    public Map<Long, UserFeedInfoClient> fetchUserFeedInfo(List<Long> authorIds) {
-        log.info("[PostService] Calling getUserFeedInfo size={}", authorIds.size());
-        ApiResponse<Map<Long, UserFeedInfoClient>> res =
-                userServiceClient.getUserFeedInfo(authorIds);
-        return res.getData() != null ? res.getData() : Map.of();
-    }
-
-    public Map<Long, UserFeedInfoClient> fetchUserFeedInfoFallback(
-            List<Long> authorIds, Throwable t) {
-        log.warn("[CB-feed-info] fallback: {}", t.getMessage());
-        return Map.of();
-    }
 
 
     @Override
@@ -498,8 +456,6 @@ public class PostServiceImpl implements PostService {
                 .orderIndex(orderIndex)
                 .build();
     }
-
-
 
     protected void updateCommentCount(Long postId, int countNumber) {
         Post post = postRepository.findById(postId)

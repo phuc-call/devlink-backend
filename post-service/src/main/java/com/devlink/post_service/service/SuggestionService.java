@@ -144,7 +144,6 @@ public interface SuggestionService {
      * Cache : Redis, TTL 24h, key = "suggestion:overview:{hash of periods}"
      */
 
-    List<PeriodOverviewRepose> getOverview(SuggestionOverviewRequest request);
-
+    List<PeriodOverviewRepose> getOverviewSuggestion(SuggestionOverviewRequest request);
 
 }

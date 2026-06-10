@@ -1,6 +1,6 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.UserInfoCacheClient;
+import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
 import com.devlink.post_service.dto.request.ModerationResult;

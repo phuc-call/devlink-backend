@@ -1,7 +1,7 @@
 package com.devlink.post_service.service.impl;
 
 
-import com.devlink.post_service.client.UserInfoCacheClient;
+import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.dto.request.CreateCommentReplyRequest;
@@ -170,7 +170,4 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .updatedAt(r.getUpdatedAt())
                 .build();
     }
-
-
-
 }
