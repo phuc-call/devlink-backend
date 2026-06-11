@@ -198,10 +198,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void followAnnouncement(Long actorId, Long receiverId, NotificationType type) {
         userProfileRepository.findFullNameByUserId(actorId).ifPresent(fullName -> {
-//            if (type == NotificationType.FOLLOW_BACK) {
-//                notificationRepository.deleteByActorIdAndUserIdAndType(
-//                        receiverId, actorId, NotificationType.FOLLOW_REQUEST);
-//            }
 
             String content = switch (type) {
                 case FOLLOW -> fullName + " đã theo dõi bạn";

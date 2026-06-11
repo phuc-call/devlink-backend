@@ -25,4 +25,9 @@ public interface AccountRestrictionRepository extends JpaRepository<AccountRestr
             @Param("types") List<RestrictionType> types,
             @Param("now") Instant now
     );
+
+    boolean existsByUserIdAndRestrictionTypeAndRestrictedUntilIsNull(
+            Long userId, String restrictionType);
+
+    Optional<AccountRestriction> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 }

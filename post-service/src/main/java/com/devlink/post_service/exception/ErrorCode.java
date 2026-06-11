@@ -84,7 +84,9 @@ public enum ErrorCode {
     POST_SAVE_NOT_ALLOWED("You are not allowed to save this post", HttpStatus.FORBIDDEN),
     POST_UNAVAILABLE("Post is no longer available", HttpStatus.GONE),
     POST_VIOLATED("Post has been removed due to a policy violation", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS),
-    ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN);
+    ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN),
+    REPORT_ALREADY_SUBMITTED( "You have already reported this content and it is pending review", HttpStatus.CONFLICT),
+    TARGET_NOT_FOUND("Reported target does not exist", HttpStatus.NOT_FOUND);
 
     private final String message;
     private final HttpStatus httpStatus;

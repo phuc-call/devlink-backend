@@ -8,12 +8,22 @@ import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
 public class KafkaTopicConfig {
+
     @Bean
-    public NewTopic badgeGrantTopic(){
+    public NewTopic badgeGrantTopic() {
         return TopicBuilder.name("badge-grant")
                 .partitions(3)
                 .replicas(1)
-                .config(TopicConfig.RETENTION_MS_CONFIG,"604800000")
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
+                .build();
+    }
+
+    @Bean
+    public NewTopic reportCreatedTopic() {
+        return TopicBuilder.name("report.created")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
                 .build();
     }
 }

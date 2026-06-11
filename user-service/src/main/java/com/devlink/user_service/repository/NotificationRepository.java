@@ -25,7 +25,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                 n.type, n.content, n.isRead, n.createdAt
             )
             FROM Notification n
-            JOIN UserProfile p ON p.user.id = n.actorId
+            LEFT JOIN UserProfile p ON p.user.id = n.actorId
             WHERE n.userId = :userId AND n.isHidden=false
             ORDER BY n.createdAt DESC
             """)

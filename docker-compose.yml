@@ -141,7 +141,7 @@ services:
       eureka-server:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - microservice-net
 
@@ -170,7 +170,7 @@ services:
       eureka-server:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_healthy
     networks:
@@ -194,7 +194,7 @@ services:
       eureka-server:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     networks:
       - microservice-net
 
@@ -230,6 +230,12 @@ services:
       - microservice-net
     depends_on:
       - zookeeper
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:9092" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0

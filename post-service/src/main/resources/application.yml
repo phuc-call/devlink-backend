@@ -36,19 +36,12 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     admin:
       fail-fast: false
-    consumer:
-      group-id: chat-service-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      #nhận event từ servce khác
-      properties:
-        spring.json.trusted.packages: "*"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       retries: 3
+      compression-type: lz4
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 1
@@ -56,8 +49,9 @@ spring:
         retry.backoff.ms: 1000
         linger.ms: 5
         batch.size: 32768
-        compression.type: snappy
-        spring.json.add.type.headers: false
+        spring.json.add.type.headers: true
+        spring.json.type.mapping: >-
+          report:com.devlink.post_service.dto.event.ReportCreatedEvent
 
   data:
     redis:

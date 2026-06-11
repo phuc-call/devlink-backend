@@ -4,5 +4,6 @@ public enum NotificationType {
     BIRTHDAY,
     FOLLOW,
     FOLLOW_BACK,
-    FOLLOW_REQUEST
+    FOLLOW_REQUEST,
+    REPORT
 }

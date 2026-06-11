@@ -11,6 +11,8 @@ import { getCurrentUserId } from '../../../utils/auth';
 import { postApi } from '../../../api/post-service/postApi';
 import CommentSection from './CommentSection';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
+import ReportModal from '../../../components/common/ReportModal.tsx';
+
 
 interface Props {
     post: FeedPostResponse;
@@ -441,6 +443,7 @@ export default function PostCard({
 
     const [saved, setSaved] = useState(isSaved);
     const [saveLoading, setSaveLoading] = useState(false);
+    const [showReport, setShowReport] = useState(false);
 
     const currentUserId = getCurrentUserId();
     const isOwner       = currentUserId !== null && post.authorId === currentUserId;
@@ -458,6 +461,7 @@ export default function PostCard({
 
     const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi });
     const vis     = visibilityLabel(post.visibility);
+
 
     const handleDelete = useCallback(async () => {
         setDeleteLoading(true);
@@ -508,7 +512,15 @@ export default function PostCard({
                     onConfirm={() => { void handleDelete(); }}
                     loading={deleteLoading}
                 />
+
             )}
+            <ReportModal
+                open={showReport}
+                targetId={post.id}
+                targetType="POST"
+                targetName={post.author?.fullName ?? undefined}
+                onClose={() => setShowReport(false)}
+            />
 
             <div style={{
                 background: '#FFFFFF', borderRadius: 8,
@@ -618,7 +630,7 @@ export default function PostCard({
                                         <MenuItem
                                             icon={<Flag size={15} />}
                                             label="Tố cáo bài viết"
-                                            onClick={() => setMenuOpen(false)}
+                                            onClick={() => { setShowReport(true); setMenuOpen(false); }}
                                             color="#EF4444"
                                             danger
                                         />
