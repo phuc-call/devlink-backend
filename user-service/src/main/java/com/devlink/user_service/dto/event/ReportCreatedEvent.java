@@ -14,6 +14,7 @@ public class ReportCreatedEvent {
     Long targetId;
     String targetType;
     String reason;
+    String description;
     @JsonProperty("isUpdate")
     private boolean isUpdate;
 }

@@ -1,23 +1,22 @@
-package com.devlink.post_service.dto.event;
+package com.devlink.user_service.dto.event;
 
-import com.devlink.post_service.entity.enums.RestrictionType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Data
-@Builder
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReportReviewedEvent {
     private Long reportId;
     private Long targetUserId;
     private Long reporterId;
+    @JsonProperty("approved")
     private boolean approved;
-    private RestrictionType restrictionType;
+    private String restrictionType;
     private String reviewNote;
     private String reviewedBy;
     private Instant reviewedAt;

@@ -86,7 +86,15 @@ public enum ErrorCode {
     POST_VIOLATED("Post has been removed due to a policy violation", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS),
     ACCESS_DENIED("You do not have permission to perform this action.", HttpStatus.FORBIDDEN),
     REPORT_ALREADY_SUBMITTED( "You have already reported this content and it is pending review", HttpStatus.CONFLICT),
-    TARGET_NOT_FOUND("Reported target does not exist", HttpStatus.NOT_FOUND);
+    TARGET_NOT_FOUND("Reported target does not exist", HttpStatus.NOT_FOUND),
+
+    //Report
+    REPORT_NOT_FOUND("Report not found",HttpStatus.NOT_FOUND),
+    REPORT_ALREADY_REVIEWED( "Report has already been reviewed",HttpStatus.CONFLICT),
+    RESTRICTION_TIME_REQUIRED( "Restriction time is required",HttpStatus.BAD_REQUEST),
+    RESTRICTION_TIME_IN_PAST("Restriction time must be in the future",HttpStatus.BAD_REQUEST),
+    REPORT_CANNOT_DELETE("Only RESOLVED or REJECTED reports can be deleted", HttpStatus.BAD_REQUEST),
+    RESTRICTION_TIME_TOO_LONG( "Restriction time cannot exceed 7 days",HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

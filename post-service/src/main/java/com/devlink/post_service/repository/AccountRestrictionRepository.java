@@ -9,11 +9,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AccountRestrictionRepository extends JpaRepository<AccountRestriction, Long> {
 
-    // Kiểm tra user có đang bị POST_BAN / FULL_BAN còn hiệu lực không
+
     @Query("""
         SELECT COUNT(r) > 0 FROM AccountRestriction r
         WHERE r.userId = :userId
@@ -30,4 +31,11 @@ public interface AccountRestrictionRepository extends JpaRepository<AccountRestr
             Long userId, String restrictionType);
 
     Optional<AccountRestriction> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
+    @Query("""
+    SELECT r FROM AccountRestriction r
+    WHERE r.userId = :userId
+    ORDER BY r.createdAt DESC
+    """)
+    List<AccountRestriction> findAllByUserId(@Param("userId") Long userId);
 }

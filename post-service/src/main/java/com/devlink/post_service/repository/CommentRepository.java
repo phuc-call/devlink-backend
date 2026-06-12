@@ -3,11 +3,13 @@ package com.devlink.post_service.repository;
 import com.devlink.post_service.dto.response.CommentProjection;
 import com.devlink.post_service.entity.Comment;
 import com.devlink.post_service.entity.enums.CommentStatus;
-import io.lettuce.core.dynamic.annotation.Param;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -64,5 +66,7 @@ public interface CommentRepository extends JpaRepository<Comment,Long> {
             Pageable pageable
     );
 
-
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.postId = :postId")
+    void deleteAllByPostId(@Param("postId") Long postId);
 }

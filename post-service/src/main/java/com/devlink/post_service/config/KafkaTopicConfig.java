@@ -26,4 +26,13 @@ public class KafkaTopicConfig {
                 .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
                 .build();
     }
+
+    @Bean
+    public NewTopic reportReviewedTopic(){
+        return TopicBuilder.name("report.reviewed")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
+                .build();
+    }
 }

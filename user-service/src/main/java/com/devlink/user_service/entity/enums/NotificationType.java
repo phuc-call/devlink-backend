@@ -5,5 +5,7 @@ public enum NotificationType {
     FOLLOW,
     FOLLOW_BACK,
     FOLLOW_REQUEST,
-    REPORT
+    REPORT,
+    REPORT_REVIEWED,
+    REPORT_VIOLATION
 }

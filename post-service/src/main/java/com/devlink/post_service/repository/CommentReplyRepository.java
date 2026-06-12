@@ -3,6 +3,7 @@ package com.devlink.post_service.repository;
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.entity.CommentReply;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,5 +37,11 @@ public interface CommentReplyRepository extends JpaRepository<CommentReply, Long
      */
     @Query(value = "CALL count_rep_comment(:commentId)",nativeQuery = true)
     long countActiveByCommentId(@Param("commentId") long commentId);
+    @Modifying
+    @Query("DELETE FROM CommentReply cr WHERE cr.comment.postId = :postId")
+    void deleteAllByPostId(@Param("postId") Long postId);
 
+    @Modifying
+    @Query("DELETE FROM CommentReply cr WHERE cr.parentReply.id = :parentReplyId")
+    void deleteByParentReplyId(@Param("parentReplyId") Long parentReplyId);
 }

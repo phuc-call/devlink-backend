@@ -37,6 +37,8 @@ public final class Constants {
     public static final Set<String> FILE_EXT = Set.of(
             "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt"
     );
+    // Thêm vào Constants.java
+    public static final String MEDIA_CLEANUP_TOPIC = "media-cleanup";
 
     //Warning
     public static final String LOG_REDIS_DESERIALIZE_FAILED = "[Comment] Redis read failed userId={}";
@@ -54,4 +56,15 @@ public final class Constants {
     public static final long CACHE_TTL_HOURS = 24;
     public static final int MAX_PERIOD_DAYS = 30;
 
+    public static final String REPORT_TOPIC = "report.created";
+
+    public static final long DELETED_SNAPSHOT_DAYS = 7L;
+    public static final long RESTRICTION_ONE_WEEK_SECONDS = 7 * 24 * 60 * 60L;
+    public static final String DELETED_CONTENT_KEY = "deleted:%s:%d"; // deleted:post:1
+    public static final String REPORT_REVIEWED_TOPIC = "report.reviewed";
+    public static final String SNAPSHOT_KEY_POST    = "post";
+    public static final String SNAPSHOT_KEY_COMMENT = "comment";
+    public static final String SNAPSHOT_KEY_REPLY   = "reply";
+
+    public static final String REPORT_NOTIFICATION_KEY="report:notification: %d";
 }

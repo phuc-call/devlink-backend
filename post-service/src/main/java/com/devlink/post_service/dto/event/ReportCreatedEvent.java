@@ -1,4 +1,5 @@
 package com.devlink.post_service.dto.event;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,6 +14,7 @@ public class ReportCreatedEvent {
     Long targetId;
     String targetType;
     String reason;
+    String description;
     @JsonProperty("isUpdate")
     private boolean isUpdate;
 }

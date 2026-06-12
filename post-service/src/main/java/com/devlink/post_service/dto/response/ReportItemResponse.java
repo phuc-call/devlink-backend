@@ -9,20 +9,21 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-@AllArgsConstructor @NoArgsConstructor @Builder @Getter
-public class ReportResponse {
-    private Long id;
-    private Long reporterId;
+
+@Builder @Getter @AllArgsConstructor @NoArgsConstructor
+public class ReportItemResponse {
+    private Long reportId;
     private Long targetId;
     private TargetType targetType;
+
+    private Long violatorUserId;
+    private String violatorName;
+
+    private Long reporterId;
+    private String reporterName;
+
     private ReportReason reason;
     private String description;
     private ReportStatus status;
-    private String reviewNote;
-    private Long reviewedBy;
-    private LocalDateTime reviewedAt;
-    private Long restrictionId;
-    private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
