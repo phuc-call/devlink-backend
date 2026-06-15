@@ -21,4 +21,9 @@ public class ReportReviewedEvent {
     private String reviewedBy;
     private Instant reviewedAt;
     private Instant restrictedUntil;
+
+    private Long targetId;
+    private String targetType;
+    private String reason;
+    private String description;
 }

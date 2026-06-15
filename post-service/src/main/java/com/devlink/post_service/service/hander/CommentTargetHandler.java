@@ -11,6 +11,9 @@ import com.devlink.post_service.repository.ReactionRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.devlink.post_service.config.Constants.SNAPSHOT_KEY_COMMENT;
 
 @Component
@@ -27,6 +30,17 @@ public class CommentTargetHandler extends AbstractTargetHandler<Comment> {
         this.postRepository=postRepository;
     }
 
+    @Override
+    protected Object toSnapshot(Comment comment) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", comment.getId());
+        map.put("content", comment.getContent() != null ? comment.getContent() : "");
+        map.put("postId", comment.getPostId());
+        map.put("authorId", comment.getAuthorId());
+        map.put("createdAt", comment.getCreatedAt() != null ? comment.getCreatedAt().toString() : null);
+        return map;
+    }
+
     @Override public TargetType getType() { return TargetType.COMMENT; }
     @Override public RestrictionType getRestrictionType() { return RestrictionType.COMMENT_BAN; }
     @Override public String getSnapshotKey() { return SNAPSHOT_KEY_COMMENT; }
@@ -37,18 +51,20 @@ public class CommentTargetHandler extends AbstractTargetHandler<Comment> {
         Comment comment = repository.findById(targetId)
                 .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
 
+        Object snapshot = toSnapshot(comment);
 
         reactionRepository.deleteAllReactionsByCommentId(targetId);
 
 
         repository.delete(comment);
 
-        return comment;
+        return snapshot;
     }
 
     @Override
     public Object getSnapshot(Long targetId) {
-        return postRepository.findById(targetId)
-                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+        Comment comment =repository.findById(targetId)
+                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
+        return toSnapshot(comment);
     }
 }

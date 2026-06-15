@@ -1,6 +1,13 @@
 // src/types/notification.types.ts
 
-export type NotificationType = 'BIRTHDAY' | 'FOLLOW' | 'FOLLOW_BACK' | 'FOLLOW_REQUEST';
+export type NotificationType =
+    | 'BIRTHDAY'
+    | 'FOLLOW'
+    | 'FOLLOW_BACK'
+    | 'FOLLOW_REQUEST'
+    | 'REPORT'
+    | 'REPORT_REVIEWED'
+    | 'REPORT_VIOLATION';
 
 export type NotificationAction = 'HIDE' | 'SHOW' | 'DELETE' | 'DELETE_MANY';
 

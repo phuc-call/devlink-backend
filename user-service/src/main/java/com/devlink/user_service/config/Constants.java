@@ -26,7 +26,7 @@ public final class Constants {
     public static final String MSG_LOGOUT_TOKEN_INVALID = "Token does not exist or has expired";
     public static final String MSG_LOGOUT_NO_SESSION = "No devices are logged in";
 
-    public static final String REPORT_NOTIFICATION_KEY="report:notification: %d";
-    public static final Long REDIS_TTL_DAYS=30L;
+    public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
+    public static final Long REPORT_NOTIFICATION_TTL_DAYS=30L;
 
 }

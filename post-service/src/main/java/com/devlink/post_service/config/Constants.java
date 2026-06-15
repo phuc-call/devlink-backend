@@ -66,5 +66,5 @@ public final class Constants {
     public static final String SNAPSHOT_KEY_COMMENT = "comment";
     public static final String SNAPSHOT_KEY_REPLY   = "reply";
 
-    public static final String REPORT_NOTIFICATION_KEY="report:notification: %d";
+    public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
 }

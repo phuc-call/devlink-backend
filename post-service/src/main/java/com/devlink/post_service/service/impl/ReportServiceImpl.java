@@ -21,6 +21,7 @@ import com.devlink.post_service.repository.ReportRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReportService;
 import com.devlink.post_service.service.ReportTargetHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -54,15 +55,31 @@ public class ReportServiceImpl implements ReportService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final AccountRestrictionRepository restrictionRepository;
     private final UserInfoCacheClient userInfoCacheClient;
-    // Spring will automatically collect all injected Handlers here.
-    private final List<ReportTargetHandler> handlers;
 
-    // Hàm bổ trợ tìm Handler bằng Stream (gọn gàng, dùng chung cho cả class)
+    private final List<ReportTargetHandler> handlers;
+    private final ObjectMapper objectMapper;
+    private final RedisTemplate<String, Object> objectRedisTemplate;
+
     private ReportTargetHandler getHandler(TargetType type) {
         return handlers.stream()
                 .filter(h -> h.getType() == type)
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND));
+    }
+
+    /**
+     * Defends against legacy Redis snapshots that were stored as raw JPA entities
+     * (before toSnapshot() was refactored to return Map<String, Object>).
+     * Those entities deserialize with detached lazy collections that blow up
+     * Jackson during HTTP response serialization. Anything that isn't a Map
+     * is treated as stale/legacy and dropped (TTL will expire it naturally).
+     */
+    private Object sanitizeSnapshot(Object raw) {
+        if (raw == null || raw instanceof Map) {
+            return raw;
+        }
+        log.warn("Legacy snapshot format detected (type={}), discarding", raw.getClass().getName());
+        return null;
     }
 
     @Override
@@ -207,6 +224,10 @@ public class ReportServiceImpl implements ReportService {
                 .reviewedBy(String.valueOf(adminId))
                 .reviewedAt(Instant.now())
                 .restrictedUntil(restrictedUntil)
+                .targetId(report.getTargetId())
+                .targetType(report.getTargetType().name())
+                .reason(report.getReason().name())
+                .description(report.getDescription())
                 .build();
 
         kafkaTemplate.send(REPORT_REVIEWED_TOPIC, String.valueOf(report.getId()), event);
@@ -245,7 +266,6 @@ public class ReportServiceImpl implements ReportService {
 
         List<ReportItemProjection> projections = result.getContent();
 
-        // Collect tất cả userId cần enrich — batch 1 lần, không N+1
         List<Long> userIds = projections.stream()
                 .flatMap(p -> Stream.of(p.getViolatorUserId(), p.getReporterId()))
                 .filter(Objects::nonNull)
@@ -301,11 +321,11 @@ public class ReportServiceImpl implements ReportService {
 
 
     @Override
+    @Transactional
     public List<MyViolationResponse> getMyViolations() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
         List<AccountRestriction> restrictions = restrictionRepository.findAllByUserId(currentUserId);
-
         return restrictions.stream()
                 .map(restriction -> {
                     TargetType targetType = null;
@@ -320,7 +340,7 @@ public class ReportServiceImpl implements ReportService {
 
                         String key = String.format(DELETED_CONTENT_KEY,
                                 getHandler(targetType).getSnapshotKey(), targetId);
-                        snapshot = redisTemplate.opsForValue().get(key);
+                        snapshot = sanitizeSnapshot(redisTemplate.opsForValue().get(key));
                     }
 
                     return MyViolationResponse.builder()
@@ -339,10 +359,13 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    @Transactional
     public ReportDetailResponse getReportDetail(Long notificationId){
         Long currentUserId=SecurityUtils.getCurrentUserId();
         String key=String.format(REPORT_NOTIFICATION_KEY, notificationId);
-        ReportNotificationRedis payload=(ReportNotificationRedis) redisTemplate.opsForValue().get(key);
+        log.info("[ReportDetail] Looking up Redis key='{}'", key);
+        Object raw = objectRedisTemplate.opsForValue().get(key);
+        ReportNotificationRedis payload = objectMapper.convertValue(raw, ReportNotificationRedis.class);
 
         if (payload == null) {
             throw new AppException(ErrorCode.REPORT_NOT_FOUND);
@@ -364,7 +387,7 @@ public class ReportServiceImpl implements ReportService {
         } else {
             String snapshotKey = String.format(DELETED_CONTENT_KEY,
                     reportTargetHandler.getSnapshotKey(), payload.getTargetId());
-            targetContent = redisTemplate.opsForValue().get(snapshotKey);
+            targetContent = sanitizeSnapshot(redisTemplate.opsForValue().get(snapshotKey));
             contentDeleted = true;
         }
 

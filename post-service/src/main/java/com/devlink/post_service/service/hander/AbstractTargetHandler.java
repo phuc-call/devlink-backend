@@ -5,6 +5,7 @@ import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.service.ReportTargetHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.function.Function;
 /**
@@ -31,8 +32,13 @@ public abstract class AbstractTargetHandler<T> implements ReportTargetHandler {
                 .orElseThrow(() -> new AppException(notFoundErrorCode));
     }
     @Override
+    @Transactional
     public Object getSnapshot(Long targetId) {
-        return repository.findById(targetId)
+        T entity = repository.findById(targetId)
                 .orElseThrow(() -> new AppException(notFoundErrorCode));
+        return toSnapshot(entity);
     }
+
+
+    protected abstract Object toSnapshot(T entity);
 }

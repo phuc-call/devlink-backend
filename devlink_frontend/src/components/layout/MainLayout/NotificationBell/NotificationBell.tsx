@@ -1,9 +1,13 @@
 // src/components/layout/MainLayout/Header/NotificationBell.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Users, UserPlus, Cake, EyeOff, Eye, Trash2, MoreVertical } from 'lucide-react';
+import {
+    Bell, Users, UserPlus, Cake, EyeOff, Eye, Trash2, MoreVertical,
+    ShieldCheck, ShieldAlert,  // ← thêm 2 icon mới
+} from 'lucide-react';
 import { notificationApi } from '../../../../api/user-service/notificationApi';
 import { followApi } from '../../../../api/user-service/followApi';
+import ReportDetailModal from '../../../../features/notification/components/ReportDetailModal/ReportDetailModal';
 import type { NotificationResponse } from '../../../../types/notification.types';
 import styles from './NotificationBell.module.css';
 
@@ -22,12 +26,16 @@ function timeAgo(dateStr: string): string {
 function getTypeIconColor(type: string): string {
     if (type === 'BIRTHDAY') return styles.iconBirthday;
     if (type === 'FOLLOW_BACK') return styles.iconFriend;
+    if (type === 'REPORT_REVIEWED') return styles.iconReportReviewed;
+    if (type === 'REPORT_VIOLATION') return styles.iconReportViolation;
     return styles.iconFollow;
 }
 
 function NotificationTypeIcon({ type }: { readonly type: string }) {
     if (type === 'BIRTHDAY') return <Cake size={11} strokeWidth={2} />;
     if (type === 'FOLLOW_BACK') return <Users size={11} strokeWidth={2} />;
+    if (type === 'REPORT_REVIEWED') return <ShieldCheck size={11} strokeWidth={2} />;
+    if (type === 'REPORT_VIOLATION') return <ShieldAlert size={11} strokeWidth={2} />;
     return <UserPlus size={11} strokeWidth={2} />;
 }
 
@@ -198,7 +206,7 @@ function SetupPasswordModal({ onClose, onDone }: SetupPasswordModalProps) {
     );
 }
 
-//  Context Menu — position: fixed
+// ── Context Menu Portal ───────────────────────────────────────────────
 interface ContextMenuPortalProps {
     readonly notification: NotificationResponse;
     readonly anchorRect: DOMRect;
@@ -209,13 +217,13 @@ interface ContextMenuPortalProps {
 }
 
 function ContextMenuPortal({
-                               notification,
-                               anchorRect,
-                               onHide,
-                               onShow,
-                               onDelete,
-                               onClose,
-                           }: ContextMenuPortalProps) {
+    notification,
+    anchorRect,
+    onHide,
+    onShow,
+    onDelete,
+    onClose,
+}: ContextMenuPortalProps) {
     const ref = useRef<HTMLDivElement>(null);
     const MENU_HEIGHT = 90;
     const MENU_WIDTH = 200;
@@ -262,20 +270,23 @@ function ContextMenuPortal({
     );
 }
 
-// Notification Item
+// ── Notification Item ─────────────────────────────────────────────────
 interface NotificationItemProps {
     readonly notification: NotificationResponse;
     readonly onRead: (id: number) => void;
     readonly onMenuOpen: (menu: { notification: NotificationResponse; rect: DOMRect } | null) => void;
     readonly activeMenuId: number | null;
+    // ↓ callback mới — chỉ dùng cho REPORT_REVIEWED
+    readonly onOpenReportDetail: (notificationId: number) => void;
 }
 
 function NotificationItem({
-                              notification,
-                              onRead,
-                              onMenuOpen,
-                              activeMenuId,
-                          }: NotificationItemProps) {
+    notification,
+    onRead,
+    onMenuOpen,
+    activeMenuId,
+    onOpenReportDetail,
+}: NotificationItemProps) {
     const navigate = useNavigate();
     const [followed, setFollowed] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
@@ -285,6 +296,18 @@ function NotificationItem({
 
     const handleClick = () => {
         if (!notification.isRead) onRead(notification.id);
+
+        // ── Report types — xử lý riêng, KHÔNG navigate profile ──────
+        if (notification.type === 'REPORT_REVIEWED') {
+            onOpenReportDetail(notification.id);
+            return;
+        }
+        if (notification.type === 'REPORT_VIOLATION') {
+            void navigate('/my-violations');
+            return;
+        }
+
+        // ── Các loại thông thường → navigate profile ─────────────────
         void navigate(`/profile/${notification.actorId}`);
     };
 
@@ -306,20 +329,30 @@ function NotificationItem({
         if (rect) onMenuOpen({ notification, rect });
     };
 
-    const showFollowBtn = notification.type === 'FOLLOW_REQUEST' || notification.type === 'FOLLOW';
+    const isReportType = notification.type === 'REPORT_REVIEWED'
+        || notification.type === 'REPORT_VIOLATION';
+    const showFollowBtn = !isReportType
+        && (notification.type === 'FOLLOW_REQUEST' || notification.type === 'FOLLOW');
     const isFriend = notification.type === 'FOLLOW_BACK';
     const typeIconColor = getTypeIconColor(notification.type);
 
     return (
         <div className={`${styles.item} ${isMenuOpen ? styles.itemActive : ''}`}>
-            {/* Dùng button thay vì div + role="button" để đúng semantic */}
             <button
                 type="button"
                 className={styles.itemMain}
                 onClick={handleClick}
             >
                 <div className={styles.avatarWrap}>
-                    {notification.actorAvatar ? (
+                    {/* Report type dùng icon hệ thống thay vì avatar actor */}
+                    {isReportType ? (
+                        <span className={styles.systemAvatar}>
+                            {notification.type === 'REPORT_REVIEWED'
+                                ? <ShieldCheck size={18} strokeWidth={1.8} />
+                                : <ShieldAlert size={18} strokeWidth={1.8} />
+                            }
+                        </span>
+                    ) : notification.actorAvatar ? (
                         <img
                             src={notification.actorAvatar}
                             alt={notification.actorName}
@@ -393,6 +426,9 @@ export default function NotificationBell() {
     const [passwordLoading, setPasswordLoading] = useState(false);
     const pendingAction = useRef<{ notification: NotificationResponse; action: 'HIDE' } | null>(null);
 
+    // ── State mới: notificationId của REPORT_REVIEWED đang xem ───────
+    const [reportDetailId, setReportDetailId] = useState<number | null>(null);
+
     useEffect(() => {
         const fetchCount = () => {
             notificationApi.getUnreadCount()
@@ -424,7 +460,6 @@ export default function NotificationBell() {
         finally { setLoading(false); }
     }, []);
 
-    // Fix: đảo điều kiện để tránh "Unexpected negated condition"
     const handleOpen = () => {
         setOpen(prev => {
             if (prev) {
@@ -517,86 +552,106 @@ export default function NotificationBell() {
         }
     };
 
+    // Mở modal report detail, đồng thời đóng panel và đánh dấu đã đọc
+    const handleOpenReportDetail = useCallback((notificationId: number) => {
+        const n = notifications.find(x => x.id === notificationId);
+        if (n && !n.isRead) void handleRead(notificationId);
+        setOpen(false);
+        setActiveMenu(null);
+        setReportDetailId(notificationId);
+    }, [notifications]); // eslint-disable-line react-hooks/exhaustive-deps
+
     return (
-        <div className={styles.wrap} ref={panelRef}>
-            <button
-                type="button"
-                className={styles.bellBtn}
-                onClick={handleOpen}
-                aria-label="Thông báo"
-            >
-                <Bell size={20} strokeWidth={1.8} />
-                {unread > 0 && (
-                    <span className={styles.badge}>{unread > 99 ? '99+' : unread}</span>
-                )}
-            </button>
-
-            {open && (
-                <div className={styles.panel}>
-                    <div className={styles.panelHeader}>
-                        <span className={styles.panelTitle}>Thông báo</span>
-                        {unread > 0 && (
-                            <button
-                                type="button"
-                                className={styles.markAllBtn}
-                                onClick={() => { void handleMarkAllRead(); }}
-                            >
-                                Đánh dấu đã đọc
-                            </button>
-                        )}
-                    </div>
-
-                    <div className={styles.list}>
-                        {loading && (
-                            <div className={styles.loadingWrap}>
-                                <div className={styles.spinner} />
-                            </div>
-                        )}
-                        {!loading && notifications.length === 0 && (
-                            <div className={styles.empty}>
-                                <Bell size={28} strokeWidth={1.4} color="#9CA3AF" />
-                                <p>Chưa có thông báo nào</p>
-                            </div>
-                        )}
-                        {!loading && notifications.map(n => (
-                            <NotificationItem
-                                key={n.id}
-                                notification={n}
-                                onRead={id => { void handleRead(id); }}
-                                onMenuOpen={menu => setActiveMenu(menu)}
-                                activeMenuId={activeMenu?.notification.id ?? null}
-                            />
-                        ))}
-                    </div>
-
-                    {activeMenu && (
-                        <ContextMenuPortal
-                            notification={activeMenu.notification}
-                            anchorRect={activeMenu.rect}
-                            onHide={() => handleAction(activeMenu.notification, 'HIDE')}
-                            onShow={() => handleAction(activeMenu.notification, 'SHOW')}
-                            onDelete={() => handleAction(activeMenu.notification, 'DELETE')}
-                            onClose={() => setActiveMenu(null)}
-                        />
+        <>
+            <div className={styles.wrap} ref={panelRef}>
+                <button
+                    type="button"
+                    className={styles.bellBtn}
+                    onClick={handleOpen}
+                    aria-label="Thông báo"
+                >
+                    <Bell size={20} strokeWidth={1.8} />
+                    {unread > 0 && (
+                        <span className={styles.badge}>{unread > 99 ? '99+' : unread}</span>
                     )}
-                </div>
-            )}
+                </button>
 
-            {passwordModal && (
-                <PasswordModal
-                    onConfirm={pw => { void handlePasswordConfirm(pw); }}
-                    onCancel={() => setPasswordModal(null)}
-                    loading={passwordLoading}
-                    error={passwordError}
+                {open && (
+                    <div className={styles.panel}>
+                        <div className={styles.panelHeader}>
+                            <span className={styles.panelTitle}>Thông báo</span>
+                            {unread > 0 && (
+                                <button
+                                    type="button"
+                                    className={styles.markAllBtn}
+                                    onClick={() => { void handleMarkAllRead(); }}
+                                >
+                                    Đánh dấu đã đọc
+                                </button>
+                            )}
+                        </div>
+
+                        <div className={styles.list}>
+                            {loading && (
+                                <div className={styles.loadingWrap}>
+                                    <div className={styles.spinner} />
+                                </div>
+                            )}
+                            {!loading && notifications.length === 0 && (
+                                <div className={styles.empty}>
+                                    <Bell size={28} strokeWidth={1.4} color="#9CA3AF" />
+                                    <p>Chưa có thông báo nào</p>
+                                </div>
+                            )}
+                            {!loading && notifications.map(n => (
+                                <NotificationItem
+                                    key={n.id}
+                                    notification={n}
+                                    onRead={id => { void handleRead(id); }}
+                                    onMenuOpen={menu => setActiveMenu(menu)}
+                                    activeMenuId={activeMenu?.notification.id ?? null}
+                                    onOpenReportDetail={handleOpenReportDetail}
+                                />
+                            ))}
+                        </div>
+
+                        {activeMenu && (
+                            <ContextMenuPortal
+                                notification={activeMenu.notification}
+                                anchorRect={activeMenu.rect}
+                                onHide={() => handleAction(activeMenu.notification, 'HIDE')}
+                                onShow={() => handleAction(activeMenu.notification, 'SHOW')}
+                                onDelete={() => handleAction(activeMenu.notification, 'DELETE')}
+                                onClose={() => setActiveMenu(null)}
+                            />
+                        )}
+                    </div>
+                )}
+
+                {passwordModal && (
+                    <PasswordModal
+                        onConfirm={pw => { void handlePasswordConfirm(pw); }}
+                        onCancel={() => setPasswordModal(null)}
+                        loading={passwordLoading}
+                        error={passwordError}
+                    />
+                )}
+
+                {setupModal && (
+                    <SetupPasswordModal
+                        onClose={() => setSetupModal(false)}
+                        onDone={handleSetupDone}
+                    />
+                )}
+            </div>
+
+            {/* ReportDetailModal render ngoài wrap để không bị overflow:hidden clip */}
+            {reportDetailId !== null && (
+                <ReportDetailModal
+                    notificationId={reportDetailId}
+                    onClose={() => setReportDetailId(null)}
                 />
             )}
-
-            {setupModal && (
-                <SetupPasswordModal
-                    onClose={() => setSetupModal(false)}
-                    onDone={handleSetupDone}
-                />
-            )}
-        </div>
+        </>
     );
 }

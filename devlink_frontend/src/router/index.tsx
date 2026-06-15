@@ -13,7 +13,7 @@ import FollowingPage from '../features/post/pages/FollowingPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
 import NotificationPage from '../features/notification/pages/NotificationPage';
 import ChatPage from '../features/chat/pages/ChatPage';
-
+import MyViolationsPage from '../features/notification/pages/MyViolationsPage/MyViolationsPage.tsx';
 import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
@@ -57,6 +57,7 @@ const router = createBrowserRouter([
                     {path: '/chat', element: <ChatPage/>},
                     {path: '/feature-1', element: <MyTemplatesPage/>},
                     {path: '/saved', element: <SavedPage/>},
+                    { path: '/my-violations', element: <MyViolationsPage /> },
                 ],
             },
             {

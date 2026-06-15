@@ -53,7 +53,20 @@ spring:
         batch.size: 32768
         spring.json.add.type.headers: true
         spring.json.type.mapping: >-
-          report:com.devlink.post_service.dto.event.ReportCreatedEvent
+          report:com.devlink.post_service.dto.event.ReportCreatedEvent,
+          reportReviewed:com.devlink.post_service.dto.event.ReportReviewedEvent,
+          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent
+    consumer:
+      group-id: media-cleanup-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: true
+        spring.json.type.mapping: >-
+          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent
 
   data:
     redis:

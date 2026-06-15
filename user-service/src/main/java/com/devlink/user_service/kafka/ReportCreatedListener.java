@@ -52,7 +52,7 @@ public class ReportCreatedListener {
                 .description(event.getDescription())
                 .build();
 
-        redisTemplate.opsForValue().set(key, payload, REDIS_TTL_DAYS, TimeUnit.DAYS);
+        redisTemplate.opsForValue().set(key, payload, REPORT_NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
 
         log.info("[Report] Saved notification id={} for reporterId={}, targetId={}",
                 saved.getId(), event.getReporterId(), event.getTargetId());

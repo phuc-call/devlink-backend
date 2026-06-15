@@ -1436,7 +1436,7 @@ export default function CommentSection({ postId }: Readonly<Props>) {
   );
 
   // Initial load — effect only triggers fetchComments, no direct setState
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+
   useEffect(() => {
     fetchComments(0);
   }, [fetchComments]);

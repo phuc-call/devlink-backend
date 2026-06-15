@@ -265,7 +265,9 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         boolean hasPassword = user.getPasswordNotification() != null && !user.getPasswordNotification().isBlank();
-        boolean correctPassword = hasPassword && passwordEncoder.matches(request.getPassWord(), user.getPasswordNotification());
+        boolean correctPassword = hasPassword
+                && request.getPassWord() != null
+                && passwordEncoder.matches(request.getPassWord(), user.getPasswordNotification());
 
         if (request.getAction() == NotificationAction.VERIFY_PASSWORD) {
             if (!hasPassword)

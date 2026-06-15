@@ -8,13 +8,16 @@ import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import static com.devlink.user_service.config.Constants.SYSTEM_ACTOR_ID;
+import static com.devlink.user_service.config.Constants.*;
 
 @Component
 @Slf4j
@@ -23,6 +26,8 @@ public class ReportReviewedListener {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
 
     @KafkaListener(topics = "report.reviewed", groupId = "user-service-group")
     public void handle(ReportReviewedEvent event) {
@@ -33,11 +38,8 @@ public class ReportReviewedListener {
         }
     }
 
-    //The post violates the rules--- notify both the report and the violator.
-
     private void handleApproved(ReportReviewedEvent event) {
-        // 1. Thông báo cho reporter
-        notificationRepository.save(Notification.builder()
+        Notification reporterNotif = notificationRepository.save(Notification.builder()
                 .userId(event.getReporterId())
                 .actorId(SYSTEM_ACTOR_ID)
                 .type(NotificationType.REPORT_REVIEWED)
@@ -48,7 +50,8 @@ public class ReportReviewedListener {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        // Thông báo cho violator
+        saveToRedis(reporterNotif.getId(), event);
+
         if (event.getTargetUserId() != null) {
             notificationRepository.save(Notification.builder()
                     .userId(event.getTargetUserId())
@@ -61,27 +64,25 @@ public class ReportReviewedListener {
                     .createdAt(LocalDateTime.now())
                     .build());
 
-            //  Gửi email cho violator
             userRepository.findById(event.getTargetUserId()).ifPresent(user ->
                     emailService.sendEmailDTO(
                             user.getEmail(),
                             "REPORT_VIOLATION",
                             Map.of(
                                     "username", user.getUsername(),
-                                    "reason",   event.getReviewNote() != null ? event.getReviewNote() : "",
+                                    "reason", event.getReviewNote() != null ? event.getReviewNote() : "",
                                     "restrictionType", event.getRestrictionType() != null ? event.getRestrictionType() : ""
                             )
                     )
             );
         }
 
-        log.info("[ReportReviewed] Approved — reporterId={}, violatorId={}",
-                event.getReporterId(), event.getTargetUserId());
+        log.info("[ReportReviewed] Approved — reporterId={}, violatorId={}, notifId={}",
+                event.getReporterId(), event.getTargetUserId(), reporterNotif.getId());
     }
 
-    /** Bài viết không vi phạm thông báo cho reporter */
     private void handleRejected(ReportReviewedEvent event) {
-        notificationRepository.save(Notification.builder()
+        Notification reporterNotif = notificationRepository.save(Notification.builder()
                 .userId(event.getReporterId())
                 .actorId(SYSTEM_ACTOR_ID)
                 .type(NotificationType.REPORT_REVIEWED)
@@ -92,6 +93,27 @@ public class ReportReviewedListener {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        log.info("[ReportReviewed] Rejected — reporterId={}", event.getReporterId());
+        saveToRedis(reporterNotif.getId(), event);
+
+        log.info("[ReportReviewed] Rejected — reporterId={}, notifId={}",
+                event.getReporterId(), reporterNotif.getId());
+    }
+
+    private void saveToRedis(Long notificationId, ReportReviewedEvent event) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("reportId", event.getReportId());
+            payload.put("reporterId", event.getReporterId());
+            payload.put("targetId", event.getTargetId());
+            payload.put("targetType", event.getTargetType());
+            payload.put("reason", event.getReason() != null ? event.getReason() : "");
+            payload.put("description", event.getDescription() != null ? event.getDescription() : "");
+
+            String key = String.format(REPORT_NOTIFICATION_KEY, notificationId);
+            redisTemplate.opsForValue().set(key, payload, REPORT_NOTIFICATION_TTL_DAYS, TimeUnit.DAYS);
+            log.info("[ReportReviewed] Redis saved key={}", key);
+        } catch (Exception e) {
+            log.error("[ReportReviewed] Redis save failed for notifId={}", notificationId, e);
+        }
     }
 }

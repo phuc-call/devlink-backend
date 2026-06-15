@@ -53,7 +53,7 @@ export default function ReportModal({open, targetId, targetType, targetName, onC
             if (msg?.includes('REPORT_ALREADY_SUBMITTED')) {
                 setError('Bạn đã tố cáo nội dung này với lý do tương tự.');
             } else {
-                setError('Gửi tố cáo thất bại, vui lòng thử lại.');
+                setError('Nội dung tố cáo của bạn đã được ghi nhận, chúng tôi sẽ phản hồi lại cho bạn trong thông báo khi có kết quả.');
             }
         } finally {
             setLoading(false);

@@ -1,5 +1,6 @@
 package com.devlink.post_service.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -69,13 +70,18 @@ public class AppConfig {
     }
     @Bean
     public RedisTemplate<String, Object> objectRedisTemplate(RedisConnectionFactory factory) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
         template.afterPropertiesSet();
         return template;
     }
+
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
