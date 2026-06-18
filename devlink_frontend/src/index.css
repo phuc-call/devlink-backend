@@ -293,3 +293,19 @@ body {
   max-width: 448px;
   /* bỏ hết height và max-height */
 }
+
+/* Reaction Popover Animation */
+@keyframes reaction-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.reaction-popover-animate {
+  animation: reaction-pop 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}

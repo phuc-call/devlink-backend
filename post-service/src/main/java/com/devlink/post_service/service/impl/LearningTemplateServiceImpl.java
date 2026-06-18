@@ -37,12 +37,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.devlink.post_service.config.Constants.MAX_FILE_SIZE;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class LearningTemplateServiceImpl implements LearningTemplateService {
 
-    private static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100 MB
 
     private final LearningTemplateRepository templateRepository;
     private final FileStorageService fileStorageService;

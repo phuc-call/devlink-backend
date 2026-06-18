@@ -29,4 +29,16 @@ public final class Constants {
     public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
     public static final Long REPORT_NOTIFICATION_TTL_DAYS=30L;
 
+    public static final int NORMAL_LIMIT = 20;
+    public static final int ACTIVE_FOLLOW_MIN = 5;
+    public static final int ACTIVE_WINDOW_HOURS = 1;
+    public static final int FEATURED_SCORE_MIN = 80;
+    public static final int FEATURED_LIMIT_MIN = 1;
+    public static final int FEATURED_LIMIT_MAX = 3;
+    public static final int FEATURED_EXPIRE_MIN_HOURS = 24;
+
+    //number of mutual friends
+    public static final int MAX_MUTUAL_FRIENDS = 5;
+    public static final int SCORE_PER_MUTUAL_FRIEND  = 5;
+
 }

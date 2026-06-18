@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.devlink.user_service.config.Constants.*;
+
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -25,20 +28,15 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
     private final FollowRepository followRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserHelper userHelper;
-    //config
-    private static final int NORMAL_LIMIT = 20;
-    private static final int ACTIVE_FOLLOW_MIN = 5;
-    private static final int ACTIVE_WINDOW_HOURS = 1;
-    private static final int FEATURED_SCORE_MIN = 80;
-    private static final int FEATURED_LIMIT_MIN = 1;
-    private static final int FEATURED_LIMIT_MAX = 3;
-    private static final int FEATURED_EXPIRE_MIN_HOURS = 24;
-    private static final int FEATURED_EXPIRE_MAX_HOURS = 48;
-    //number of mutual friends
-    private static final int MAX_MUTUAL_FRIENDS = 5;
-    private static final int SCORE_PER_MUTUAL_FRIEND  = 5;
+    private final Random random = new Random();
 
-    private enum Weight {
+    public static final int MAX_SCORE =
+            Weight.SCHOOL.value
+                    + Weight.CITY.value
+                    + Weight.LANGUAGE.value
+                    + Weight.MAJOR.value
+                    + (SCORE_PER_MUTUAL_FRIEND  * MAX_MUTUAL_FRIENDS);
+    public enum Weight {
         SCHOOL(35), CITY(25), LANGUAGE(25), MAJOR(15);
         final int value;
 
@@ -47,16 +45,6 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
         }
     }
 
-    //max 125%
-    private static final int MAX_SCORE =
-            Weight.SCHOOL.value
-                    + Weight.CITY.value
-                    + Weight.LANGUAGE.value
-                    + Weight.MAJOR.value
-                    + (SCORE_PER_MUTUAL_FRIEND  * MAX_MUTUAL_FRIENDS);
-    private final Random random = new Random();
-
-    // Always return 20 people, refresh each time it loads
     @Override
     public List<UserRecommendationResponse> getRecommendations() {
         User user = userHelper.getCurrentUser();

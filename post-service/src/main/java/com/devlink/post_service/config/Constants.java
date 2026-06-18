@@ -28,7 +28,7 @@ public final class Constants {
     public static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;  // 50MB each file
     public static final long MAX_TOTAL_SIZE_BYTES = 200L * 1024 * 1024; // 200MB sum
     public static final int MAX_FILE_COUNT = 10; // tối đa 10 file
-
+    public static final int MAX_CHARS = 50_000;
     public static final Set<String> ALLOWED_EXT = Set.of(
             "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
             "jpg", "jpeg", "png", "gif", "webp",
@@ -67,4 +67,7 @@ public final class Constants {
     public static final String SNAPSHOT_KEY_REPLY   = "reply";
 
     public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
+
+    public static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100 MB
+
 }

@@ -12,6 +12,27 @@ import { postApi } from '../../../api/post-service/postApi';
 import CommentSection from './CommentSection';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
 import ReportModal from '../../../components/common/ReportModal.tsx';
+import { reactionApi } from '../../../api/post-service/reactionApi';
+import type { ReactionType } from '../../../types/reaction.types';
+
+const REACTION_DETAILS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
+    LIKE: { emoji: '👍', label: 'Thích', color: '#2563EB' },
+    LOVE: { emoji: '❤️', label: 'Yêu thích', color: '#EF4444' },
+    HAHA: { emoji: '😆', label: 'Haha', color: '#F59E0B' },
+    WOW: { emoji: '😮', label: 'Wow', color: '#F59E0B' },
+    SAD: { emoji: '😢', label: 'Buồn', color: '#F59E0B' },
+    ANGRY: { emoji: '😡', label: 'Phẫn nộ', color: '#EA580C' },
+};
+
+function getTopReactionEmojis(counts: Record<ReactionType, number>): string[] {
+    if (!counts) return [];
+    return Object.entries(counts)
+        .filter(([, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([type]) => REACTION_DETAILS[type as ReactionType].emoji);
+}
+
 
 
 interface Props {
@@ -445,9 +466,160 @@ export default function PostCard({
     const [saveLoading, setSaveLoading] = useState(false);
     const [showReport, setShowReport] = useState(false);
 
+    // Reactions States
+    const [currentUserReaction, setCurrentUserReaction] = useState<ReactionType | null>(null);
+    const [reactionCounts, setReactionCounts] = useState<Record<ReactionType, number>>({
+        LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+    });
+    const [totalReactions, setTotalReactions] = useState(post.likeCount ?? 0);
+    const [showReactionsPopover, setShowReactionsPopover] = useState(false);
+    const popoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const currentUserId = getCurrentUserId();
     const isOwner       = currentUserId !== null && post.authorId === currentUserId;
     const commentOpen   = openCommentPostId === post.id;
+
+    useEffect(() => {
+        let isMounted = true;
+        reactionApi.getSummary(post.id, 'POST')
+            .then(res => {
+                if (isMounted && res.data.success && res.data.data) {
+                    setCurrentUserReaction(res.data.data.currentUserReaction);
+                    setReactionCounts(res.data.data.counts || {
+                        LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+                    });
+                    setTotalReactions(res.data.data.totalCount);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load post reaction summary", err);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [post.id]);
+
+    useEffect(() => {
+        return () => {
+            if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+        };
+    }, []);
+
+    const handleMouseEnter = () => {
+        if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+        popoverTimeoutRef.current = setTimeout(() => {
+            setShowReactionsPopover(true);
+        }, 500);
+    };
+
+    const handleMouseLeave = () => {
+        if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+        popoverTimeoutRef.current = setTimeout(() => {
+            setShowReactionsPopover(false);
+        }, 400);
+    };
+
+    const handleReactClick = async () => {
+        const typeToReact = currentUserReaction ? currentUserReaction : 'LIKE';
+        const isRemoving = !!currentUserReaction;
+        
+        // Optimistic UI updates
+        const nextReaction = isRemoving ? null : 'LIKE';
+        const nextCounts = { ...reactionCounts };
+        if (currentUserReaction) {
+            nextCounts[currentUserReaction] = Math.max(0, (nextCounts[currentUserReaction] || 0) - 1);
+        }
+        if (nextReaction) {
+            nextCounts[nextReaction] = (nextCounts[nextReaction] || 0) + 1;
+        }
+        const nextTotal = isRemoving ? Math.max(0, totalReactions - 1) : totalReactions + 1;
+
+        setCurrentUserReaction(nextReaction);
+        setReactionCounts(nextCounts);
+        setTotalReactions(nextTotal);
+
+        try {
+            const res = await reactionApi.react({
+                targetId: post.id,
+                targetType: 'POST',
+                reactionType: typeToReact
+            });
+            if (res.data.success && res.data.data) {
+                setCurrentUserReaction(res.data.data.currentUserReaction);
+                setReactionCounts(res.data.data.counts);
+                setTotalReactions(res.data.data.totalCount);
+            }
+        } catch (err) {
+            setCurrentUserReaction(currentUserReaction);
+            setReactionCounts(reactionCounts);
+            setTotalReactions(totalReactions);
+            console.error("Failed to react to post", err);
+        }
+    };
+
+    const handleSelectReaction = async (type: ReactionType) => {
+        setShowReactionsPopover(false);
+        if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+
+        const prevReaction = currentUserReaction;
+        const nextReaction = type;
+
+        // Optimistic UI updates
+        const nextCounts = { ...reactionCounts };
+        let diff = 0;
+        if (!prevReaction) {
+            diff = 1;
+        } else if (prevReaction === type) {
+            nextCounts[type] = Math.max(0, (nextCounts[type] || 0) - 1);
+            setCurrentUserReaction(null);
+            setReactionCounts(nextCounts);
+            setTotalReactions(Math.max(0, totalReactions - 1));
+            try {
+                const res = await reactionApi.react({
+                    targetId: post.id,
+                    targetType: 'POST',
+                    reactionType: type
+                });
+                if (res.data.success && res.data.data) {
+                    setCurrentUserReaction(res.data.data.currentUserReaction);
+                    setReactionCounts(res.data.data.counts);
+                    setTotalReactions(res.data.data.totalCount);
+                }
+            } catch (err) {
+                setCurrentUserReaction(prevReaction);
+                setReactionCounts(reactionCounts);
+                setTotalReactions(totalReactions);
+                console.error("Failed to toggle reaction", err);
+            }
+            return;
+        } else {
+            nextCounts[prevReaction] = Math.max(0, (nextCounts[prevReaction] || 0) - 1);
+        }
+        nextCounts[type] = (nextCounts[type] || 0) + 1;
+
+        setCurrentUserReaction(nextReaction);
+        setReactionCounts(nextCounts);
+        setTotalReactions(totalReactions + diff);
+
+        try {
+            const res = await reactionApi.react({
+                targetId: post.id,
+                targetType: 'POST',
+                reactionType: type
+            });
+            if (res.data.success && res.data.data) {
+                setCurrentUserReaction(res.data.data.currentUserReaction);
+                setReactionCounts(res.data.data.counts);
+                setTotalReactions(res.data.data.totalCount);
+            }
+        } catch (err) {
+            setCurrentUserReaction(prevReaction);
+            setReactionCounts(reactionCounts);
+            setTotalReactions(totalReactions);
+            console.error("Failed to select reaction", err);
+        }
+    };
+
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -701,6 +873,38 @@ export default function PostCard({
                     </>
                 )}
 
+                {/* ── Reactions & Comments Count Summary Bar ── */}
+                {(totalReactions > 0 || (post.commentCount != null && post.commentCount > 0)) && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 16px',
+                        borderTop: '1px solid #F3F4F6',
+                        fontSize: 13,
+                        color: '#6B7280'
+                    }}>
+                        {/* Left: Emojis and count */}
+                        {totalReactions > 0 ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ fontSize: 14 }}>
+                                    {getTopReactionEmojis(reactionCounts).join('')}
+                                </span>
+                                <span style={{ fontWeight: 500 }}>
+                                    {totalReactions}
+                                </span>
+                            </div>
+                        ) : <div />}
+
+                        {/* Right: Comment count */}
+                        {post.commentCount != null && post.commentCount > 0 ? (
+                            <div>
+                                {post.commentCount} bình luận
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+
                 {/* ── Footer ── */}
                 <div style={{
                     padding: '10px 16px',
@@ -708,7 +912,97 @@ export default function PostCard({
                     display: 'flex', gap: 4,
                 }}>
                     <FooterBtn icon={<Eye size={14} />} label={`${post.viewCount}`} />
-                    <FooterBtn icon={<Heart size={14} />} label="Thích" />
+                    
+                    <div
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                        style={{ position: 'relative', display: 'inline-block' }}
+                    >
+                        {/* Popover */}
+                        {showReactionsPopover && (
+                            <div
+                                className="reaction-popover-animate"
+                                onMouseEnter={() => {
+                                    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+                                }}
+                                onMouseLeave={handleMouseLeave}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: 0,
+                                    marginBottom: 8,
+                                    background: '#ffffff',
+                                    borderRadius: 30,
+                                    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                                    border: '1px solid #E5E7EB',
+                                    display: 'flex',
+                                    gap: 6,
+                                    padding: '4px 6px',
+                                    zIndex: 100,
+                                }}
+                            >
+                                {(['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'] as ReactionType[]).map((type) => {
+                                    const detail = REACTION_DETAILS[type];
+                                    return (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => { void handleSelectReaction(type); }}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                fontSize: 20,
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.1s ease',
+                                                padding: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.3)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                                            title={detail.label}
+                                        >
+                                            {detail.emoji}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Like Button */}
+                        <button
+                            type="button"
+                            onClick={() => { void handleReactClick(); }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '6px 12px',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                color: currentUserReaction ? REACTION_DETAILS[currentUserReaction].color : '#6B7280',
+                                fontFamily: 'Inter, sans-serif',
+                                fontWeight: 600,
+                                transition: 'background 0.12s, color 0.12s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                            {currentUserReaction ? (
+                                <span style={{ fontSize: 14 }}>
+                                    {REACTION_DETAILS[currentUserReaction].emoji}
+                                </span>
+                            ) : (
+                                <Heart size={14} color="#6B7280" />
+                            )}
+                            {currentUserReaction ? REACTION_DETAILS[currentUserReaction].label : 'Thích'}
+                        </button>
+                    </div>
+
 
                     <button
                         type="button"

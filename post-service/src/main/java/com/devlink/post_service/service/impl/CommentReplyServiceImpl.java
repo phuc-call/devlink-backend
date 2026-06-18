@@ -41,7 +41,6 @@ public class CommentReplyServiceImpl implements CommentReplyService {
 
     private final UserInfoCacheClient userInfoCacheClient;
 
-
     @Override
     @Transactional
     public CommentReplyResponse createReply(CreateCommentReplyRequest request) {

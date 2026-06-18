@@ -17,6 +17,27 @@ import type {
   CommentSummaryResponse,
   CommentReplySummaryResponse,
 } from "../../../types/comment.types";
+import { reactionApi } from "../../../api/post-service/reactionApi";
+import type { ReactionType } from "../../../types/reaction.types";
+
+const REACTION_DETAILS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
+  LIKE: { emoji: '👍', label: 'Like', color: '#3B82F6' },
+  LOVE: { emoji: '❤️', label: 'Love', color: '#EF4444' },
+  HAHA: { emoji: '😆', label: 'Haha', color: '#F59E0B' },
+  WOW: { emoji: '😮', label: 'Wow', color: '#F59E0B' },
+  SAD: { emoji: '😢', label: 'Sad', color: '#F59E0B' },
+  ANGRY: { emoji: '😡', label: 'Angry', color: '#EA580C' },
+};
+
+function getTopReactionEmojis(counts: Record<ReactionType, number>): string[] {
+  if (!counts) return [];
+  return Object.entries(counts)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([type]) => REACTION_DETAILS[type as ReactionType].emoji);
+}
+
 
 const PAGE_SIZE = 5;
 
@@ -746,9 +767,158 @@ function ReplyItem({
   showToast,
 }: Readonly<ReplyItemProps>) {
   const [showReplyInput, setShowReplyInput] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(reply.likeCount ?? 0);
   const [editing, setEditing] = useState(false);
+
+  // Reactions States
+  const [currentUserReaction, setCurrentUserReaction] = useState<ReactionType | null>(null);
+  const [reactionCounts, setReactionCounts] = useState<Record<ReactionType, number>>({
+    LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+  });
+  const [totalReactions, setTotalReactions] = useState(reply.likeCount ?? 0);
+  const [showReactionsPopover, setShowReactionsPopover] = useState(false);
+  const popoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    reactionApi.getSummary(reply.id, 'COMMENT_REPLY')
+      .then(res => {
+        if (isMounted && res.data.success && res.data.data) {
+          setCurrentUserReaction(res.data.data.currentUserReaction);
+          setReactionCounts(res.data.data.counts || {
+            LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+          });
+          setTotalReactions(res.data.data.totalCount);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load reply reaction summary", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [reply.id]);
+
+  useEffect(() => {
+    return () => {
+      if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    popoverTimeoutRef.current = setTimeout(() => {
+      setShowReactionsPopover(true);
+    }, 500);
+  };
+
+  const handleMouseLeave = () => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    popoverTimeoutRef.current = setTimeout(() => {
+      setShowReactionsPopover(false);
+    }, 400);
+  };
+
+  const handleReactClick = async () => {
+    const typeToReact = currentUserReaction ? currentUserReaction : 'LIKE';
+    const isRemoving = !!currentUserReaction;
+    
+    // Optimistic UI updates
+    const nextReaction = isRemoving ? null : 'LIKE';
+    const nextCounts = { ...reactionCounts };
+    if (currentUserReaction) {
+      nextCounts[currentUserReaction] = Math.max(0, (nextCounts[currentUserReaction] || 0) - 1);
+    }
+    if (nextReaction) {
+      nextCounts[nextReaction] = (nextCounts[nextReaction] || 0) + 1;
+    }
+    const nextTotal = isRemoving ? Math.max(0, totalReactions - 1) : totalReactions + 1;
+
+    setCurrentUserReaction(nextReaction);
+    setReactionCounts(nextCounts);
+    setTotalReactions(nextTotal);
+
+    try {
+      const res = await reactionApi.react({
+        targetId: reply.id,
+        targetType: 'COMMENT_REPLY',
+        reactionType: typeToReact
+      });
+      if (res.data.success && res.data.data) {
+        setCurrentUserReaction(res.data.data.currentUserReaction);
+        setReactionCounts(res.data.data.counts);
+        setTotalReactions(res.data.data.totalCount);
+      }
+    } catch (err) {
+      setCurrentUserReaction(currentUserReaction);
+      setReactionCounts(reactionCounts);
+      setTotalReactions(totalReactions);
+      console.error("Failed to react to reply", err);
+    }
+  };
+
+  const handleSelectReaction = async (type: ReactionType) => {
+    setShowReactionsPopover(false);
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+
+    const prevReaction = currentUserReaction;
+    const nextReaction = type;
+
+    // Optimistic UI updates
+    const nextCounts = { ...reactionCounts };
+    let diff = 0;
+    if (!prevReaction) {
+      diff = 1;
+    } else if (prevReaction === type) {
+      nextCounts[type] = Math.max(0, (nextCounts[type] || 0) - 1);
+      setCurrentUserReaction(null);
+      setReactionCounts(nextCounts);
+      setTotalReactions(Math.max(0, totalReactions - 1));
+      try {
+        const res = await reactionApi.react({
+          targetId: reply.id,
+          targetType: 'COMMENT_REPLY',
+          reactionType: type
+        });
+        if (res.data.success && res.data.data) {
+          setCurrentUserReaction(res.data.data.currentUserReaction);
+          setReactionCounts(res.data.data.counts);
+          setTotalReactions(res.data.data.totalCount);
+        }
+      } catch (err) {
+        setCurrentUserReaction(prevReaction);
+        setReactionCounts(reactionCounts);
+        setTotalReactions(totalReactions);
+        console.error("Failed to toggle reaction", err);
+      }
+      return;
+    } else {
+      nextCounts[prevReaction] = Math.max(0, (nextCounts[prevReaction] || 0) - 1);
+    }
+    nextCounts[type] = (nextCounts[type] || 0) + 1;
+
+    setCurrentUserReaction(nextReaction);
+    setReactionCounts(nextCounts);
+    setTotalReactions(totalReactions + diff);
+
+    try {
+      const res = await reactionApi.react({
+        targetId: reply.id,
+        targetType: 'COMMENT_REPLY',
+        reactionType: type
+      });
+      if (res.data.success && res.data.data) {
+        setCurrentUserReaction(res.data.data.currentUserReaction);
+        setReactionCounts(res.data.data.counts);
+        setTotalReactions(res.data.data.totalCount);
+      }
+    } catch (err) {
+      setCurrentUserReaction(prevReaction);
+      setReactionCounts(reactionCounts);
+      setTotalReactions(totalReactions);
+      console.error("Failed to select reaction", err);
+    }
+  };
+
   const [content, setContent] = useState(reply.content);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -783,10 +953,6 @@ function ReplyItem({
     showToast("Changes saved.");
   };
 
-  const handleLike = () => {
-    setLiked((v) => !v);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
-  };
 
   return (
     <div
@@ -890,32 +1056,100 @@ function ReplyItem({
           <span style={{ fontSize: 12, color: "#65676B", marginRight: 6 }}>
             {timeAgo(reply.createdAt)}
           </span>
-          <button
-            type="button"
-            onClick={handleLike}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              color: liked ? "#3B82F6" : "#65676B",
-              padding: "2px 6px",
-              borderRadius: 4,
-              fontFamily: "Inter, sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-            }}
+          <div
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ position: 'relative', display: 'inline-block' }}
           >
-            {liked ? "💙 Like" : "Like"}
-            {likeCount > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 400, color: "#65676B" }}>
-                {" "}
-                · {likeCount}
-              </span>
+            {/* Popover */}
+            {showReactionsPopover && (
+              <div
+                className="reaction-popover-animate"
+                onMouseEnter={() => {
+                  if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+                }}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  marginBottom: 6,
+                  background: '#ffffff',
+                  borderRadius: 30,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  gap: 4,
+                  padding: '3px 5px',
+                  zIndex: 100,
+                }}
+              >
+                {(['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'] as ReactionType[]).map((type) => {
+                  const detail = REACTION_DETAILS[type];
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => { void handleSelectReaction(type); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 18,
+                        cursor: 'pointer',
+                        transition: 'transform 0.1s ease',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.3)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                      title={detail.label}
+                    >
+                      {detail.emoji}
+                    </button>
+                  );
+                })}
+              </div>
             )}
-          </button>
+
+            {/* Dynamic Like Button */}
+            <button
+              type="button"
+              onClick={() => { void handleReactClick(); }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                color: currentUserReaction ? REACTION_DETAILS[currentUserReaction].color : "#65676B",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontFamily: "Inter, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              {currentUserReaction ? (
+                <>
+                  <span style={{ fontSize: 13 }}>
+                    {REACTION_DETAILS[currentUserReaction].emoji}
+                  </span>
+                  <span>{REACTION_DETAILS[currentUserReaction].label}</span>
+                </>
+              ) : (
+                "Like"
+              )}
+              {totalReactions > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 400, color: "#65676B", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  · {getTopReactionEmojis(reactionCounts).join('')} {totalReactions}
+                </span>
+              )}
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setShowReplyInput((v) => !v)}
@@ -1000,8 +1234,157 @@ function CommentItem({
   showToast,
 }: Readonly<CommentItemProps>) {
   const [showReplyInput, setShowReplyInput] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
+
+  // Reactions States
+  const [currentUserReaction, setCurrentUserReaction] = useState<ReactionType | null>(null);
+  const [reactionCounts, setReactionCounts] = useState<Record<ReactionType, number>>({
+    LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+  });
+  const [totalReactions, setTotalReactions] = useState(comment.likeCount ?? 0);
+  const [showReactionsPopover, setShowReactionsPopover] = useState(false);
+  const popoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    reactionApi.getSummary(comment.id, 'COMMENT')
+      .then(res => {
+        if (isMounted && res.data.success && res.data.data) {
+          setCurrentUserReaction(res.data.data.currentUserReaction);
+          setReactionCounts(res.data.data.counts || {
+            LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+          });
+          setTotalReactions(res.data.data.totalCount);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load comment reaction summary", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [comment.id]);
+
+  useEffect(() => {
+    return () => {
+      if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    popoverTimeoutRef.current = setTimeout(() => {
+      setShowReactionsPopover(true);
+    }, 500);
+  };
+
+  const handleMouseLeave = () => {
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+    popoverTimeoutRef.current = setTimeout(() => {
+      setShowReactionsPopover(false);
+    }, 400);
+  };
+
+  const handleReactClick = async () => {
+    const typeToReact = currentUserReaction ? currentUserReaction : 'LIKE';
+    const isRemoving = !!currentUserReaction;
+    
+    // Optimistic UI updates
+    const nextReaction = isRemoving ? null : 'LIKE';
+    const nextCounts = { ...reactionCounts };
+    if (currentUserReaction) {
+      nextCounts[currentUserReaction] = Math.max(0, (nextCounts[currentUserReaction] || 0) - 1);
+    }
+    if (nextReaction) {
+      nextCounts[nextReaction] = (nextCounts[nextReaction] || 0) + 1;
+    }
+    const nextTotal = isRemoving ? Math.max(0, totalReactions - 1) : totalReactions + 1;
+
+    setCurrentUserReaction(nextReaction);
+    setReactionCounts(nextCounts);
+    setTotalReactions(nextTotal);
+
+    try {
+      const res = await reactionApi.react({
+        targetId: comment.id,
+        targetType: 'COMMENT',
+        reactionType: typeToReact
+      });
+      if (res.data.success && res.data.data) {
+        setCurrentUserReaction(res.data.data.currentUserReaction);
+        setReactionCounts(res.data.data.counts);
+        setTotalReactions(res.data.data.totalCount);
+      }
+    } catch (err) {
+      setCurrentUserReaction(currentUserReaction);
+      setReactionCounts(reactionCounts);
+      setTotalReactions(totalReactions);
+      console.error("Failed to react to comment", err);
+    }
+  };
+
+  const handleSelectReaction = async (type: ReactionType) => {
+    setShowReactionsPopover(false);
+    if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+
+    const prevReaction = currentUserReaction;
+    const nextReaction = type;
+
+    // Optimistic UI updates
+    const nextCounts = { ...reactionCounts };
+    let diff = 0;
+    if (!prevReaction) {
+      diff = 1;
+    } else if (prevReaction === type) {
+      nextCounts[type] = Math.max(0, (nextCounts[type] || 0) - 1);
+      setCurrentUserReaction(null);
+      setReactionCounts(nextCounts);
+      setTotalReactions(Math.max(0, totalReactions - 1));
+      try {
+        const res = await reactionApi.react({
+          targetId: comment.id,
+          targetType: 'COMMENT',
+          reactionType: type
+        });
+        if (res.data.success && res.data.data) {
+          setCurrentUserReaction(res.data.data.currentUserReaction);
+          setReactionCounts(res.data.data.counts);
+          setTotalReactions(res.data.data.totalCount);
+        }
+      } catch (err) {
+        setCurrentUserReaction(prevReaction);
+        setReactionCounts(reactionCounts);
+        setTotalReactions(totalReactions);
+        console.error("Failed to toggle reaction", err);
+      }
+      return;
+    } else {
+      nextCounts[prevReaction] = Math.max(0, (nextCounts[prevReaction] || 0) - 1);
+    }
+    nextCounts[type] = (nextCounts[type] || 0) + 1;
+
+    setCurrentUserReaction(nextReaction);
+    setReactionCounts(nextCounts);
+    setTotalReactions(totalReactions + diff);
+
+    try {
+      const res = await reactionApi.react({
+        targetId: comment.id,
+        targetType: 'COMMENT',
+        reactionType: type
+      });
+      if (res.data.success && res.data.data) {
+        setCurrentUserReaction(res.data.data.currentUserReaction);
+        setReactionCounts(res.data.data.counts);
+        setTotalReactions(res.data.data.totalCount);
+      }
+    } catch (err) {
+      setCurrentUserReaction(prevReaction);
+      setReactionCounts(reactionCounts);
+      setTotalReactions(totalReactions);
+      console.error("Failed to select reaction", err);
+    }
+  };
+
   const [replies, setReplies] = useState<CommentReplySummaryResponse[]>([]);
   const [replyPage, setReplyPage] = useState(0);
   const [hasMoreReplies, setHasMoreReplies] = useState(false);
@@ -1080,10 +1463,6 @@ function CommentItem({
     setReplyCount((c) => Math.max(0, c - 1));
   };
 
-  const handleLike = () => {
-    setLiked((v) => !v);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
-  };
 
   return (
     <div
@@ -1174,32 +1553,100 @@ function CommentItem({
           <span style={{ fontSize: 12, color: "#65676B", marginRight: 6 }}>
             {timeAgo(comment.createdAt)}
           </span>
-          <button
-            type="button"
-            onClick={handleLike}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              color: liked ? "#3B82F6" : "#65676B",
-              padding: "2px 6px",
-              borderRadius: 4,
-              fontFamily: "Inter, sans-serif",
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-            }}
+          <div
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ position: 'relative', display: 'inline-block' }}
           >
-            {liked ? "💙 Like" : "Like"}
-            {likeCount > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 400, color: "#65676B" }}>
-                {" "}
-                · {likeCount}
-              </span>
+            {/* Popover */}
+            {showReactionsPopover && (
+              <div
+                className="reaction-popover-animate"
+                onMouseEnter={() => {
+                  if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+                }}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  marginBottom: 6,
+                  background: '#ffffff',
+                  borderRadius: 30,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  gap: 4,
+                  padding: '3px 5px',
+                  zIndex: 100,
+                }}
+              >
+                {(['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'] as ReactionType[]).map((type) => {
+                  const detail = REACTION_DETAILS[type];
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => { void handleSelectReaction(type); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 18,
+                        cursor: 'pointer',
+                        transition: 'transform 0.1s ease',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.3)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                      title={detail.label}
+                    >
+                      {detail.emoji}
+                    </button>
+                  );
+                })}
+              </div>
             )}
-          </button>
+
+            {/* Dynamic Like Button */}
+            <button
+              type="button"
+              onClick={() => { void handleReactClick(); }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                color: currentUserReaction ? REACTION_DETAILS[currentUserReaction].color : "#65676B",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontFamily: "Inter, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              {currentUserReaction ? (
+                <>
+                  <span style={{ fontSize: 13 }}>
+                    {REACTION_DETAILS[currentUserReaction].emoji}
+                  </span>
+                  <span>{REACTION_DETAILS[currentUserReaction].label}</span>
+                </>
+              ) : (
+                "Like"
+              )}
+              {totalReactions > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 400, color: "#65676B", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  · {getTopReactionEmojis(reactionCounts).join('')} {totalReactions}
+                </span>
+              )}
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setShowReplyInput((v) => !v)}

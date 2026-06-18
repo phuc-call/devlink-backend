@@ -70,8 +70,17 @@ public interface ReportService {
      */
     void deleteReport(Long reportId);
 
+    /**
+     * Returns all account restrictions for the current user with deleted content snapshots from Redis.
+     * Snapshot may be null if Redis TTL (7 days) has expired.
+     */
     List<MyViolationResponse> getMyViolations();
 
-
+    /**
+     * Returns report detail for the current reporter by notificationId (Redis key report:notification:{id}).
+     * Throws FORBIDDEN if caller is not the original reporter, REPORT_NOT_FOUND if Redis key missing.
+     *
+     * @param notificationId notification DB id used as Redis key
+     */
     ReportDetailResponse getReportDetail(Long notificationId);
 }

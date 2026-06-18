@@ -1,11 +1,18 @@
 package com.devlink.post_service.repository;
 
+import com.devlink.post_service.dto.procedure.ReactionCountProjection;
 import com.devlink.post_service.entity.Reaction;
+import com.devlink.post_service.entity.enums.TargetType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Optional;
+@Component
 public interface ReactionRepository extends JpaRepository<Reaction, Long> {
 
     /**
@@ -48,4 +55,37 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
                 AND r.targetType = 'COMMENT_REPLY')
     """)
     void deleteAllReactionsByReplyId(@Param("replyId") Long replyId);
+
+    Optional<Reaction> findByTargetIdAndTargetTypeAndUserId(
+            Long targetId, TargetType targetType, Long userId
+    );
+
+    //only type >0
+    @Query("""
+            SELECT r.reactionType AS reactionType, COUNT(r) AS count
+            FROM Reaction r
+            WHERE r.targetId = :targetId AND r.targetType = :targetType
+            GROUP BY r.reactionType
+            """)
+    List<ReactionCountProjection> countGroupedByType(
+            @Param("targetId") Long targetId,
+            @Param("targetType") TargetType targetType
+    );
+
+    @Query("""
+    SELECT r.reactionType AS reactionType, COUNT(r) AS count
+    FROM Reaction r
+    WHERE r.targetId = :targetId
+      AND r.targetType = :targetType
+    GROUP BY r.reactionType
+    ORDER BY COUNT(r) DESC
+""")
+    List<ReactionCountProjection> findTopReactionTypes(
+            @Param("targetId") Long targetId,
+            @Param("targetType") TargetType targetType,
+            Pageable pageable
+    );
+
+
+
 }

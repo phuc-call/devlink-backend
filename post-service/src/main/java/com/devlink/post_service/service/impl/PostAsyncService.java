@@ -22,6 +22,8 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.List;
 
+import static com.devlink.post_service.config.Constants.MAX_CHARS;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,7 +40,7 @@ public class PostAsyncService {
     private final ApplicationContext applicationContext;
     private final Tika tika;
     private final PostMediaRepository postMediaRepository;
-    private static final int MAX_CHARS = 50_000;
+
 
     private PostAsyncService self() {
         return applicationContext.getBean(PostAsyncService.class);
