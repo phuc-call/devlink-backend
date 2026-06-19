@@ -2,17 +2,17 @@ package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.dto.reponse.NotificationBrithDay;
+import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
 import com.devlink.user_service.dto.reponse.UserSearchResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -264,6 +264,19 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     @Query("""
     SELECT f.following.id FROM Follow f
     WHERE f.follower.id = :userId
+    AND f.status = 'ACCEPTED'""")
+    List<Long> getFollowingByUserId(@Param("userId")Long userId);
+
+    @Query("""
+    SELECT f.following.id FROM Follow f
+    WHERE f.follower.id = :userId
+    AND f.status = 'ACCEPTED'""")
+    List<Long> pageGetFollowingByUserId(@Param("userId")Long userId, Pageable pageable);
+
+
+    @Query("""
+    SELECT f.following.id FROM Follow f
+    WHERE f.follower.id = :userId
     AND f.status = 'ACCEPTED'
     AND EXISTS (
         SELECT 1 FROM Follow f2
@@ -273,4 +286,26 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     )
 """)
     List<Long> findFriendIds(@Param("userId") Long userId);
+
+
+    @Query("""
+    SELECT new com.devlink.user_service.dto.reponse.UserFollowingCardResponse(
+        up.user.id,
+        up.fullName,
+        up.avatarUrl,
+        up.bio,
+        up.school,
+        up.major,
+        up.favoriteLanguage
+    )
+    FROM Follow f
+    JOIN UserProfile up ON up.user.id = f.following.id
+    WHERE f.follower.id = :userId
+    AND f.status = 'ACCEPTED'
+    ORDER BY f.createdAt DESC
+""")
+    Page<UserFollowingCardResponse> getFollowingCards(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
 }

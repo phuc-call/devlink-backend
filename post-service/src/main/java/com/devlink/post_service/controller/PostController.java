@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static com.devlink.post_service.config.Constants.SUCCESS;
+
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
@@ -42,7 +44,7 @@ public class PostController {
             @RequestParam(defaultValue = "20") @Max(40) int size,
             @RequestParam(required = false) String postType) {
         return ResponseEntity.ok(
-                ApiResponse.ok(postService.getFeed(page, size, postType), "Success")
+                ApiResponse.ok(postService.getFeed(page, size, postType), SUCCESS)
         );
     }
 
@@ -54,6 +56,15 @@ public class PostController {
                 ApiResponse.ok(postService.updatePost(id, request), "Update post successfully")
         );
     }
+    @GetMapping("/following")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFollowingFeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getFollowingFeed(page, size), "Success")
+        );
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
@@ -63,4 +74,16 @@ public class PostController {
                 .message("Xoá bài viết thành công")
                 .build();
     }
+
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getUserPosts(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getUserPosts(userId, page, size), SUCCESS)
+        );
+    }
+
 }

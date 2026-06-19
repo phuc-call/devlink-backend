@@ -35,4 +35,13 @@ public class KafkaTopicConfig {
                 .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
                 .build();
     }
+
+    @Bean
+    public NewTopic reactionCreatedTopic() {
+        return TopicBuilder.name("reaction.created")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
+                .build();
+    }
 }

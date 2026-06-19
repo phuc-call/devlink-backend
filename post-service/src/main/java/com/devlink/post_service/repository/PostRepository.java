@@ -6,6 +6,7 @@ import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.RestrictionType;
+import com.devlink.post_service.entity.enums.Visibility;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -71,6 +72,39 @@ public interface PostRepository extends JpaRepository<Post, Long> {
       AND p.deletedAt IS NULL
 """)
     List<FeedPostResponse> findSavedPostProjections(@Param("ids") List<Long> ids);
+    @Query("""
+    SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
+           p.id, p.authorId, p.content, p.status, p.visibility,
+           p.postType, p.viewCount, p.isPinned, p.aiModerationStatus,
+           p.createdAt, p.updatedAt, p.commentCount)
+    FROM Post p
+    WHERE p.authorId IN :followingIds
+      AND p.status <> 'DELETED'
+      AND p.deletedAt IS NULL
+    ORDER BY p.createdAt DESC
+""")
+    Page<FeedPostResponse> findFollowingPosts(
+            @Param("followingIds") List<Long> followingIds,
+            Pageable pageable
+    );
+
+    @Query("""
+    SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
+           p.id, p.authorId, p.content, p.status, p.visibility,
+           p.postType, p.viewCount, p.isPinned, p.aiModerationStatus,
+           p.createdAt, p.updatedAt, p.commentCount)
+    FROM Post p
+    WHERE p.authorId = :authorId
+      AND p.visibility IN :visibilities
+      AND p.status <> 'DELETED'
+      AND p.deletedAt IS NULL
+    ORDER BY p.createdAt DESC
+""")
+    Page<FeedPostResponse> findPostsByAuthorIdAndVisibilityIn(
+            @Param("authorId") Long authorId,
+            @Param("visibilities") List<Visibility> visibilities,
+            Pageable pageable
+    );
 
 
 }

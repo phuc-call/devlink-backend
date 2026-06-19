@@ -1,6 +1,6 @@
 
 import axiosInstance from '../axiosInstance';
-import type { UpdatePostRequest } from '../../types/post.types';
+import type { UpdatePostRequest, FeedPostResponse, PageResponse } from '../../types/post.types';
 
 export const postApi = {
     updatePost: (id: number, data: UpdatePostRequest) => {
@@ -25,5 +25,12 @@ export const postApi = {
 
     deletePost: (id: number) => {
         return axiosInstance.delete(`/api/posts/${id}`);
+    },
+
+    getUserPosts: (userId: number, page: number = 0, size: number = 10) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            `/api/posts/users/${userId}`,
+            { params: { page, size } }
+        );
     },
 };

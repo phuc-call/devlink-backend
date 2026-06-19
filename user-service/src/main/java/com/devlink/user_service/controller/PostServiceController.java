@@ -85,4 +85,17 @@ public class PostServiceController {
                 .data(postServiceClient.getLanguageOfCurrentUser(userId))
                 .build();
     }
+
+    @GetMapping("/{id}/following/ids")
+    public ResponseEntity<ApiResponse<List<Long>>> getFollowingIds(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.<List<Long>>builder()
+                        .success(true)
+                        .message("Success")
+                        .data(postServiceClient.getFollowingId(id))
+                        .build()
+        );
+    }
 }

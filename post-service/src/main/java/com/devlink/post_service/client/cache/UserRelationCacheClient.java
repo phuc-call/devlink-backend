@@ -1,6 +1,7 @@
 package com.devlink.post_service.client.cache;
 
 import com.devlink.post_service.client.UserServiceClient;
+import com.devlink.post_service.security.SecurityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -26,7 +27,9 @@ public class UserRelationCacheClient {
     private final ObjectMapper objectMapper;
     private final UserServiceClient userServiceClient;
 
+
     private static final String FRIEND_IDS_KEY_PREFIX = "friend_ids:";
+    private static final String FOLLOWING_IDS_KEY_PREFIX = "following_ids:";
     private static final String BLOCKED_IDS_KEY_PREFIX = "blocked_ids:";
     private static final Duration RELATION_TTL = Duration.ofMinutes(5);
 
@@ -113,4 +116,48 @@ public class UserRelationCacheClient {
         }
         return List.of();
     }
+
+    @CircuitBreaker(name = "user-service", fallbackMethod = "getFollowingIdsFallback")
+    @Retry(name = "user-service")
+    public List<Long> getFollowingIds(Long userId) {
+        String key = FOLLOWING_IDS_KEY_PREFIX + userId;
+        String cached = redisTemplate.opsForValue().get(key);
+
+        Long currentUserId= SecurityUtils.getCurrentUserId();
+
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, new TypeReference<List<Long>>() {});
+            } catch (Exception e) {
+                log.warn("[UserRelationCacheClient] Failed to deserialize following ids userId={}", userId);
+            }
+        }
+
+        List<Long> ids = userServiceClient.getFollowingIds(currentUserId).getData();
+        if (ids == null) ids = List.of();
+
+        try {
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(ids), RELATION_TTL);
+        } catch (Exception e) {
+            log.warn("[UserRelationCacheClient] Failed to cache following ids userId={}", userId);
+        }
+
+        return ids;
+    }
+
+    public List<Long> getFollowingIdsFallback(Long userId, Throwable t) {
+        log.warn("[UserRelationCacheClient] getFollowingIds fallback userId={}, reason={}", userId, t.getMessage());
+
+        try {
+            String cached = redisTemplate.opsForValue().get(FOLLOWING_IDS_KEY_PREFIX + userId);
+            if (cached != null) {
+                return objectMapper.readValue(cached, new TypeReference<List<Long>>() {});
+            }
+        } catch (Exception e) {
+            log.warn("[UserRelationCacheClient] Failed to read stale following ids userId={}", userId);
+        }
+
+        return List.of();
+    }
+
 }

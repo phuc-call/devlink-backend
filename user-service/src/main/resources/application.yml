@@ -52,7 +52,8 @@ spring:
         spring.json.use.type.headers: true
         spring.json.type.mapping: >-                                      
           report:com.devlink.user_service.dto.event.ReportCreatedEvent,
-          reportReviewed:com.devlink.user_service.dto.event.ReportReviewedEvent
+          reportReviewed:com.devlink.user_service.dto.event.ReportReviewedEvent,
+          reactions:com.devlink.user_service.dto.event.ReactionCreatedEvent
         
 
   cache:

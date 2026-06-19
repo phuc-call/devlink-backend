@@ -51,10 +51,10 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     Optional<UserProfile> findByUser(User user);
 
     @Query("""
-            SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
-                        up.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
-                        )
-                        FROM UserProfile up
+                    SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
+                                up.user.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
+                                )
+                                FROM UserProfile up
             WHERE up.user.id<>:userId
                 AND up.user.badge IN('BLUE_TICK', 'RED_TICK', 'POPULAR')
                 AND up.user.id NOT IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId)
@@ -64,7 +64,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
 
     @Query("""
                     SELECT new com.devlink.user_service.dto.internal.CandidateProfileInternal(
-                                up.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
+                                up.user.id, up.fullName, up.avatarUrl, up.school, up.major, up.city, up.favoriteLanguage
                                 )
                      FROM UserProfile up
                                  WHERE up.user.id<>:userId
@@ -75,7 +75,6 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             """)
     List<CandidateProfileInternal> findRandomCandidates(@Param("userId") Long userId,
                                                         @Param("limit") int limit);
-
     @Modifying
     @Query("""
             UPDATE UserProfile u

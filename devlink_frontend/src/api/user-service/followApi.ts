@@ -1,5 +1,6 @@
 import axiosInstance from '../axiosInstance';
 import type {BlockStatusResponse, PageResponse} from '../../types/common.types';
+import type { UserFollowingCardResponse } from '../../types/follow.types';
 
 export type FollowActionResult = 'FOLLOWING' | 'FRIEND' | 'NOT_FOLLOWING';
 
@@ -40,7 +41,11 @@ export const followApi = {
         axiosInstance.get<{ data: PageResponse<FollowResponse> }>('/api/users/me/following', {
             params: { page, size },
         }),
-
+ // GET /api/users/me/following/cards
+    getFollowingCards: (page = 0, size = 20) =>
+        axiosInstance.get<{ data: PageResponse<UserFollowingCardResponse> }>('/api/users/me/following/cards', {
+            params: { page, size },
+        }),
     // POST /api/users/{userId}/view
     incrementViewCount: (userId: number) =>
         axiosInstance.post<{ data: null }>(`/api/users/${userId}/view`),

@@ -9,7 +9,7 @@ public final class Constants {
     private Constants() {
     }
 
-    public static final String[] PUBLIC_ENDPOINT = {
+    private static final String[] PUBLIC_ENDPOINT = {
             "/v3/api-docs",
             "/v3/api-docs/**",
             "/swagger-ui/**",
@@ -19,10 +19,12 @@ public final class Constants {
             "/api/posts/public/**"
     };
 
-    public static final String PAGE_NUMBER = "0";
-    public static final String PAGE_SIZE = "2";
-    public static final String SORT_DIR = "asc";
-    public static final int OPS_EXPIRATION_MINUTES = 5;
+    public static String[] getPublicEndpoints() {
+        return PUBLIC_ENDPOINT;
+    }
+
+
+
     public static final String USER_COMMENT = "user:comment:";
     public static final String USER_NAME = "user:name:";
     public static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;  // 50MB each file
@@ -51,7 +53,7 @@ public final class Constants {
             TemplateFileType.VIDEO, Set.of(".mp4", ".mov", ".avi"),
             TemplateFileType.CODE, Set.of()
     );
-    public static final String SUCCESSS="Success";
+    public static final String SUCCESS="Success";
 
     public static final long CACHE_TTL_HOURS = 24;
     public static final int MAX_PERIOD_DAYS = 30;
@@ -59,7 +61,7 @@ public final class Constants {
     public static final String REPORT_TOPIC = "report.created";
 
     public static final long DELETED_SNAPSHOT_DAYS = 7L;
-    public static final long RESTRICTION_ONE_WEEK_SECONDS = 7 * 24 * 60 * 60L;
+
     public static final String DELETED_CONTENT_KEY = "deleted:%s:%d"; // deleted:post:1
     public static final String REPORT_REVIEWED_TOPIC = "report.reviewed";
     public static final String SNAPSHOT_KEY_POST    = "post";
@@ -67,7 +69,7 @@ public final class Constants {
     public static final String SNAPSHOT_KEY_REPLY   = "reply";
 
     public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
-
+    public static final String REACTION_CREATED_TOPIC="reaction.created";
     public static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100 MB
 
 }

@@ -8,6 +8,7 @@ import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;
+import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.PostServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class PostServiceClientImpl implements PostServiceClient {
 
     private final UserRepository userRepository;
     private final UserHelper u;
+    private final FollowRepository followRepository;
 
 
 
@@ -88,5 +90,15 @@ public class PostServiceClientImpl implements PostServiceClient {
                 .stream()
                 .map(Enum::name)
                 .toList();
+    }
+
+    @Override
+    public List<Long> getFollowingId(Long currentUser){
+
+        List<Long>following=followRepository.getFollowingByUserId(currentUser);
+        if(following.isEmpty()){
+            return List.of();
+        }
+        return following;
     }
 }

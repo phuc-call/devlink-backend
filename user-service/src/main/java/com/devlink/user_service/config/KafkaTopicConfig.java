@@ -9,9 +9,19 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
 
+    // call topic from post-service
     @Bean
     public NewTopic badgeGrantTopic() {
         return TopicBuilder.name("badge-grant")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
+                .build();
+    }
+
+    @Bean
+    public NewTopic reactionCreatedTopic() {
+        return TopicBuilder.name("reaction.created")
                 .partitions(3)
                 .replicas(1)
                 .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")

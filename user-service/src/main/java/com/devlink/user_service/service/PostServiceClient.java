@@ -139,6 +139,8 @@ public interface PostServiceClient {
      *
      * @return list of language names of current user
      */
-     List<String> getLanguageOfCurrentUser(@RequestHeader("X-User-Id") Long userId) ;
+     List<String> getLanguageOfCurrentUser(@RequestHeader("X-User-Id") Long userId);
+
+     List<Long> getFollowingId(Long currentUser);
 
 }

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import {
     MoreHorizontal, Pencil, Trash2, Flag, Bookmark, Bell,
@@ -73,11 +74,10 @@ function InlineEditForm({ post, onCancel, onSaved }: InlineEditFormProps) {
     const [removeIds, setRemoveIds]       = useState<number[]>([]);
     const [newFiles, setNewFiles]         = useState<File[]>([]);
     const [newPreviews, setNewPreviews]   = useState<string[]>([]);
-    const [tagInput, setTagInput]         = useState(post.tags.map(t => t.tag).join(', '));
+    const [tagInput, setTagInput]         = useState((post.tags ?? []).map(t => t.tag).join(', '));
     const [loading, setLoading]           = useState(false);
     const [error, setError]               = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
         setNewFiles(prev => [...prev, ...files]);
@@ -455,12 +455,20 @@ export default function PostCard({
                                      post: initialPost, onDeleted, onUpdated,
                                      openCommentPostId, onToggleComment,isSaved = false,
                                  }: Props) {
+    const navigate = useNavigate();
     const [post, setPost]                   = useState(initialPost);
     const [menuOpen, setMenuOpen]           = useState(false);
     const [editing, setEditing]             = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+   const safeTags = post.tags ?? [];
+    const safeMediaList = post.mediaList ?? [];
+    const authorId = post.author?.id ?? post.authorId;
+    const authorName = post.author?.fullName ?? 'Người dùng';
+    const authorAvatar = post.author?.avatarUrl
+        ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=3B82F6&color=fff`;
 
     const [saved, setSaved] = useState(isSaved);
     const [saveLoading, setSaveLoading] = useState(false);
@@ -676,6 +684,17 @@ export default function PostCard({
         onToggleComment(commentOpen ? null : post.id);
     }, [commentOpen, onToggleComment, post.id]);
 
+     const handleOpenAuthorProfile = useCallback(() => {
+        if (!authorId) return;
+
+        if (currentUserId !== null && authorId === currentUserId) {
+            navigate('/profile/me');
+            return;
+        }
+
+        navigate(`/profile/${authorId}`);
+    }, [authorId, currentUserId, navigate]);
+
     return (
         <>
             {showDeleteDialog && (
@@ -707,16 +726,49 @@ export default function PostCard({
                     justifyContent: 'space-between',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <img
-                            src={post.author?.avatarUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.fullName ?? 'U')}&background=3B82F6&color=fff`}
-                            alt={post.author?.fullName ?? 'User'}
-                            style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
-                        />
+                        <button
+                            type="button"
+                            onClick={handleOpenAuthorProfile}
+                            aria-label={`Xem profile ${authorName}`}
+                            style={{
+                                border: 'none',
+                                background: 'transparent',
+                                padding: 0,
+                                cursor: 'pointer',
+                                borderRadius: '50%',
+                                display: 'flex',
+                            }}
+                        >
+                            <img
+                                src={authorAvatar}
+                                alt={authorName}
+                                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                            />
+                        </button>
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
-                                    {post.author?.fullName ?? 'Người dùng'}
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleOpenAuthorProfile}
+                                    style={{
+                                        border: 'none',
+                                        background: 'transparent',
+                                        padding: 0,
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        fontSize: 14,
+                                        color: '#111827',
+                                        fontFamily: 'Inter, sans-serif',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.textDecoration = 'underline';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.textDecoration = 'none';
+                                    }}
+                                >
+                                    {authorName}
+                                </button>
                                 {post.author?.badge != null && post.author.badge !== 'NONE' && (
                                     <span style={{
                                         background: '#DBEAFE', color: '#2563EB',
@@ -828,9 +880,9 @@ export default function PostCard({
                             </div>
                         )}
 
-                        {post.tags.length > 0 && (
+                        {safeTags.length > 0 && (
                             <div style={{ padding: '0 16px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                {post.tags.map(t => (
+                                {safeTags.map(t => (
                                     <span key={t.id} style={{
                                         background: '#EFF6FF', color: '#3B82F6',
                                         fontSize: 12, padding: '2px 8px', borderRadius: 9999,
@@ -841,9 +893,9 @@ export default function PostCard({
                             </div>
                         )}
 
-                        {post.mediaList.length > 0 && (
+                        {safeMediaList.length > 0 && (
                             <div>
-                                {post.mediaList.map(m => (
+                                {safeMediaList.map(m => (
                                     <div key={m.id}>
                                         {m.mediaType === 'IMAGE' && (
                                             <img src={m.url} alt={m.originalName}

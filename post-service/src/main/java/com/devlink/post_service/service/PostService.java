@@ -8,8 +8,25 @@ import org.springframework.data.domain.Page;
 
 public interface PostService {
     PostResponse createPost(CreatePostRequest request);
+
     Page<FeedPostResponse> getFeed(int page, int size, String postType);
 
+    Page<FeedPostResponse> getFollowingFeed(int page, int size);
+
     PostResponse updatePost(Long postId, UpdatePostRequest request);
+
     void deletePost(Long postId);
+
+    /**
+     * Retrieves a paginated list of posts authored by a specific user.
+     * Applies visibility filters based on the relationship between the current viewer and the target author.
+     * Enriches the posts with author details, tags, and media list.
+     *
+     * @param targetUserId ID of the user whose posts are to be retrieved
+     * @param page page index (0-based)
+     * @param size number of items per page
+     * @return paginated {@link FeedPostResponse}
+     */
+    Page<FeedPostResponse> getUserPosts(Long targetUserId, int page, int size);
+
 }

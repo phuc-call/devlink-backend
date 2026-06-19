@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-import static com.devlink.post_service.config.Constants.SUCCESSS;
+import static com.devlink.post_service.config.Constants.SUCCESS;
 
 @RestController
 @RequestMapping("/api/templates/suggestions")
@@ -88,7 +88,7 @@ public class SuggestionController {
     public ResponseEntity<ApiResponse<List<PeriodOverviewRepose>>> overview(
             @RequestBody SuggestionOverviewRequest request) {
         return ResponseEntity.ok(
-                ApiResponse.ok(suggestionService.getOverviewSuggestion(request), SUCCESSS)
+                ApiResponse.ok(suggestionService.getOverviewSuggestion(request), SUCCESS)
         );
     }
 

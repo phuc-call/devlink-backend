@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.util.List;
 
+import static com.devlink.post_service.config.Constants.SUCCESS;
+
 @RestController
 @RequestMapping("/api/templates")
 @RequiredArgsConstructor
@@ -36,7 +38,7 @@ public class LearningTemplateController {
         TemplateResponse response = learningTemplateService.createTemplate(request, file);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response, "Template created successfully"));
+                .body(ApiResponse.ok(response, SUCCESS));
     }
 
    @GetMapping()
@@ -44,7 +46,7 @@ public class LearningTemplateController {
         TemplateFileTyeAndDifficultlyResponse response = learningTemplateService.getFileTypeAndDifficulty();
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok(response, Constants.SUCCESSS));
+                .body(ApiResponse.ok(response, SUCCESS));
     }
 
 
@@ -56,7 +58,7 @@ public class LearningTemplateController {
             @RequestParam(required = false) String tag
     ) {
         PagedResponse<TemplateCardResponse> result = learningTemplateService.getMyTemplates(page, size, difficulty, tag);
-        return ResponseEntity.ok(ApiResponse.ok(result, Constants.SUCCESSS));
+        return ResponseEntity.ok(ApiResponse.ok(result, SUCCESS));
     }
 
 
@@ -79,7 +81,7 @@ public class LearningTemplateController {
         TemplateDetailResponse response = learningTemplateService.getTemplateDetail(id);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok(response, Constants.SUCCESSS));
+                .body(ApiResponse.ok(response, SUCCESS));
     }
 
 

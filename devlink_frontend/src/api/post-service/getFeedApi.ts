@@ -11,4 +11,11 @@ export const getFeedApi = {
             { params }
         );
     },
+
+    getFollowingFeed: (page: number = 0, size: number = 20) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            '/api/posts/following',
+            { params: { page, size } }
+        );
+    },
 };

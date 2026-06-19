@@ -3,6 +3,7 @@ package com.devlink.user_service.service.impl;
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.dto.reponse.PageResponse;
+import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.enums.FollowActionResult;
@@ -15,6 +16,7 @@ import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.NotificationRepository;
 import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.repository.UserRepository;
+import com.devlink.user_service.security.SecurityUtils;
 import com.devlink.user_service.service.FollowService;
 import com.devlink.user_service.service.UserBlockService;
 import jakarta.transaction.Transactional;
@@ -100,6 +102,14 @@ public class    FollowServiceImpl implements FollowService {
             //announcement
             notificationService.followAnnouncement(currentUserId, userId,NotificationType.FOLLOW_REQUEST);
         }
+    }
+
+
+    @Override
+    public Page<UserFollowingCardResponse> getFollowingCards(int page, int size) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        Pageable pageable = PageRequest.of(page, size);
+        return followRepository.getFollowingCards(currentUserId, pageable);
     }
 
 

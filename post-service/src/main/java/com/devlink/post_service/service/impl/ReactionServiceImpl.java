@@ -1,30 +1,43 @@
 package com.devlink.post_service.service.impl;
 
+import com.devlink.post_service.dto.event.ReactionCreatedEvent;
 import com.devlink.post_service.dto.procedure.ReactionCountProjection;
 import com.devlink.post_service.dto.request.ReactionRequest;
 import com.devlink.post_service.dto.response.ReactionResponse;
 import com.devlink.post_service.entity.Reaction;
 import com.devlink.post_service.entity.enums.ReactionType;
 import com.devlink.post_service.entity.enums.TargetType;
+import com.devlink.post_service.exception.AppException;
+import com.devlink.post_service.exception.ErrorCode;
+import com.devlink.post_service.repository.CommentReplyRepository;
+import com.devlink.post_service.repository.CommentRepository;
+import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.ReactionRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static com.devlink.post_service.config.Constants.REACTION_CREATED_TOPIC;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class ReactionServiceImpl implements ReactionService {
     private final ReactionRepository reactionRepository;
-
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final CommentReplyRepository commentReplyRepository;
 
     @Override
     public ReactionResponse react(ReactionRequest request) {
@@ -34,6 +47,7 @@ public class ReactionServiceImpl implements ReactionService {
                 request.getTargetId(), request.getTargetType(), currentUser);
 
         ReactionType currentUserReaction = null;
+        boolean shouldNotify=false;
         if (existing.isPresent()) {
             Reaction reaction = existing.get();
 
@@ -44,6 +58,7 @@ public class ReactionServiceImpl implements ReactionService {
                 reaction.setReactionType(request.getReactionType());
                 reactionRepository.save(reaction);
                 currentUserReaction = request.getReactionType();
+                shouldNotify=true;
             }
         } else {
             // React lần đầu
@@ -55,9 +70,48 @@ public class ReactionServiceImpl implements ReactionService {
                     .build();
             reactionRepository.save(newReaction);
             currentUserReaction = request.getReactionType();
+            shouldNotify=true;
+        }
+        if(shouldNotify){
+            publishReactionCreatedEvent(request,currentUser);
         }
 
         return buildResponse(request.getTargetId(), request.getTargetType(), currentUserReaction);
+    }
+
+    private void publishReactionCreatedEvent(ReactionRequest request, Long actorId) {
+        Long receiverId = resolveReceiverId(request.getTargetId(), request.getTargetType());
+
+        if (receiverId.equals(actorId)) {
+            return;
+        }
+
+        ReactionCreatedEvent event = ReactionCreatedEvent.builder()
+                .actorId(actorId)
+                .receiverId(receiverId)
+                .targetId(request.getTargetId())
+                .targetType(request.getTargetType())
+                .reactionType(request.getReactionType())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        kafkaTemplate.send(REACTION_CREATED_TOPIC, String.valueOf(receiverId), event);
+    }
+
+    private Long resolveReceiverId(Long targetId, TargetType targetType) {
+        return switch (targetType) {
+            case POST -> postRepository.findById(targetId)
+                    .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND))
+                    .getAuthorId();
+
+            case COMMENT,COMMENT_REPLY -> commentRepository.findById(targetId)
+                    .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND))
+                    .getAuthorId();
+
+            case TEMPLATE,POST_FILE -> commentReplyRepository.findById(targetId)
+                    .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND))
+                    .getAuthorId();
+        };
     }
 
     @Transactional(readOnly = true)

@@ -64,4 +64,7 @@ public interface UserServiceClient {
 
     @GetMapping("/internal/users/languages/me/{userId}")
     ApiResponse<List<String>> getLanguageOfCurrentUser(@PathVariable("userId") Long userId);
+
+    @GetMapping("/internal/users/{id}/following/ids")
+    ApiResponse<List<Long>> getFollowingIds(@PathVariable("id") Long id);
 }

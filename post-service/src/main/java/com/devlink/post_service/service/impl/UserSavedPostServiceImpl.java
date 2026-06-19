@@ -1,21 +1,19 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
-import com.devlink.post_service.dto.client.UserFeedInfoClient;
-import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.dto.response.FeedPostResponse;
+import com.devlink.post_service.dto.response.SavePostProjectionResponse;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.UserSavedPost;
 import com.devlink.post_service.entity.enums.AiModerationStatus;
 import com.devlink.post_service.entity.enums.Visibility;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
-import com.devlink.post_service.repository.PostMediaRepository;
 import com.devlink.post_service.repository.PostRepository;
-import com.devlink.post_service.repository.PostTagRepository;
 import com.devlink.post_service.repository.UserSavedPostRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.UserSavedPostService;
+import com.devlink.post_service.service.helper.PostEnrichmentHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -40,10 +38,8 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
     private final UserSavedPostRepository savedPostRepository;
     private final PostRepository postRepository;
     private final UserRelationCacheClient userRelationCacheClient;
-    private final UserInfoCacheClient userInfoCacheClient;
+    private final PostEnrichmentHelper postEnrichmentHelper;
 
-    private final PostTagRepository postTagRepository;
-    private final PostMediaRepository postMediaRepository;
 
     @Override
     public void savePost(Long postId) {
@@ -130,6 +126,8 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
 
         List<Long> postIds = postIdPage.getContent();
 
+        List<FeedPostResponse> posts = postRepository.findSavedPostProjections(postIds);
+        postEnrichmentHelper.enrich(posts, postIds);
         Map<Long, Instant> savedAtMap = savedPostRepository
                 .findSavedAtByUserIdAndPostIds(userId, postIds)
                 .stream()
@@ -137,37 +135,16 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
                         SavePostProjectionResponse::getPostId,
                         SavePostProjectionResponse::getSaveAt
                 ));
-
-        List<FeedPostResponse> posts = postRepository.findSavedPostProjections(postIds);
-
-        Map<Long, List<TagResponse>> tagsMap = postTagRepository
-                .findTagsByPostIds(postIds).stream()
-                .collect(Collectors.groupingBy(TagResponse::getPostId));
-
-        Map<Long, List<MediaResponse>> mediaMap = postMediaRepository
-                .findMediaByPostIds(postIds).stream()
-                .collect(Collectors.groupingBy(MediaResponse::getPostId));
-
-        List<Long> authorIds = posts.stream()
-                .map(FeedPostResponse::getAuthorId)
-                .distinct()
-                .toList();
-        Map<Long, UserFeedInfoClient> authorMap = userInfoCacheClient.getUserFeedInfo(authorIds);
-
         Map<Long, FeedPostResponse> postMap = posts.stream()
                 .collect(Collectors.toMap(FeedPostResponse::getId, p -> p));
 
         List<FeedPostResponse> result = postIds.stream()
                 .map(postMap::get)
                 .filter(Objects::nonNull)
-                .map(post -> {
-                    post.setTags(tagsMap.getOrDefault(post.getId(), List.of()));
-                    post.setMediaList(mediaMap.getOrDefault(post.getId(), List.of()));
-                    post.setAuthor(authorMap.get(post.getAuthorId()));
-                    post.setSavedAt(savedAtMap.get(post.getId()));
-                    return post;
-                })
                 .toList();
+
+        result.forEach(p -> p.setSavedAt(savedAtMap.get(p.getId())));
+
         return new PageImpl<>(result, pageable, postIdPage.getTotalElements());
     }
 }

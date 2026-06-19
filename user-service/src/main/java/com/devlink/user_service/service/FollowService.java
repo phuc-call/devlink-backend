@@ -2,8 +2,10 @@ package com.devlink.user_service.service;
 
 import com.devlink.user_service.dto.reponse.FollowResponse;
 import com.devlink.user_service.dto.reponse.PageResponse;
+import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
 import com.devlink.user_service.entity.enums.FollowActionResult;
 import com.devlink.user_service.entity.enums.FollowListType;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -15,5 +17,8 @@ public interface FollowService {
   List<Long> getFriendIds(Long userId);
 
   void cancelFollowRequest( Long followingId);
-  public FollowActionResult getFollowStatus(Long userId);
+   FollowActionResult getFollowStatus(Long userId);
+
+
+  Page<UserFollowingCardResponse> getFollowingCards(int page, int size);
 }
