@@ -1,9 +1,6 @@
 package com.devlink.user_service.repository;
 
-import com.devlink.user_service.dto.reponse.FollowResponse;
-import com.devlink.user_service.dto.reponse.NotificationBrithDay;
-import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
-import com.devlink.user_service.dto.reponse.UserSearchResponse;
+import com.devlink.user_service.dto.reponse.*;
 import com.devlink.user_service.entity.Follow;
 import com.devlink.user_service.entity.enums.FollowStatus;
 import org.springframework.data.domain.Page;
@@ -110,11 +107,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
                         WHERE f.following.id=:followingId AND f.status=FollowStatus.PENDING""")
         int acceptFollowRequest(@Param("followingId") Long followingId);
 
-        @Query("""
-                        SELECT f FROM Follow f
-                                     JOIN FETCH f.following
-                                                 WHERE f.follower.id=:followerId""")
-        List<Follow> findFollowingListByFollowerId(@Param("followerId") Long followerId);
+
 
         boolean existsByFollowerIdAndFollowingIdAndStatus(
                         Long followerId, Long followingId, FollowStatus status);
@@ -302,4 +295,12 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
         Page<UserFollowingCardResponse> getFollowingCards(
                         @Param("userId") Long userId,
                         Pageable pageable);
+        @Query("""
+        SELECT new com.devlink.user_service.dto.reponse.FollowQualifiedResponse(
+            f.status, p.completionPercent
+        )
+        FROM Follow f
+        JOIN f.follower.profile p
+        WHERE f.following.id = :followingId""")
+        List<FollowQualifiedResponse> findFollowerListByFollowingId(@Param("followingId") Long followingId);
 }

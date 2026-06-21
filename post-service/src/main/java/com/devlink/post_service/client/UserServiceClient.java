@@ -1,10 +1,7 @@
 package com.devlink.post_service.client;
 
 import com.devlink.post_service.config.FeignClientConfig;
-import com.devlink.post_service.dto.client.UserFeedInfoClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentClient;
-import com.devlink.post_service.dto.client.UserLanguagesClient;
-import com.devlink.post_service.dto.client.UserNameClient;
+import com.devlink.post_service.dto.client.*;
 import com.devlink.post_service.dto.response.ApiResponse;
 import com.devlink.post_service.entity.enums.BadgeType;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -78,4 +75,7 @@ public interface UserServiceClient {
      */
     @GetMapping("/internal/users/users/{userId}")
     ApiResponse<Map<Long, BadgeType>> getUserBadge(@PathVariable("userId") Long userId);
+
+    @GetMapping("/api/users/badges/video-limits")
+    ApiResponse<List<BadgeVideoLimitClient>> getAllBadgeVideoLimits();
 }

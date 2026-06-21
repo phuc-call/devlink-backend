@@ -23,6 +23,7 @@ import AdminLayout from '../components/layout/AdminLayout/AdminLayout';
 import DashboardPage from '../features/admin/pages/DashboardPage';
 import AdminPostsPage from '../features/admin/pages/AdminPostsPage';
 import AdminUsersPage from '../features/admin/pages/AdminUsersPage';
+import AdminBadgePage from '../features/admin/pages/AdminBadgePage';
 import AdminTemplatesPage from '../features/admin/pages/AdminTemplatesPage';
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
@@ -83,6 +84,7 @@ const router = createBrowserRouter([
                     {path: '/admin/comments', element: <AdminCommentsPage/>},
                     {path: '/admin/templates', element: <AdminTemplatesPage/>},
                     {path: '/admin/users', element: <AdminUsersPage/>},
+                    {path: '/admin/badges', element: <AdminBadgePage/>},
                     {path: '/admin/reports', element: <AdminReportsPage/>},
                     {path: '/admin/settings', element: <AdminSettingsPage/>},
                 ],

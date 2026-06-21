@@ -1,10 +1,11 @@
 package com.devlink.user_service.service;
 
-import com.devlink.user_service.dto.reponse.BadgeConfigResponse;
-import com.devlink.user_service.dto.reponse.BadgeGrantResponse;
-import com.devlink.user_service.dto.reponse.BadgeVideoLimitResponse;
+import com.devlink.user_service.dto.reponse.*;
 import com.devlink.user_service.dto.request.CreateBadgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateBadgeVideoLimitRequest;
+import com.devlink.user_service.entity.enums.BadgeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -20,8 +21,8 @@ public interface BadgeService {
     /**
      * Manually grant a RED_TICK badge to a single user.
      *
-     * @param userId        the user ID to grant
-     * @param reason        the reason for granting
+     * @param userId the user ID to grant
+     * @param reason the reason for granting
      * @param adminUsername the administrator username performing the grant
      * @return the badge grant response details
      */
@@ -30,8 +31,8 @@ public interface BadgeService {
     /**
      * Manually grant a RED_TICK badge to multiple users in batch.
      *
-     * @param userIds       the list of user IDs to grant
-     * @param reason        the reason for granting
+     * @param userIds the list of user IDs to grant
+     * @param reason the reason for granting
      * @param adminUsername the administrator username performing the grant
      * @return the list of badge grant response details
      */
@@ -70,8 +71,6 @@ public interface BadgeService {
      */
     BadgeConfigResponse updateBadgeConfig(Long id, CreateBadgeConfigRequest request, Long adminId);
 
-
-
     /**
      * Retrieve all badge video limits configuration.
      *
@@ -88,4 +87,37 @@ public interface BadgeService {
      * @return the updated badge video limit details
      */
     BadgeVideoLimitResponse updateBadgeVideoLimit(String badgeType, UpdateBadgeVideoLimitRequest request, Long adminId);
+
+    /**
+     * Search users by username or email, with pagination support.
+     *
+     * @param keyword search keyword (username or email), can be null/empty to retrieve all users
+     * @param pageable pagination information
+     * @return paginated UserSummaryResponse results
+     */
+    Page<UserSummaryResponse> searchUsers(String keyword, Pageable pageable);
+
+    /**
+     * View the current badge and complete badge history of a user.
+     *
+     * @param userId ID of the user to view
+     * @return badge details and history
+     */
+    UserBadgeDetailResponse getUserBadgeDetail(Long userId);
+
+    /**
+     * Get statistics of users grouped by badge type.
+     *
+     * @return the number of users for each badge type and the total count
+     */
+    BadgeStatsResponse getBadgeStats();
+
+    /**
+     * Retrieve users by badge type, with pagination support.
+     *
+     * @param badgeType badge type to filter by
+     * @param pageable pagination information
+     * @return paginated UserSummaryResponse results
+     */
+    Page<UserSummaryResponse> getUsersByBadgeType(BadgeType badgeType, Pageable pageable);
 }

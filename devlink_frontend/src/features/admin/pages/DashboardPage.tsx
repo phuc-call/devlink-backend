@@ -1,7 +1,6 @@
 // src/features/admin/pages/DashboardPage.tsx
 import {
-    Users, FileText, BookOpen, ShieldAlert,
-    TrendingUp, MessageSquare, Eye, Activity,
+    Users, FileText, BookOpen, ShieldAlert, MessageSquare, Eye, Activity,
 } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder';
 import SuggestionOverviewChart from '../components/SuggestionOverviewChart';

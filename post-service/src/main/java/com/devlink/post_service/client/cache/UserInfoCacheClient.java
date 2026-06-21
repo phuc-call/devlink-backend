@@ -2,6 +2,7 @@ package com.devlink.post_service.client.cache;
 
 import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.config.Constants;
+import com.devlink.post_service.dto.client.BadgeVideoLimitClient;
 import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.client.UserNameClient;
@@ -37,6 +38,7 @@ public class UserInfoCacheClient {
     private final ObjectMapper objectMapper;
     private final UserServiceClient userServiceClient;
     private static final String USER_FEED_INFO_KEY_PREFIX = "feed_info:";
+    private static final String BADGE_VIDEO_LIMIT_KEY_PREFIX = "badge_video_limit:";
 
     /**
      * Returns basic display info for the given user IDs.
@@ -198,5 +200,61 @@ public class UserInfoCacheClient {
             }
         }
         return result;
+    }
+
+    /**
+     * Returns video limit config for a single badge type.
+     * Checks Redis first; on miss calls user-service and re-caches with 10m TTL.
+     *
+     * @param badgeType badge type string (e.g. "NONE", "POPULAR")
+     * @return BadgeVideoLimitClient or null if unavailable
+     */
+    @CircuitBreaker(name = "user-service-feed-info", fallbackMethod = "getBadgeVideoLimitFallback")
+    @Retry(name = "user-service-feed-info")
+    public BadgeVideoLimitClient getBadgeVideoLimit(String badgeType) {
+        String key = BADGE_VIDEO_LIMIT_KEY_PREFIX + badgeType;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, BadgeVideoLimitClient.class);
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to deserialize video limit badgeType={}", badgeType);
+            }
+        }
+
+        List<BadgeVideoLimitClient> fetched = userServiceClient.getAllBadgeVideoLimits().getData();
+        if (fetched == null) return null;
+
+        BadgeVideoLimitClient target = null;
+        for (BadgeVideoLimitClient item : fetched) {
+            try {
+                redisTemplate.opsForValue().set(
+                        BADGE_VIDEO_LIMIT_KEY_PREFIX + item.getBadgeType(),
+                        objectMapper.writeValueAsString(item),
+                        Duration.ofMinutes(10)
+                );
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to cache video limit badgeType={}", item.getBadgeType());
+            }
+            if (item.getBadgeType().equals(badgeType)) {
+                target = item;
+            }
+        }
+
+        return target;
+    }
+
+    public BadgeVideoLimitClient getBadgeVideoLimitFallback(String badgeType, Throwable t) {
+        log.warn("[UserInfoCacheClient] getBadgeVideoLimit fallback badgeType={}, reason={}", badgeType, t.getMessage());
+        String key = BADGE_VIDEO_LIMIT_KEY_PREFIX + badgeType;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, BadgeVideoLimitClient.class);
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to read stale video limit badgeType={}", badgeType);
+            }
+        }
+        return null;
     }
 }

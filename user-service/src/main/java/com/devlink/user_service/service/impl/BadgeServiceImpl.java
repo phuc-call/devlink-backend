@@ -1,9 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.reponse.BadgeConfigResponse;
-import com.devlink.user_service.dto.reponse.BadgeGrantResponse;
-import com.devlink.user_service.dto.reponse.BadgeVideoLimitResponse;
+import com.devlink.user_service.dto.reponse.*;
 import com.devlink.user_service.dto.request.CreateBadgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateBadgeVideoLimitRequest;
 import com.devlink.user_service.entity.*;
@@ -17,12 +15,15 @@ import com.devlink.user_service.service.BadgeService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.devlink.user_service.entity.enums.BadgeType.NONE;
 
 @Transactional
 @Service
@@ -40,23 +41,23 @@ public class BadgeServiceImpl implements BadgeService {
     public void evaluateUser(Long userId) {
 
         User user = userHelper.getUser(userId);
-        BadgeConfig badgeConfig = badgeConfigRepository.findByIsActiveTrue().orElseGet(BadgeConfig::new);
+        BadgeConfig badgeConfig = badgeConfigRepository.findByIsActiveTrue()
+                .orElseThrow(() -> new AppException(ErrorCode.VISIBILITY_NOT_FOUND));
         BadgeType currentBadType = user.getBadge();
         if (currentBadType.equals(BadgeType.RED_TICK))
             return;
 
-        List<Follow> qualifiedFollowing = followRepository.findFollowingListByFollowerId(userId);
+        List<FollowQualifiedResponse> qualifiedFollowing = followRepository.findFollowerListByFollowingId(userId);
 
-        List<Follow> result = new ArrayList<>();
-        for (Follow follower : qualifiedFollowing) {
-            UserProfile userProfile = follower.getFollowing().getProfile();
-            if (userProfile != null && userProfile.getCompletionPercent() >= badgeConfig.getMinCompletionPercent()) {
+        List<FollowQualifiedResponse> result = new ArrayList<>();
+        for (FollowQualifiedResponse follower : qualifiedFollowing) {
+            if (follower.getCompletionPercent() >= badgeConfig.getMinCompletionPercent()) {
                 result.add(follower);
             }
         }
         long totalFollowing = result.size();
         int totalPending = 0;
-        for (Follow f : result) {
+        for (FollowQualifiedResponse f : result) {
             if (f.getStatus().equals(FollowStatus.PENDING)) {
                 totalPending++;
             }
@@ -79,23 +80,27 @@ public class BadgeServiceImpl implements BadgeService {
         if (total < config.getPopularThreshold() &&
                 current.equals(BadgeType.POPULAR) &&
                 isOverGracePeriod(userId, BadgeType.POPULAR)) {
-            doAutoGrantBadge(user, BadgeType.NONE, total);
+            doAutoGrantBadge(user, NONE, total);
             return;
         }
-        if (total >= config.getPopularThreshold() && current.equals(BadgeType.NONE)) {
+        if (total >= config.getPopularThreshold() && current.equals(NONE)) {
             doAutoGrantBadge(user, BadgeType.POPULAR, total);
         }
     }
 
     private void evaluateBlueTick(User user, Long userId, BadgeType current,
-            BadgeConfig config, Long total, double pendingRatio) {
-        if (total < config.getBleuTickThreshold() &&
-                current.equals(BadgeType.BLUE_TICK) &&
-                isOverGracePeriod(userId, BadgeType.BLUE_TICK)) {
-            doAutoGrantBadge(user, BadgeType.POPULAR, total);
+                                  BadgeConfig config, Long total, double pendingRatio) {
+        boolean meetsBlueTick = total >= config.getBleuTickThreshold()
+                && pendingRatio > config.getBlueTickPendingRatio();
+
+        if (current.equals(BadgeType.BLUE_TICK) && !meetsBlueTick
+                && isOverGracePeriod(userId, BadgeType.BLUE_TICK)) {
+            BadgeType fallback = total >= config.getPopularThreshold() ? BadgeType.POPULAR : NONE;
+            doAutoGrantBadge(user, fallback, total);
+            return;
         }
-        if (total >= config.getBleuTickThreshold() && pendingRatio > config.getBlueTickPendingRatio() &&
-                current.equals(BadgeType.NONE)) {
+
+        if (meetsBlueTick && (current.equals(NONE) || current.equals(BadgeType.POPULAR))) {
             doAutoGrantBadge(user, BadgeType.BLUE_TICK, total);
         }
     }
@@ -125,7 +130,17 @@ public class BadgeServiceImpl implements BadgeService {
     public List<BadgeGrantResponse> grantRedTickBatch(List<Long> userIds, String reason, String adminUsername) {
         List<BadgeGrantResponse> responses = new ArrayList<>();
         for (Long userId : userIds) {
-            responses.add(grantRedTick(userId, reason, adminUsername));
+            try {
+                responses.add(grantRedTick(userId, reason, adminUsername));
+            } catch (AppException e) {
+                log.warn("[BADGE] grantRedTickBatch: userId={} failed - {}", userId, e.getMessage());
+                responses.add(BadgeGrantResponse.builder()
+                        .userId(userId)
+                        .badge(null)
+                        .message("FAILED: " + e.getMessage())
+                        .grantedAt(null)
+                        .build());
+            }
         }
         return responses;
     }
@@ -180,7 +195,6 @@ public class BadgeServiceImpl implements BadgeService {
         return toConfigResponse(saved);
     }
 
-
     @Override
     public List<BadgeVideoLimitResponse> getAllBadgeVideoLimits() {
         return badgeVideoLimitRepository.findAll().stream()
@@ -190,7 +204,8 @@ public class BadgeServiceImpl implements BadgeService {
 
     @Override
     @Transactional
-    public BadgeVideoLimitResponse updateBadgeVideoLimit(String badgeType, UpdateBadgeVideoLimitRequest request, Long adminId) {
+    public BadgeVideoLimitResponse updateBadgeVideoLimit(String badgeType, UpdateBadgeVideoLimitRequest request,
+                                                         Long adminId) {
         BadgeVideoLimit limit = badgeVideoLimitRepository.findById(badgeType)
                 .orElseThrow(() -> new AppException(ErrorCode.VISIBILITY_NOT_FOUND));
 
@@ -207,17 +222,17 @@ public class BadgeServiceImpl implements BadgeService {
         userRepository.save(user);
         badgeHistoryRepository.save(
                 BadgeHistory.builder()
-                         .user(user)
-                         .badgeType(newBadgeType)
-                         .grantedBy("SYSTEM")
-                         .reason(null)
-                         .followerCountSnapshot(followerCount)
-                         .build());
+                        .user(user)
+                        .badgeType(newBadgeType)
+                        .grantedBy("SYSTEM")
+                        .reason(null)
+                        .followerCountSnapshot(followerCount)
+                        .build());
 
     }
 
     private void doManualGrantBadge(User user,
-            String adminUsername, String reason) {
+                                    String adminUsername, String reason) {
         user.setBadge(BadgeType.RED_TICK);
         userRepository.save(user);
         badgeHistoryRepository.save(
@@ -232,7 +247,8 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     private boolean isOverGracePeriod(Long userId, BadgeType badgeType) {
-        BadgeConfig badgeConfig = badgeConfigRepository.findByIsActiveTrue().orElseGet(BadgeConfig::new);
+        BadgeConfig badgeConfig = badgeConfigRepository.findByIsActiveTrue()
+        .orElseThrow(() -> new AppException(ErrorCode.VISIBILITY_NOT_FOUND));
         Optional<BadgeHistory> lastBadge = badgeHistoryRepository
                 .findTopByUserIdAndBadgeTypeOrderByCreatedAtDesc(userId, badgeType);
         return lastBadge.map(h -> h.getCreatedAt().plusDays(badgeConfig.getGracePeriodDays())
@@ -261,5 +277,54 @@ public class BadgeServiceImpl implements BadgeService {
                 .updatedAt(limit.getUpdatedAt())
                 .updatedBy(limit.getUpdatedBy())
                 .build();
+    }
+
+
+    @Override
+    public Page<UserSummaryResponse> searchUsers(String keyword, Pageable pageable) {
+        return userRepository.searchUsers(keyword, pageable);
+    }
+
+    @Override
+    public UserBadgeDetailResponse getUserBadgeDetail(Long userId) {
+        User user = userHelper.getUser(userId);
+
+        List<BadgeHistoryItemResponse> history = badgeHistoryRepository
+                .findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(h -> BadgeHistoryItemResponse.builder()
+                        .badgeType(h.getBadgeType())
+                        .grantedBy(h.getGrantedBy())
+                        .reason(h.getReason())
+                        .followerCountSnapshot(h.getFollowerCountSnapshot())
+                        .createdAt(h.getCreatedAt())
+                        .build())
+                .toList();
+
+        return UserBadgeDetailResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .currentBadge(user.getBadge())
+                .history(history)
+                .build();
+    }
+
+    @Override
+    public BadgeStatsResponse getBadgeStats() {
+        Map<BadgeType,Long>countMap=userRepository.countUserGroupByBadge()
+                .stream()
+                .collect(Collectors.toMap(BadgeCountResponse::getBadge,BadgeCountResponse::getTotal));
+        return BadgeStatsResponse.builder()
+                .popular(countMap.getOrDefault(BadgeType.POPULAR,0L))
+                .blueTick(countMap.getOrDefault(BadgeType.BLUE_TICK,0L))
+                .redTick(countMap.getOrDefault(BadgeType.RED_TICK,0L))
+                .build();
+
+    }
+
+    @Override
+    public Page<UserSummaryResponse> getUsersByBadgeType(BadgeType badgeType, Pageable pageable) {
+        return userRepository.findUsersByBadgeType(badgeType, pageable);
     }
 }

@@ -8,6 +8,7 @@ import {
     BookOpen,
     MessageSquare,
     ShieldAlert,
+    Award,
     BarChart2,
     Settings,
     LogOut,
@@ -45,6 +46,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         title: 'Quản lý người dùng',
         items: [
             { label: 'Tài khoản',       path: '/admin/users',         icon: <Users size={16} /> },
+            { label: 'Badge',           path: '/admin/badges',        icon: <Award size={16} /> },
             { label: 'Báo cáo / Vi phạm', path: '/admin/reports',    icon: <ShieldAlert size={16} /> },
         ],
     },

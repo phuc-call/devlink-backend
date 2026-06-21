@@ -56,6 +56,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+
     private void sendEmailFallback(String toEmail, String type,
                                    Map<String, String> variables, Throwable t) {
         log.error("[EMAIL] Fallback - Gmail down. to={} type={} error={}",

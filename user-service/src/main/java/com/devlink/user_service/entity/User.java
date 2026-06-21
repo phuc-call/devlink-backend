@@ -42,6 +42,7 @@ public class User {
 
     @Column(name = "profile_visibility",length = 20)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private ProfileVisibility profileVisibility= ProfileVisibility.PUBLIC;
 
     private String passwordNotification;
