@@ -4,6 +4,7 @@ import type { FeedPostResponse } from '../../../../types/post.types';
 import { postApi } from '../../../../api/post-service/postApi';
 import PostCard from '../../../post/components/PostCard';
 import styles from './UserProfileContent.module.css';
+import { useInfiniteScroll } from '../../../../hooks/useInfiniteScroll';
 
 interface Props {
     profile: UserProfileResponse | null;
@@ -44,11 +45,17 @@ export default function UserProfileContent({ profile }: Props) {
         if (profile) {
             loadPosts(0, true);
         }
-    }, [profile?.userId]);
+    }, [profile, loadPosts]);
 
-    const handleLoadMore = () => {
+    const handleLoadMore = useCallback(() => {
         loadPosts(page + 1);
-    };
+    }, [page, loadPosts]);
+
+    const triggerRef = useInfiniteScroll({
+        onLoadMore: handleLoadMore,
+        hasMore,
+        isLoading: loading,
+    });
 
     const handlePostDeleted = useCallback((deletedId: number) => {
         setPosts(prev => prev.filter(p => p.id !== deletedId));
@@ -98,21 +105,8 @@ export default function UserProfileContent({ profile }: Props) {
             ))}
 
             {hasMore && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-                    <button
-                        type="button"
-                        onClick={handleLoadMore}
-                        disabled={loading}
-                        style={{
-                            padding: '10px 18px', borderRadius: 10,
-                            border: '1px solid #E5E7EB', background: '#FFFFFF',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            color: '#374151', fontSize: 14,
-                            fontFamily: 'Inter, sans-serif', fontWeight: 500,
-                        }}
-                    >
-                        {loading ? 'Đang tải...' : 'Xem thêm bài viết'}
-                    </button>
+                <div ref={triggerRef} style={{ padding: '12px', textAlign: 'center' }}>
+                    {loading && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}
                 </div>
             )}
         </div>

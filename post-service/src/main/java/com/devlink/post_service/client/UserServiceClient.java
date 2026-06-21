@@ -6,6 +6,7 @@ import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.client.UserLanguagesClient;
 import com.devlink.post_service.dto.client.UserNameClient;
 import com.devlink.post_service.dto.response.ApiResponse;
+import com.devlink.post_service.entity.enums.BadgeType;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,4 +68,14 @@ public interface UserServiceClient {
 
     @GetMapping("/internal/users/{id}/following/ids")
     ApiResponse<List<Long>> getFollowingIds(@PathVariable("id") Long id);
+
+    /**
+     * Returns badge type for a single user by their ID.
+     * Checks Redis first; on miss calls user-service and re-caches with 10m TTL.
+     *
+     * @param userId ID of the user to look up
+     * @return Map<userId, BadgeType>, empty map if unavailable
+     */
+    @GetMapping("/internal/users/users/{userId}")
+    ApiResponse<Map<Long, BadgeType>> getUserBadge(@PathVariable("userId") Long userId);
 }

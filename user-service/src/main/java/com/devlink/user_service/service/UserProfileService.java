@@ -28,9 +28,23 @@ public interface UserProfileService {
 
     FollowRequestModeResponse getFollowRequestMode();
 
+    /**
+     * Search users by name, city, and address with optional friend/follower/following filters.
+     *
+     * @param name           the keyword to match against full names
+     * @param city           optional city keyword
+     * @param address        optional address keyword
+     * @param friendsOnly    filter to search only friends
+     * @param followersOnly  filter to search only followers
+     * @param followingOnly  filter to search only following
+     * @param page           page number (0-indexed)
+     * @param size           page size
+     * @return UserSearchPageResponse containing page of matched user profiles
+     */
     UserSearchPageResponse search(
             String name,
             String city,
+            String address,
             Boolean friendsOnly,
             Boolean followersOnly,
             Boolean followingOnly,

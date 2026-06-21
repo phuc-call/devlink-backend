@@ -3,6 +3,7 @@ import {Bookmark} from 'lucide-react';
 import {savedPostApi} from '../../../api/post-service/savedPostApi';
 import type {FeedPostResponse} from '../../../types/post.types';
 import PostCard from '../../post/components/PostCard';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 
 const PAGE_SIZE = 10;
 
@@ -35,11 +36,19 @@ export default function SavedPage() {
         void fetchSaved(0);
     }, [fetchSaved]);
 
-    const handleLoadMore = () => {
+    const hasMore = page + 1 < totalPages;
+
+    const handleLoadMore = useCallback(() => {
         const next = page + 1;
         setPage(next);
         void fetchSaved(next);
-    };
+    }, [page, totalPages]);
+
+    const triggerRef = useInfiniteScroll({
+        onLoadMore: handleLoadMore,
+        hasMore,
+        isLoading: loading,
+    });
 
     const handleRemoved = useCallback((postId: number) => {
         setPosts(prev => prev.filter(p => p.id !== postId));
@@ -107,7 +116,7 @@ export default function SavedPage() {
                 />
             ))}
 
-            {loading && (
+            {loading && hasMore && (
                 <div style={{
                     textAlign: 'center',
                     padding: '16px 0',
@@ -119,21 +128,15 @@ export default function SavedPage() {
                 </div>
             )}
 
-            {!loading && page + 1 < totalPages && (
-                <div style={{textAlign: 'center', marginTop: 8}}>
-                    <button
-                        type="button"
-                        onClick={handleLoadMore}
-                        style={{
-                            padding: '8px 24px', borderRadius: 8,
-                            border: '1px solid #E5E7EB',
-                            background: '#FFFFFF', color: '#374151',
-                            fontSize: 13, fontWeight: 500,
-                            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                        }}
-                    >
-                        Xem thêm
-                    </button>
+            {hasMore && (
+                <div ref={triggerRef} style={{ padding: '16px', textAlign: 'center' }}>
+                    {loading && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}
+                </div>
+            )}
+
+            {!hasMore && posts.length > 0 && (
+                <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
+                    Đã xem hết các bài viết
                 </div>
             )}
         </div>

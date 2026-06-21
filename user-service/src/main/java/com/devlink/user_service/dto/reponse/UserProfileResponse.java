@@ -29,6 +29,7 @@ public class UserProfileResponse {
     private String city;
     private String country;
     private String timezone;
+    private String address;
 
     private Long userId;
 

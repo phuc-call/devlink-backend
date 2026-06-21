@@ -39,6 +39,9 @@ public class UserBlockServiceImpl implements UserBlockService {
 
     @Override
     public BlockStatusResponse blockUser(Long userId) {
+        if(userId==null){
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
         User user = userHelper.getCurrentUser();
         Long currentUserId = user.getId();
         if (currentUserId.equals(userId))
@@ -53,18 +56,19 @@ public class UserBlockServiceImpl implements UserBlockService {
                     .message("Unblocked the user")
                     .build();
         } else {
-            removeFollowRelationships(currentUserId, userId);
-            User target = userRepository.findById(userId)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-            userBlockRepository.save(UserBlock.builder()
-                    .blocker(user)
-                    .blockedId(target.getId())
-                    .build());
-            return BlockStatusResponse.builder()
-                    .blocked(true)
-                    .message("Blocked the user")
-                    .build();
-        }
+    removeFollowRelationships(currentUserId, userId);
+    User target = userRepository.findById(userId)
+            .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    UserBlock block = UserBlock.builder()
+            .blocker(user)
+            .blockedId(target.getId())
+            .build();
+    userBlockRepository.save(block);
+    return BlockStatusResponse.builder()
+            .blocked(true)
+            .message("Blocked the user")
+            .build();
+}
     }
 
     private void removeFollowRelationships(Long currentUserId, Long userId) {

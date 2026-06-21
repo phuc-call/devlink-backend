@@ -36,9 +36,11 @@ public class Notification {
     private String content;
 
     @Column(name = "is_read", nullable = false)
+    @Builder.Default
     private Boolean isRead = false;
 
     @Column(name = "is_hidden", nullable = false)
+    @Builder.Default
     private Boolean isHidden = false;
 
     @CreationTimestamp

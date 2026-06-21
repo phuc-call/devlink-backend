@@ -63,4 +63,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
         """)
     List<UserInfoForCommentInternal> findBasicInfoByIds(@Param("ids") List<Long> ids);
 
+
+    @Query("SELECT u.id, u.badge FROM User u WHERE u.id IN :ids")
+    List<Object[]> findBadgesByUserIds(@Param("ids") List<Long> ids);
+
 }

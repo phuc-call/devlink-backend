@@ -55,8 +55,8 @@ public class NotificationServiceImpl implements NotificationService {
     private static final String QUEUE_PREFIX = "birthday:queue:";
     private static final String SENT_PREFIX = "birthday:sent:";
     private static final int MIN_VIEW = 2;
-    private static final int CHUNK_SIZE = 200;  // TODO: tune theo load thực tế
-    private static final long SLEEP_MS = 200;  // TODO: tăng nếu DB còn chậm
+    private static final int CHUNK_SIZE = 200;
+    private static final long SLEEP_MS = 200;
 
     // API — user open app, display friend's birthdays in the last 7 days
     @Override

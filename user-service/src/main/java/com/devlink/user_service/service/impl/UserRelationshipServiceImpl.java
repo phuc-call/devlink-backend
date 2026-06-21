@@ -93,7 +93,7 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
                 .limit(Math.min(allCored.size(), NORMAL_LIMIT * 2))
                 .collect(Collectors.toList());
         Collections.shuffle(pool);
-        return pool.stream().limit(NORMAL_LIMIT).collect(Collectors.toList());
+        return pool.stream().limit(NORMAL_LIMIT).toList();
     }
 
     private UserRecommendationResponse buildResponse(
@@ -139,7 +139,6 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
 
     public boolean isActiveMode(Long userId){
         LocalDateTime oneHourAgo =LocalDateTime.now().minusHours(ACTIVE_WINDOW_HOURS);
-        //condition one: turn on the friends suggestion function
         int recentFollow=followRepository.countTodayFollows(userId, oneHourAgo );
         if(recentFollow<ACTIVE_FOLLOW_MIN) return false;
 

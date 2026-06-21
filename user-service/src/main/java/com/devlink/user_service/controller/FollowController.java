@@ -7,7 +7,7 @@ import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
 import com.devlink.user_service.entity.enums.FollowActionResult;
 import com.devlink.user_service.entity.enums.FollowListType;
 import com.devlink.user_service.service.FollowService;
-import com.devlink.user_service.service.UserProfileService;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class FollowController {
     private final FollowService followService;
 
-    private final UserProfileService userProfileService;
+
     @PostMapping("/{userId}/follow")
     public ResponseEntity<ApiResponse<Object>>followUser(@PathVariable Long userId){
         followService.followUser(userId);

@@ -35,8 +35,11 @@ public class EmailTemplate {
     private String body;
 
     @Column(name = "language", nullable = false, length = 5)
+    @Builder.Default
     private String language = "vi";
+
     @Column(name = "is_system", nullable = false)
+    @Builder.Default
     private Boolean isSystem = false;
 
     @UpdateTimestamp

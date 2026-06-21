@@ -41,7 +41,7 @@ public class PostController {
     @GetMapping("/feed")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") @Max(40) int size,
+            @RequestParam(defaultValue = "4") @Max(5) int size,
             @RequestParam(required = false) String postType) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFeed(page, size, postType), SUCCESS)
@@ -59,10 +59,10 @@ public class PostController {
     @GetMapping("/following")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFollowingFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") @Max(20) int size
+            @RequestParam(defaultValue = "3") @Max(5) int size
     ) {
         return ResponseEntity.ok(
-                ApiResponse.ok(postService.getFollowingFeed(page, size), "Success")
+                ApiResponse.ok(postService.getFollowingFeed(page, size), SUCCESS)
         );
     }
 
@@ -79,7 +79,7 @@ public class PostController {
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getUserPosts(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") @Max(20) int size
+            @RequestParam(defaultValue = "10") @Max(10) int size
     ) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getUserPosts(userId, page, size), SUCCESS)

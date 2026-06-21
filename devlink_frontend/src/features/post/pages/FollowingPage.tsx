@@ -6,13 +6,14 @@ import type {FeedPostResponse} from '../../../types/post.types';
 import type {UserFollowingCardResponse} from '../../../types/follow.types';
 import PostCard from '../components/PostCard';
 import UserFollowingCard from '../components/UserFollowingCard';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 
 function randomFirstLoadSize() {
-    return Math.floor(Math.random() * 6) + 5; // 5 - 10
+    return 4; // keep within backend max
 }
 
 function randomNextLoadSize() {
-    return Math.floor(Math.random() * 21) + 30; // 30 - 50
+    return 4; // keep within backend max
 }
 
 function getPageContent<T>(data: unknown): T[] {
@@ -139,14 +140,25 @@ export default function FollowingPage() {
         loadFollowingPosts(0, true, randomFirstLoadSize());
     }, [loadFollowingUsers, loadFollowingPosts]);
 
-
-    const handleLoadMorePosts = () => {
+    const handleLoadMorePosts = useCallback(() => {
         loadFollowingPosts(postPage + 1, false, randomNextLoadSize());
-    };
+    }, [postPage, loadFollowingPosts]);
 
-    const handleLoadMoreUsers = () => {
+    const handleLoadMoreUsers = useCallback(() => {
         loadFollowingUsers(userPage + 1);
-    };
+    }, [userPage, loadFollowingUsers]);
+
+    const usersTriggerRef = useInfiniteScroll({
+        onLoadMore: handleLoadMoreUsers,
+        hasMore: hasMoreUsers,
+        isLoading: loadingUsers,
+    });
+
+    const postsTriggerRef = useInfiniteScroll({
+        onLoadMore: handleLoadMorePosts,
+        hasMore: hasMorePosts,
+        isLoading: loadingPosts,
+    });
 
     const handlePostDeleted = useCallback((id: number) => {
         setPosts(prev => prev.filter(post => post.id !== id));
@@ -181,25 +193,6 @@ export default function FollowingPage() {
                         marginBottom: 10,
                     }}
                 >
-
-
-                    {hasMoreUsers && followingUsers.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={handleLoadMoreUsers}
-                            disabled={loadingUsers}
-                            style={{
-                                border: 'none',
-                                background: 'transparent',
-                                color: '#2563EB',
-                                cursor: loadingUsers ? 'not-allowed' : 'pointer',
-                                fontSize: 13,
-                                fontWeight: 700,
-                            }}
-                        >
-                            Xem thêm
-                        </button>
-                    )}
                 </div>
 
                 {loadingUsers && followingUsers.length === 0 ? (
@@ -262,6 +255,10 @@ export default function FollowingPage() {
                             </div>
                         )}
                     </div>
+                )}
+
+                {hasMoreUsers && (
+                    <div ref={usersTriggerRef} style={{ padding: '8px' }}></div>
                 )}
             </section>
 
@@ -357,26 +354,10 @@ export default function FollowingPage() {
                         </div>
                     )}
 
-                    {!loadingPosts && hasMorePosts && (
-                        <button
-                            type="button"
-                            onClick={handleLoadMorePosts}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                background: '#EFF6FF',
-                                color: '#2563EB',
-                                border: 'none',
-                                borderRadius: 8,
-                                cursor: 'pointer',
-                                fontSize: 14,
-                                fontWeight: 700,
-                                marginBottom: 12,
-                                fontFamily: 'Inter, sans-serif',
-                            }}
-                        >
-                            Xem thêm bài viết
-                        </button>
+                    {hasMorePosts && (
+                        <div ref={postsTriggerRef} style={{ padding: '16px', textAlign: 'center' }}>
+                            {loadingPosts && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}
+                        </div>
                     )}
 
                     {!loadingPosts && !hasMorePosts && (

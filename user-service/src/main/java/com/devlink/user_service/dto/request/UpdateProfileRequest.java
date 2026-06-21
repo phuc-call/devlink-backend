@@ -15,10 +15,8 @@ import java.util.List;
 @Setter
 public class UpdateProfileRequest {
 
-
     @Size(min = 2, max = 100, message = "FULL_NAME_INVALID_LENGTH")
     private String fullName;
-
 
     @Size(max = 500, message = "COVER_IMAGE_URL_TOO_LONG")
     @Size(max = 500, message = "BIO_TOO_LONG")
@@ -30,7 +28,7 @@ public class UpdateProfileRequest {
     @Size(max = 150, message = "MAJOR_TOO_LONG")
     private String major;
 
-    //limit 3 language
+    // limit 3 language
     @Size(max = 3, message = "LANGUAGES_TOO_MANY")
     private List<ProgrammingLanguage> favoriteLanguage;
 
@@ -38,4 +36,6 @@ public class UpdateProfileRequest {
     @Size(max = 5, message = "COUNTRY_CODE_TOO_MANY")
     private String countryCode;
     private String timezone;
+    @Size(max = 255, message = "ADDRESS_TOO_LONG")
+    private String address;
 }

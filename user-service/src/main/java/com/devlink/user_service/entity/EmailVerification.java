@@ -34,6 +34,7 @@ public class EmailVerification {
     @CreationTimestamp
     private LocalDateTime createdAt;
     @Column(name = "used", nullable = false)
+    @Builder.Default
     private Boolean used = false;
 
 }

@@ -8,6 +8,7 @@ import { getFeedApi } from '../../../api/post-service/getFeedApi';
 import type { FeedPostResponse } from '../../../types/post.types';
 import PostCard from '../components/PostCard';
 import { getCurrentUserInfo } from '../../../utils/auth';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 
 export default function FeedPage() {
     const { showModal, closeModal }           = useProfileSetup();
@@ -40,7 +41,7 @@ export default function FeedPage() {
         if (loadingRef.current) return;
         loadingRef.current = true;
 
-        getFeedApi.getFeed(pageNum, 20)
+        getFeedApi.getFeed(pageNum, 4)
             .then(res => {
                 const data = res.data.data;
                 if (reset || pageNum === 0) {
@@ -60,12 +61,17 @@ export default function FeedPage() {
         setLoading(true);
     }, []);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { loadFeed(0); }, [loadFeed]);
 
-    const handleLoadMore = () => {
+    const handleLoadMore = useCallback(() => {
         loadFeed(page + 1);
-    };
+    }, [page, loadFeed]);
+
+    const triggerRef = useInfiniteScroll({
+        onLoadMore: handleLoadMore,
+        hasMore,
+        isLoading: loading,
+    });
 
     const handlePostCreated = () => {
         setPage(0);
@@ -130,7 +136,7 @@ export default function FeedPage() {
                     />
                 ))}
 
-                {loading && (
+                {loading && hasMore && (
                     <div style={{
                         display: 'flex', alignItems: 'center',
                         justifyContent: 'center', padding: '16px', gap: 8,
@@ -142,24 +148,13 @@ export default function FeedPage() {
                     </div>
                 )}
 
-                {!loading && hasMore && (
-                    <button
-                        type="button"
-                        onClick={handleLoadMore}
-                        style={{
-                            width: '100%', padding: '12px',
-                            background: '#EFF6FF', color: '#3B82F6',
-                            border: 'none', borderRadius: 8,
-                            cursor: 'pointer', fontSize: 14,
-                            fontWeight: 500, marginBottom: 12,
-                            fontFamily: 'Inter, sans-serif',
-                        }}
-                    >
-                        Xem thêm
-                    </button>
+                {hasMore && (
+                    <div ref={triggerRef} style={{ padding: '16px', textAlign: 'center' }}>
+                        {loading && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}
+                    </div>
                 )}
 
-                {!loading && !hasMore && (
+                {!hasMore && (
                     <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
                         Đã xem hết bài viết
                     </div>

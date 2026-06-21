@@ -7,7 +7,10 @@ import com.devlink.user_service.dto.internal.UserNameInternal;
 import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
+import com.devlink.user_service.entity.enums.BadgeType;
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;
+import com.devlink.user_service.exception.AppException;
+import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.PostServiceClient;
@@ -29,17 +32,15 @@ public class PostServiceClientImpl implements PostServiceClient {
     private final UserHelper u;
     private final FollowRepository followRepository;
 
-
-
     @Override
     public Map<Long, UserFeedInfoResponse> getUserFeedInfo(List<Long> userIds, Long currentUserId) {
-        if (userIds == null || userIds.isEmpty()) return Map.of();
+        if (userIds == null || userIds.isEmpty())
+            return Map.of();
 
         return userRepository.findFeedInfoByIds(userIds, currentUserId)
                 .stream()
                 .collect(Collectors.toMap(UserFeedInfoResponse::getId, info -> info));
     }
-
 
     @Transactional(readOnly = true)
     public Map<Long, UserInfoForCommentInternal> getUserBasicInfo(List<Long> userIds) {
@@ -47,15 +48,14 @@ public class PostServiceClientImpl implements PostServiceClient {
                 .stream()
                 .collect(Collectors.toMap(
                         UserInfoForCommentInternal::getId,
-                        info -> info
-                ));
+                        info -> info));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserNameInternal getCurrentUser(Long userId){
-        User user=u.getUser(userId);
-        UserProfile profile=user.getProfile();
+    public UserNameInternal getCurrentUser(Long userId) {
+        User user = u.getUser(userId);
+        UserProfile profile = user.getProfile();
         return UserNameInternal.builder()
                 .userName(profile.getFullName())
                 .avatar(profile.getAvatarUrl())
@@ -65,9 +65,9 @@ public class PostServiceClientImpl implements PostServiceClient {
 
     @Override
     @Transactional(readOnly = true)
-    public LanguageInternal getListLange(){
-        List<String> languages=new ArrayList<>();
-        for(ProgrammingLanguage programmingLanguage:ProgrammingLanguage.values()){
+    public LanguageInternal getListLange() {
+        List<String> languages = new ArrayList<>();
+        for (ProgrammingLanguage programmingLanguage : ProgrammingLanguage.values()) {
             languages.add(programmingLanguage.name());
         }
 
@@ -77,9 +77,9 @@ public class PostServiceClientImpl implements PostServiceClient {
     }
 
     @Override
-    public List<String> getLanguageOfCurrentUser( Long userId) {
-        User user=u.getUser(userId);
-        UserProfile profile=user.getProfile();
+    public List<String> getLanguageOfCurrentUser(Long userId) {
+        User user = u.getUser(userId);
+        UserProfile profile = user.getProfile();
 
         if (profile == null || profile.getFavoriteLanguage() == null
                 || profile.getFavoriteLanguage().isEmpty()) {
@@ -93,12 +93,19 @@ public class PostServiceClientImpl implements PostServiceClient {
     }
 
     @Override
-    public List<Long> getFollowingId(Long currentUser){
+    public List<Long> getFollowingId(Long currentUser) {
 
-        List<Long>following=followRepository.getFollowingByUserId(currentUser);
-        if(following.isEmpty()){
+        List<Long> following = followRepository.getFollowingByUserId(currentUser);
+        if (following.isEmpty()) {
             return List.of();
         }
         return following;
+    }
+
+    @Override
+    public Map<Long, BadgeType> getUserBadge(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return Map.of(user.getId(), user.getBadge());
     }
 }

@@ -62,24 +62,32 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserHelper userHelper;
     private final FollowRepository followRepository;
 
-
     @Override
     public UserProfileResponse updateUserProfile(UpdateProfileRequest request) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = getOrCreateProfile(user);
 
-        if (request.getFullName() != null) userProfile.setFullName(request.getFullName());
-        if (request.getBio() != null) userProfile.setBio(request.getBio());
-        if (request.getSchool() != null) userProfile.setSchool(request.getSchool());
-        if (request.getMajor() != null) userProfile.setMajor(request.getMajor());
-        if (request.getCity() != null) userProfile.setCity(request.getCity());
-        if (request.getCountryCode() != null) userProfile.setCountryCode(request.getCountryCode());
-        if (request.getTimezone() != null) userProfile.setTimezone(request.getTimezone());
+        if (request.getFullName() != null)
+            userProfile.setFullName(request.getFullName());
+        if (request.getBio() != null)
+            userProfile.setBio(request.getBio());
+        if (request.getSchool() != null)
+            userProfile.setSchool(request.getSchool());
+        if (request.getMajor() != null)
+            userProfile.setMajor(request.getMajor());
+        if (request.getCity() != null)
+            userProfile.setCity(request.getCity());
+        if (request.getCountryCode() != null)
+            userProfile.setCountryCode(request.getCountryCode());
+        if (request.getTimezone() != null)
+            userProfile.setTimezone(request.getTimezone());
+        if (request.getAddress() != null)
+            userProfile.setAddress(request.getAddress());
         if (request.getFavoriteLanguage() != null && !request.getFavoriteLanguage().isEmpty()) {
             userProfile.setFavoriteLanguage(request.getFavoriteLanguage());
         }
 
-        //total completed of profile
+        // total completed of profile
         ProfileNudgeConfig config = getNudgeConfig();
         int percent = calculateCompletion(userProfile, config);
         userProfile.setCompletionPercent(percent);
@@ -138,15 +146,15 @@ public class UserProfileServiceImpl implements UserProfileService {
                 profile.getFullName() != null ? profile.getFullName() : "",
                 profile.getBio() != null ? profile.getBio() : "",
                 profile.getSchool() != null ? profile.getSchool() : "",
-                profile.getMajor() != null ? profile.getMajor() : ""
-        );
+                profile.getMajor() != null ? profile.getMajor() : "");
 
         double perField = baseWeight / (double) fields.size();
 
         double percent = 0;
 
         for (String field : fields) {
-            if (hasValue(field)) percent += perField;
+            if (hasValue(field))
+                percent += perField;
         }
         if (hasLanguage(profile.getFavoriteLanguage())) {
             percent += languageWeight;
@@ -162,7 +170,6 @@ public class UserProfileServiceImpl implements UserProfileService {
         return value != null && !value.isBlank();
     }
 
-
     @Override
     public UserProfileResponse getProfile() {
         User user = userHelper.getCurrentUser();
@@ -174,14 +181,17 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     private boolean shouldShowNudge(UserProfile profile, ProfileNudgeConfig config) {
-        if (!Boolean.TRUE.equals(config.getFeatureEnabled())) return false;
-        if (Boolean.TRUE.equals(profile.getNudgeDismissedForever())) return false;
-        if (profile.getCompletionPercent() >= config.getCompletionThreshold()) return false;
+        if (!Boolean.TRUE.equals(config.getFeatureEnabled()))
+            return false;
+        if (Boolean.TRUE.equals(profile.getNudgeDismissedForever()))
+            return false;
+        if (profile.getCompletionPercent() >= config.getCompletionThreshold())
+            return false;
         LocalDateTime nextNudge = profile.getNextNudgeAt();
         return nextNudge == null || !nextNudge.isAfter(LocalDateTime.now());
     }
 
-    //get profile of another person
+    // get profile of another person
     @Override
     public UserProfileResponse getUserProfile(Long userId) {
         Long viewerId = userHelper.getCurrentUser().getId();
@@ -204,11 +214,11 @@ public class UserProfileServiceImpl implements UserProfileService {
                 return toFullResponse(owner);
             }
             case PROTECTED -> {
-                boolean isMutual =
-                        followRepository.existsByFollowerIdAndFollowingIdAndStatus(
-                                viewerId, owner.getId(), FollowStatus.ACCEPTED);
+                boolean isMutual = followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                        viewerId, owner.getId(), FollowStatus.ACCEPTED);
 
-                if (!isMutual) return buildLimitedResponse(owner.getProfile(), owner);
+                if (!isMutual)
+                    return buildLimitedResponse(owner.getProfile(), owner);
 
                 return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
             }
@@ -220,7 +230,6 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         return toFullResponse(owner);
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -245,9 +254,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepository.save(user);
     }
 
-
     private UserProfileResponse buildLimitedResponse(UserProfile profile, User owner) {
-        if (profile == null) throw new AppException(ErrorCode.USER_NOT_FOUND);
+        if (profile == null)
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         return UserProfileResponse.builder()
                 .fullName(profile.getFullName())
                 .userId(owner.getId())
@@ -262,12 +271,12 @@ public class UserProfileServiceImpl implements UserProfileService {
         return res;
     }
 
-
     @Override
     public void dismissNudge(boolean dismissForever) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = user.getProfile();
-        if (userProfile == null) return;
+        if (userProfile == null)
+            return;
         if (dismissForever) {
             userProfile.setNudgeDismissedForever(true);
             userProfile.setNextNudgeAt(null);
@@ -288,7 +297,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfileRepository.save(userProfile);
     }
 
-    //ADMIN
+    // ADMIN
     @Override
     public void updateNudgeConfig(UpdateNudgeConfigRequest request) {
         ProfileNudgeConfig config = getNudgeConfig();
@@ -319,24 +328,22 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.retryLoadBalancerInterceptor = retryLoadBalancerInterceptor;
     }
 
-
     @Override
     @Cacheable("provinces")
     public List<String> getProvinces() {
         try {
             String apiUrl = "https://provinces.open-api.vn/api/v1/p/";
-            ResponseEntity<List<Map<String, Object>>> responseEntity =
-                    restTemplate.exchange(
-                            apiUrl,
-                            HttpMethod.GET,
-                            null,
-                            new ParameterizedTypeReference<List<Map<String, Object>>>() {
-                            }
-                    );
+            ResponseEntity<List<Map<String, Object>>> responseEntity = restTemplate.exchange(
+                    apiUrl,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {
+                    });
 
             List<Map<String, Object>> response = responseEntity.getBody();
 
-            if (response == null) return List.of();
+            if (response == null)
+                return List.of();
 
             return response.stream()
                     .map(p -> (String) p.get("name"))
@@ -350,19 +357,22 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     private String stripPrefix(String name) {
-        if (name == null) return "";
+        if (name == null)
+            return "";
         return Pattern.compile("^(Thành phố |Tỉnh )",
-                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ)
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ)
                 .matcher(name).replaceAll("").trim();
     }
+
     @Override
-    public UserSearchPageResponse search(String name, String city, Boolean friendsOnly, Boolean followersOnly,
-                                  Boolean followingOnly, int page, int size) {
+    public UserSearchPageResponse search(String name, String city, String address, Boolean friendsOnly, Boolean followersOnly,
+            Boolean followingOnly, int page, int size) {
         User currentUser = userHelper.getCurrentUser();
         Long currentUserId = currentUser.getId();
         Pageable pageable = PageRequest.of(page, size);
 
         String resolvedCity = (city != null && !city.isBlank()) ? city.trim() : null;
+        String resolvedAddress = (address != null && !address.isBlank()) ? address.trim() : null;
         List<Long> filterIds = null;
         if (Boolean.TRUE.equals(friendsOnly)) {
             filterIds = followRepository.findMutualFollowingIds(currentUserId);
@@ -375,12 +385,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         boolean userFilter = filterIds != null;
         List<Long> safeIds = (filterIds != null && !filterIds.isEmpty()) ? filterIds : List.of(-1L);
         Page<UserSearchResponse> users = followRepository.search(
-                name.trim(), resolvedCity, userFilter, safeIds, currentUserId, pageable
-        );
+                name.trim(), resolvedCity, resolvedAddress, userFilter, safeIds, currentUserId, pageable);
         return UserSearchPageResponse.builder()
                 .users(users)
                 .build();
     }
-
 
 }

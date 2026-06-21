@@ -3,6 +3,7 @@ package com.devlink.post_service.client.cache;
 import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.dto.client.UserLanguagesClient;
 import com.devlink.post_service.dto.response.ApiResponse;
+import com.devlink.post_service.entity.enums.BadgeType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Cache-aside client for language data.
@@ -32,7 +34,7 @@ public class UserLanguageCacheClient {
     private static final String USER_LANG_KEY_PREFIX = "user_lang:";
     private static final Duration SUPPORTED_LANG_TTL = Duration.ofHours(6);
     private static final Duration USER_LANG_TTL = Duration.ofHours(24);
-
+    private static final String USER_BADGE_KEY_PREFIX = "badge:user:";
     /**
      * Returns all supported platform languages.
      * Checks Redis first; on miss calls user-service and re-caches with 6h TTL.
@@ -129,5 +131,54 @@ public class UserLanguageCacheClient {
             log.warn("[UserLanguageCacheClient] Failed to read stale languages userId={}", userId);
         }
         return List.of();
+    }
+
+    @CircuitBreaker(name = "user-service-feed-info", fallbackMethod = "getUserBadgeFallback")
+    @Retry(name = "user-service-feed-info")
+    public Map<Long, BadgeType> getUserBadge(Long userId) {
+        String key = USER_BADGE_KEY_PREFIX + userId;
+        String cached = redisTemplate.opsForValue().get(key);
+
+        if (cached != null) {
+            try {
+                BadgeType badge = objectMapper.readValue(cached, BadgeType.class);
+                return Map.of(userId, badge);
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to deserialize badge userId={}", userId);
+            }
+        }
+
+        Map<Long, BadgeType> result = userServiceClient
+                .getUserBadge(userId)
+                .getData();
+
+        if (result != null && result.containsKey(userId)) {
+            try {
+                redisTemplate.opsForValue().set(
+                        key,
+                        objectMapper.writeValueAsString(result.get(userId)),
+                        Duration.ofMinutes(10)
+                );
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to cache badge userId={}", userId);
+            }
+        }
+
+        return result != null ? result : Map.of();
+    }
+
+    public Map<Long, BadgeType> getUserBadgeFallback(Long userId, Throwable t) {
+        log.warn("[UserInfoCacheClient] getUserBadge fallback userId={}, reason={}", userId, t.getMessage());
+        String key = USER_BADGE_KEY_PREFIX + userId;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            try {
+                BadgeType badge = objectMapper.readValue(cached, BadgeType.class);
+                return Map.of(userId, badge);
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to read stale badge userId={}", userId);
+            }
+        }
+        return Map.of();
     }
 }

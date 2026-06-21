@@ -34,8 +34,10 @@ public class Follow {
     // PENDING (chờ duyệt, F017–F018) | ACCEPTED
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private FollowStatus status = FollowStatus.ACCEPTED;
     @Column(name = "view_count")
+    @Builder.Default
     private Integer viewCount = 0;
     @Column(name = "last_interacted_at")
     private LocalDateTime lastInteractedAt;

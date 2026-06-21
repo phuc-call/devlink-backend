@@ -2,6 +2,8 @@ package com.devlink.user_service.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -13,20 +15,23 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@AllArgsConstructor @NoArgsConstructor
-@Getter @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 @Table(name = "badge_config")
 public class BadgeConfig {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "popular_threshold",nullable = false)
-    private Integer popularThreshold=500;
+    @Column(name = "popular_threshold", nullable = false)
+    private Integer popularThreshold = 500;
 
-    @Column(name = "bule_tick_threshold",nullable = false)
-    private Integer bleuTickThreshold=1000;
+    @Column(name = "bule_tick_threshold", nullable = false)
+    private Integer bleuTickThreshold = 1000;
 
-    //Accept if completion profile is greater than 30%
+    // Accept if completion profile is greater than 30%
     @Column(name = "min_completion_percent", nullable = false)
     private Integer minCompletionPercent = 30;
     @Column(name = "blue_tick_pending_ratio", nullable = false)
@@ -38,4 +43,7 @@ public class BadgeConfig {
     private LocalDateTime updatedAt;
     @Column(name = "updated_by")
     private Long updatedBy;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = false;
 }

@@ -4,6 +4,7 @@ import type { UserProfileResponse } from '../../../types/profile.types';
 import ProfileBanner from '../components/ProfileBanner/ProfileBanner.tsx';
 import ProfileSidebar from '../components/ProfileSidebar/ProfileSidebar.tsx';
 import ProfileContent from '../components/ProfileContent/ProfileContent.tsx';
+import UserProfileContent from '../components/UserProfileContent/Userprofilecontent.tsx';
 import FollowListPanel from '../components/FollowListPanel/Followlistpanel.tsx';
 import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
 import styles from './ProfilePage.module.css';
@@ -82,7 +83,10 @@ export default function ProfilePage() {
                                 onCancel={() => setIsEditing(false)}
                             />
                         ) : (
-                            <ProfileContent />
+                            <>
+                                <ProfileContent />
+                                <UserProfileContent profile={profile} />
+                            </>
                         )}
                     </main>
                 </div>

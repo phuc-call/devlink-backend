@@ -8,10 +8,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Getter @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BadgeGrantResponse {
-    private Long          userId;
-    private BadgeType     badge;
-    private String        message;
+    private Long userId;
+    private BadgeType badge;
+    private String message;
     private LocalDateTime grantedAt;
 }

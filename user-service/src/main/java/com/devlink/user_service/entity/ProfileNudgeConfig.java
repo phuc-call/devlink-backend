@@ -25,26 +25,28 @@ public class ProfileNudgeConfig {
 
     //turn the function on or off
     @Column(name = "feature_enabled", nullable = false)
+    @Builder.Default
     private Boolean featureEnabled = true;
-
-    //Reminder interval (unit: days).
-
-
 
     //Default: 70 (meaning a warning will be given if it's less than 70%).
     @Column(name = "completion_threshold", nullable = false)
+    @Builder.Default
     private Integer completionThreshold = 70;
 
     //Default: 30( meaning language accounts for 30%)
     @Column(name = "language_weight", nullable = false)
+     @Builder.Default
     private Integer languageWeight = 30;
 
     //Default: There will be 3 reminders.
     @Column(name = "first_nudge_days", nullable = false)
+    @Builder.Default
     private Integer firstNudgeDays=7;   // 7
     @Column(name = "second_nudge_days", nullable = false)
+    @Builder.Default
     private Integer secondNudgeDays=21;  // 21
     @Column(name = "third_nudge_days", nullable = false)
+    @Builder.Default
     private Integer thirdNudgeDays=180;
 
     @Column(name = "updated_by")

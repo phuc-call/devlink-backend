@@ -1,6 +1,6 @@
 package com.devlink.user_service.service.impl;
 
-import com.devlink.user_service.common.UserHelper;
+
 import com.devlink.user_service.entity.EmailTemplate;
 import com.devlink.user_service.entity.EmailVerification;
 import com.devlink.user_service.entity.enums.VerificationType;
@@ -31,7 +31,7 @@ public class EmailServiceImpl implements EmailService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final JavaMailSenderImpl mailSender;
     private final PasswordEncoder passwordEncoder;
-    private final UserHelper userHelper;
+
 
     @Async
     @CircuitBreaker(name = "emailCB", fallbackMethod = "sendEmailFallback")

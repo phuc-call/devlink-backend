@@ -13,7 +13,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Getter @Setter @AllArgsConstructor @NoArgsConstructor
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "user_profile")
 public class UserProfile {
     @Id
@@ -21,7 +24,7 @@ public class UserProfile {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id",unique = true,nullable = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     private User user;
     @Column(name = "profile_views_count", nullable = false)
     private Integer profileViewsCount = 0;
@@ -31,7 +34,7 @@ public class UserProfile {
     // (F011)
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
-    //(F012)
+    // (F012)
     @Column(name = "cover_image_url", length = 500)
     private String coverImageUrl;
 
@@ -45,7 +48,7 @@ public class UserProfile {
 
     @Convert(converter = ProgrammingLanguageConverter.class)
     private List<ProgrammingLanguage> favoriteLanguage;
-    //personal profile configuration
+    // personal profile configuration
     @Column(name = "completion_percent", nullable = false)
     private Integer completionPercent = 0;
     @Column(name = "next_nudge_at")
@@ -63,15 +66,16 @@ public class UserProfile {
     private String countryCode;
     @Column(name = "timezone", length = 50)
     private String timezone;
-
+    @Column(name = "address", length = 255)
+    private String address;
 
     @Column(name = "profile_view_count")
     private Long profileViewCount = 0L;
 
     @Column(name = "follower_count", nullable = false)
-    private Integer followerCount=0;
-    @Column(name = "following_count",nullable = false)
-    private Integer followingCount=0;
+    private Integer followerCount = 0;
+    @Column(name = "following_count", nullable = false)
+    private Integer followingCount = 0;
 
     @Column(name = "cover_avatar", length = 225)
     private String coverAvatar;

@@ -76,6 +76,7 @@ public class UserProfileController {
     public ResponseEntity<ApiResponse<UserSearchPageResponse>> search(
             @RequestParam @NotBlank String name,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) String address,
             @RequestParam(defaultValue = "false") Boolean friendsOnly,
             @RequestParam(defaultValue = "false") Boolean followersOnly,
             @RequestParam(defaultValue = "false") Boolean followingOnly,
@@ -83,7 +84,7 @@ public class UserProfileController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size
     ) {
         UserSearchPageResponse result = userProfileService.search(
-                name, city, friendsOnly, followersOnly, followingOnly, page, size
+                name, city, address, friendsOnly, followersOnly, followingOnly, page, size
         );
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
