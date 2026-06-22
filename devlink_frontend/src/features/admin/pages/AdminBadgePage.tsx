@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Award, Sparkles, ShieldCheck, RefreshCw, Upload, BarChart2, Users } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Award, Sparkles, ShieldCheck, RefreshCw, Upload, Users } from 'lucide-react';
 import { badgeApi } from '../../../api/user-service/badgeApi';
 import type {
     BadgeConfigResponse,
     BadgeVideoLimitResponse,
-    BadgeStatsResponse,
+
     UserSummaryResponse,
     CreateBadgeConfigRequest,
     UpdateBadgeVideoLimitRequest,
@@ -13,7 +14,8 @@ import type {
 } from '../../../types/badge.types';
 import { BADGE_LABELS, BADGE_COLORS } from '../../../types/badge.types';
 import UserSearchSelect from '../components/UserSearchSelect';
-import BadgeStatsPanel from '../components/Badgestatspanel.tsx';
+import UserMultiSearchSelect from '../components/UserMultiSearchSelect';
+
 import UserBadgeDetailModal from '../components/Userbadgedetailmodal.tsx';
 
 function formatDate(dateString: string) {
@@ -23,11 +25,13 @@ function formatDate(dateString: string) {
     });
 }
 
+const VALID_BADGE_TYPES: BadgeType[] = ['NONE', 'POPULAR', 'BLUE_TICK', 'RED_TICK'];
+
 export default function AdminBadgePage() {
     const [configs, setConfigs] = useState<BadgeConfigResponse[]>([]);
     const [activeConfig, setActiveConfig] = useState<BadgeConfigResponse | null>(null);
     const [videoLimits, setVideoLimits] = useState<BadgeVideoLimitResponse[]>([]);
-    const [stats, setStats] = useState<BadgeStatsResponse | null>(null);
+   
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -45,7 +49,8 @@ export default function AdminBadgePage() {
     // Grant Red Tick — dùng UserSearchSelect thay vì nhập userId thô
     const [grantSingleUser, setGrantSingleUser] = useState<UserSummaryResponse | null>(null);
     const [grantSingleReason, setGrantSingleReason] = useState('');
-    const [grantBatch, setGrantBatch] = useState({ userIds: '', reason: '' });
+    const [grantBatchUsers, setGrantBatchUsers] = useState<UserSummaryResponse[]>([]);
+    const [grantBatchReason, setGrantBatchReason] = useState('');
     const [grantLoading, setGrantLoading] = useState(false);
 
     // Evaluate — dùng UserSearchSelect
@@ -62,19 +67,30 @@ export default function AdminBadgePage() {
     const [filterPage, setFilterPage] = useState(0);
     const [filterTotalPages, setFilterTotalPages] = useState(0);
 
+    // Đọc query param ?badge=... khi được điều hướng từ chart ở Dashboard,
+    // để tự động lọc đúng badge thay vì phải bấm lại từ đầu.
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const badgeParam = searchParams.get('badge');
+        if (badgeParam && VALID_BADGE_TYPES.includes(badgeParam as BadgeType)) {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
     useEffect(() => {
         loadData();
     }, []);
 
     useEffect(() => {
         if (!filterBadge) return;
-        loadFilteredUsers(filterBadge, 0);
     }, [filterBadge]);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [configsRes, activeRes, limitsRes, statsRes] = await Promise.all([
+            const [configsRes, activeRes, limitsRes] = await Promise.all([
                 badgeApi.getAllBadgeConfigs(),
                 badgeApi.getActiveBadgeConfig(),
                 badgeApi.getAllBadgeVideoLimits(),
@@ -83,7 +99,7 @@ export default function AdminBadgePage() {
             setConfigs(configsRes.data.data);
             setActiveConfig(activeRes.data.data);
             setVideoLimits(limitsRes.data.data);
-            setStats(statsRes.data.data);
+     
         } catch (error) {
             console.error(error);
             showStatus('error', 'Không tải được dữ liệu badge. Vui lòng thử lại.');
@@ -189,17 +205,29 @@ export default function AdminBadgePage() {
     };
 
     const handleGrantBatch = async () => {
-        const ids = grantBatch.userIds.split(/[,\s]+/).map(v => Number(v.trim())).filter(id => id > 0);
-        if (ids.length === 0) {
-            showStatus('error', 'Vui lòng nhập danh sách userId hợp lệ.');
+        if (grantBatchUsers.length === 0) {
+            showStatus('error', 'Vui lòng chọn ít nhất 1 user.');
             return;
         }
         setGrantLoading(true);
         try {
-            const body: GrantRedTickBatchRequest = { userIds: ids, reason: grantBatch.reason.trim() || undefined };
-            await badgeApi.grantRedTickBatch(body);
-            showStatus('success', `Cấp Red Tick hàng loạt cho ${ids.length} user thành công.`);
-            setGrantBatch({ userIds: '', reason: '' });
+            const body: GrantRedTickBatchRequest = {
+                userIds: grantBatchUsers.map(u => u.id),
+                reason: grantBatchReason.trim() || undefined,
+            };
+            const res = await badgeApi.grantRedTickBatch(body);
+            const failed = res.data.data.filter(r => r.message?.startsWith('FAILED'));
+            if (failed.length > 0) {
+                showStatus(
+                    'error',
+                    `Thành công ${res.data.data.length - failed.length}/${res.data.data.length} user. ${failed.length} user thất bại (xem console).`
+                );
+                console.warn('[grantRedTickBatch] Một số user cấp thất bại:', failed);
+            } else {
+                showStatus('success', `Cấp Red Tick hàng loạt cho ${grantBatchUsers.length} user thành công.`);
+            }
+            setGrantBatchUsers([]);
+            setGrantBatchReason('');
         } catch (error) {
             console.error(error);
             showStatus('error', 'Cấp Red Tick hàng loạt thất bại.');
@@ -226,10 +254,6 @@ export default function AdminBadgePage() {
         }
     };
 
-    const handleFilterByBadge = (badge: BadgeType) => {
-        setFilterBadge(badge);
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    };
 
     return (
         <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -267,19 +291,6 @@ export default function AdminBadgePage() {
                 </div>
             )}
 
-            {/* Stats */}
-            <section style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 16px 40px rgba(15,23,42,0.04)', marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 14, background: '#F0FDF4', display: 'grid', placeItems: 'center' }}>
-                        <BarChart2 size={20} color="#15803D" />
-                    </div>
-                    <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Thống kê badge</div>
-                        <div style={{ fontSize: 13, color: '#6B7280' }}>Click vào badge để xem danh sách user.</div>
-                    </div>
-                </div>
-                <BadgeStatsPanel stats={stats} onFilterByBadge={handleFilterByBadge} />
-            </section>
 
             {/* Config + Video Limits */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 20, marginBottom: 24 }}>
@@ -449,15 +460,15 @@ export default function AdminBadgePage() {
                         <div style={{ display: 'grid', gap: 12 }}>
                             <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Cấp hàng loạt</div>
                             <label style={{ display: 'grid', gap: 6, fontSize: 13, color: '#374151' }}>
-                                Danh sách User ID
-                                <textarea rows={4} value={grantBatch.userIds} onChange={e => setGrantBatch(prev => ({ ...prev, userIds: e.target.value }))} placeholder="Ví dụ: 12, 34, 56" style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid #E5E7EB', resize: 'vertical', boxSizing: 'border-box' }} />
+                                Chọn user (tìm theo username hoặc email)
+                                <UserMultiSearchSelect values={grantBatchUsers} onChange={setGrantBatchUsers} />
                             </label>
                             <label style={{ display: 'grid', gap: 6, fontSize: 13, color: '#374151' }}>
                                 Lý do (tuỳ chọn)
-                                <input type="text" value={grantBatch.reason} onChange={e => setGrantBatch(prev => ({ ...prev, reason: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid #E5E7EB', boxSizing: 'border-box' }} />
+                                <input type="text" value={grantBatchReason} onChange={e => setGrantBatchReason(e.target.value)} style={{ width: '100%', padding: 12, borderRadius: 12, border: '1px solid #E5E7EB', boxSizing: 'border-box' }} />
                             </label>
-                            <button type="button" onClick={handleGrantBatch} disabled={grantLoading} style={{ width: 'fit-content', padding: '12px 16px', borderRadius: 12, border: 'none', background: '#1D4ED8', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>
-                                {grantLoading ? 'Đang gửi...' : 'Cấp batch Red Tick'}
+                            <button type="button" onClick={handleGrantBatch} disabled={grantLoading || grantBatchUsers.length === 0} style={{ width: 'fit-content', padding: '12px 16px', borderRadius: 12, border: 'none', background: '#1D4ED8', color: '#fff', cursor: 'pointer', fontWeight: 700, opacity: grantBatchUsers.length === 0 ? 0.5 : 1 }}>
+                                {grantLoading ? 'Đang gửi...' : `Cấp batch Red Tick${grantBatchUsers.length ? ` (${grantBatchUsers.length})` : ''}`}
                             </button>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 package com.devlink.user_service.config;
 
 import com.devlink.user_service.security.HeaderAuthFilter;
+import com.devlink.user_service.security.InternalAuthFilter;
 import com.devlink.user_service.security.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final HeaderAuthFilter headerAuthFilter;
+    private final InternalAuthFilter internalAuthFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -27,17 +30,20 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(Constants.PUBLIC_ENDPOINT).permitAll()
+                        // /internal/** được bảo vệ bởi InternalAuthFilter (kiểm tra X-Internal-Secret)
+                        // Spring Security cho phép đi qua, nhưng InternalAuthFilter chặn nếu sai secret
+                        .requestMatchers("/internal/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("api/user/**").hasRole("USER")
+                        .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
-
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2LoginSuccessHandler)
                 );
+
+        // InternalAuthFilter chạy TRƯỚC HeaderAuthFilter
+        http.addFilterBefore(internalAuthFilter, HeaderAuthFilter.class);
         http.addFilterBefore(headerAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
-
-
 }

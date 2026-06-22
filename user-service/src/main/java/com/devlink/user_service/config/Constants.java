@@ -5,7 +5,6 @@ public final class Constants {
     }
 
     public static final String[] PUBLIC_ENDPOINT = {
-
             "/oauth2/**",
             "/v3/api-docs",
             "/auth/register/**",
@@ -14,7 +13,7 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/internal/**",
+            // "/internal/**" đã xóa — được bảo vệ bởi InternalAuthFilter với X-Internal-Secret
             "/user-service/v3/api-docs/**"
     };
     public static final Long SYSTEM_ACTOR_ID = 0L;

@@ -61,6 +61,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                         h.remove(HeaderConstants.USER_ID);
                         h.remove(HeaderConstants.USER_ROLE);
                         h.remove(HeaderConstants.USER_EMAIL);
+                        h.remove("X-Internal-Secret"); // Không để client giả mạo internal service call
                     })
                     .header(HeaderConstants.USER_EMAIL, email)
                     .header(HeaderConstants.USER_ROLE, role)

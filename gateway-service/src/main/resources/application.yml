@@ -67,16 +67,6 @@ spring:
                     redis-rate-limiter.replenishRate: 10
                     redis-rate-limiter.burstCapacity: 20
                     key-resolver: "#{@userKeyResolver}"
-            # gateway application.yml - thêm vào phần routes
-
-            #INTERNAL show to test will remove if success
-            - id: user-service-internal
-              uri: lb://user-service
-              predicates:
-                - Path=/internal/**
-              filters:
-                - name: LoggingFilter
-
             # post-service
             - id: post-service
               uri: lb://post-service

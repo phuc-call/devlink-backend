@@ -1,5 +1,6 @@
 package com.devlink.post_service.service.impl;
 
+import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
@@ -23,6 +24,7 @@ import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
 import com.devlink.post_service.service.PostService;
 import com.devlink.post_service.service.helper.PostEnrichmentHelper;
+import com.devlink.post_service.service.helper.VideoLimitChecker;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +62,8 @@ public class PostServiceImpl implements PostService {
     private final PostFileRepository postFileRepository;
     private final FileStorageService fileStorageService;
     private final PostAsyncService postAsyncService;
+    private final VideoLimitChecker videoLimitChecker;
+    private final UserInfoCacheClient userInfoCacheClient;
 
     private final PostMediaRepository postMediaRepository;
 
@@ -73,9 +77,28 @@ public class PostServiceImpl implements PostService {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("[PostService] createPost authorId={} postType={}", userId, request.getPostType());
 
+
         checkPostRestriction(userId);
 
         List<MultipartFile> validFiles = filterValidFiles(request.getMediaFiles());
+
+        if (!validFiles.isEmpty()) {
+            boolean hasVideo = false;
+            boolean hasDoc = false;
+            for (MultipartFile f : validFiles) {
+                MediaType mType = resolveMediaType(getExt(f.getOriginalFilename()));
+                if (mType == MediaType.VIDEO) hasVideo = true;
+                else if (mType != MediaType.IMAGE) hasDoc = true;
+            }
+            if (hasVideo) request.setPostType(PostType.VIDEO);
+            else if (hasDoc) request.setPostType(PostType.FILE);
+            else request.setPostType(PostType.IMAGE);
+        }
+
+        if(request.getPostType().equals(PostType.VIDEO)){
+            String badgeType = resolveBadgeType(userId);
+            videoLimitChecker.checkAndIncrement(userId, request.getPostType(), validFiles, badgeType);
+        }
         validatePostContent(request, validFiles);
 
         Post post = buildAndSavePost(request, userId);
@@ -321,6 +344,57 @@ public class PostServiceImpl implements PostService {
 
         validatePostOwnership(post, currentUserId);
 
+        List<MultipartFile> validNewFiles = filterValidFiles(request.getNewMediaFiles());
+        resolveAndSetPostType(post, request, validNewFiles, currentUserId);
+
+        boolean contentChanged = applyContentChanges(post, request);
+
+        Post saved = postRepository.save(post);
+
+        processNewFiles(saved, addNewMedia(post, request.getNewMediaFiles()));
+        if (contentChanged) postAsyncService.moderatePost(saved.getId());
+
+        return toResponse(saved, saved.getMediaList());
+    }
+
+    private void resolveAndSetPostType(Post post, UpdatePostRequest request,
+                                       List<MultipartFile> validNewFiles, Long currentUserId) {
+        boolean hasVideo = false;
+        boolean hasImage = false;
+        boolean hasDoc = false;
+
+        for (PostMedia existing : post.getMediaList()) {
+            if (request.getRemoveMediaIds() == null || !request.getRemoveMediaIds().contains(existing.getId())) {
+                if (existing.getMediaType() == MediaType.VIDEO) hasVideo = true;
+                else if (existing.getMediaType() == MediaType.IMAGE) hasImage = true;
+                else hasDoc = true;
+            }
+        }
+
+        for (MultipartFile f : validNewFiles) {
+            MediaType mType = resolveMediaType(getExt(f.getOriginalFilename()));
+            if (mType == MediaType.VIDEO) hasVideo = true;
+            else if (mType == MediaType.IMAGE) hasImage = true;
+            else hasDoc = true;
+        }
+
+        PostType updatedPostType;
+        if (hasVideo) updatedPostType = PostType.VIDEO;
+        else if (hasDoc) updatedPostType = PostType.FILE;
+        else if (hasImage) updatedPostType = PostType.IMAGE;
+        else updatedPostType = PostType.TEXT;
+
+        post.setPostType(updatedPostType);
+
+        if (post.getPostType() == PostType.VIDEO
+                && request.getNewMediaFiles() != null
+                && !request.getNewMediaFiles().isEmpty()) {
+            String badgeType = resolveBadgeType(currentUserId);
+            videoLimitChecker.checkAndIncrement(currentUserId, PostType.VIDEO, validNewFiles, badgeType);
+        }
+    }
+
+    private boolean applyContentChanges(Post post, UpdatePostRequest request) {
         boolean contentChanged = false;
 
         if (request.getContent() != null) {
@@ -345,12 +419,7 @@ public class PostServiceImpl implements PostService {
         List<PostMedia> newMediaAdded = addNewMedia(post, request.getNewMediaFiles());
         if (!newMediaAdded.isEmpty()) contentChanged = true;
 
-        Post saved = postRepository.save(post);
-
-        processNewFiles(saved, newMediaAdded);
-        if (contentChanged) postAsyncService.moderatePost(saved.getId());
-
-        return toResponse(saved, saved.getMediaList());
+        return contentChanged;
     }
 
 
@@ -515,6 +584,19 @@ public class PostServiceImpl implements PostService {
         }
         postRepository.save(post);
     }
-
+    /** * Retrieves the user's badge from the Redis cache (via the UserInfo Cache Client). * Fallback to
+     * "NONE" if the user-service is unavailable. */
+    private String resolveBadgeType(Long userId) {
+        try {
+            Map<Long, com.devlink.post_service.entity.enums.BadgeType> badgeMap =
+                    userInfoCacheClient.getUserBadge(userId);
+            if (badgeMap != null && badgeMap.containsKey(userId)) {
+                return badgeMap.get(userId).name();
+            }
+        } catch (Exception e) {
+            log.warn("[PostService] resolveBadgeType fallback userId={}, reason={}", userId, e.getMessage());
+        }
+        return "NONE";
+    }
 
 }

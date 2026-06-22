@@ -1,10 +1,12 @@
 // src/features/admin/pages/DashboardPage.tsx
 import {
-    Users, FileText, BookOpen, ShieldAlert, MessageSquare, Eye, Activity,
+    Users, FileText, BookOpen, ShieldAlert,
+    MessageSquare, Eye, Activity,
 } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder';
 import SuggestionOverviewChart from '../components/SuggestionOverviewChart';
 import TemplateOverviewSection from '../components/TemplateOverviewSection';
+import BadgeOverviewChart from '../components/BadgeOverviewChart';
 
 interface StatCardProps {
     label: string;
@@ -66,6 +68,9 @@ export default function DashboardPage() {
                 <StatCard label="Template học tập"   description="Tổng template đang active"    icon={<BookOpen size={20}/>}    color="#F59E0B" bg="#FFFBEB"/>
                 <StatCard label="Báo cáo chờ duyệt" description="Số vi phạm chưa xử lý"        icon={<ShieldAlert size={20}/>} color="#EF4444" bg="#FEF2F2"/>
             </div>
+
+            {/* ── Badge Overview: donut chart, click → /admin/badges?badge=... ── */}
+            <BadgeOverviewChart />
 
             {/* ── Template Overview: stat cards + charts + items table ── */}
             <TemplateOverviewSection />

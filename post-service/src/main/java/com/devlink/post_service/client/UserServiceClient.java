@@ -76,6 +76,6 @@ public interface UserServiceClient {
     @GetMapping("/internal/users/users/{userId}")
     ApiResponse<Map<Long, BadgeType>> getUserBadge(@PathVariable("userId") Long userId);
 
-    @GetMapping("/api/users/badges/video-limits")
+    @GetMapping("/internal/users/badges/video-limits")
     ApiResponse<List<BadgeVideoLimitClient>> getAllBadgeVideoLimits();
 }

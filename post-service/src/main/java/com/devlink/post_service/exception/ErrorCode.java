@@ -94,7 +94,12 @@ public enum ErrorCode {
     RESTRICTION_TIME_REQUIRED( "Restriction time is required",HttpStatus.BAD_REQUEST),
     RESTRICTION_TIME_IN_PAST("Restriction time must be in the future",HttpStatus.BAD_REQUEST),
     REPORT_CANNOT_DELETE("Only RESOLVED or REJECTED reports can be deleted", HttpStatus.BAD_REQUEST),
-    RESTRICTION_TIME_TOO_LONG( "Restriction time cannot exceed 7 days",HttpStatus.BAD_REQUEST);
+    RESTRICTION_TIME_TOO_LONG( "Restriction time cannot exceed 7 days",HttpStatus.BAD_REQUEST),
+
+    //badge
+    VIDEO_DURATION_EXCEEDED("Video duration exceeds your badge limit", HttpStatus.BAD_REQUEST),
+    VIDEO_DAILY_LIMIT_EXCEEDED("Daily video upload limit reached", HttpStatus.BAD_REQUEST),
+    VIDEO_LIMIT_CONFIG_NOT_FOUND("Video limit config not found", HttpStatus.SERVICE_UNAVAILABLE);
 
     private final String message;
     private final HttpStatus httpStatus;

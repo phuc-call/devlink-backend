@@ -7,6 +7,7 @@ import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.client.UserNameClient;
 import com.devlink.post_service.dto.response.ApiResponse;
+import com.devlink.post_service.entity.enums.BadgeType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Cache-aside client for user display info (name, avatar).
@@ -40,6 +42,7 @@ public class UserInfoCacheClient {
     private static final String USER_FEED_INFO_KEY_PREFIX = "feed_info:";
     private static final String BADGE_VIDEO_LIMIT_KEY_PREFIX = "badge_video_limit:";
 
+    private static final String USER_BADGE_KEY_PREFIX = "user_badge:";
     /**
      * Returns basic display info for the given user IDs.
      * Checks Redis first; on miss calls user-service in batch and re-caches with 5m TTL.
@@ -212,49 +215,65 @@ public class UserInfoCacheClient {
     @CircuitBreaker(name = "user-service-feed-info", fallbackMethod = "getBadgeVideoLimitFallback")
     @Retry(name = "user-service-feed-info")
     public BadgeVideoLimitClient getBadgeVideoLimit(String badgeType) {
-        String key = BADGE_VIDEO_LIMIT_KEY_PREFIX + badgeType;
-        String cached = redisTemplate.opsForValue().get(key);
-        if (cached != null) {
-            try {
-                return objectMapper.readValue(cached, BadgeVideoLimitClient.class);
-            } catch (Exception e) {
-                log.warn("[UserInfoCacheClient] Failed to deserialize video limit badgeType={}", badgeType);
-            }
-        }
-
         List<BadgeVideoLimitClient> fetched = userServiceClient.getAllBadgeVideoLimits().getData();
         if (fetched == null) return null;
 
-        BadgeVideoLimitClient target = null;
-        for (BadgeVideoLimitClient item : fetched) {
-            try {
-                redisTemplate.opsForValue().set(
-                        BADGE_VIDEO_LIMIT_KEY_PREFIX + item.getBadgeType(),
-                        objectMapper.writeValueAsString(item),
-                        Duration.ofMinutes(10)
-                );
-            } catch (Exception e) {
-                log.warn("[UserInfoCacheClient] Failed to cache video limit badgeType={}", item.getBadgeType());
-            }
-            if (item.getBadgeType().equals(badgeType)) {
-                target = item;
-            }
-        }
-
-        return target;
+        return fetched.stream()
+                .filter(item -> item.getBadgeType().equals(badgeType))
+                .findFirst()
+                .orElse(null);
     }
 
     public BadgeVideoLimitClient getBadgeVideoLimitFallback(String badgeType, Throwable t) {
         log.warn("[UserInfoCacheClient] getBadgeVideoLimit fallback badgeType={}, reason={}", badgeType, t.getMessage());
-        String key = BADGE_VIDEO_LIMIT_KEY_PREFIX + badgeType;
+        return null;
+    }
+
+
+
+    @CircuitBreaker(name = "user-service-feed-info", fallbackMethod = "getUserBadgeFallback")
+    @Retry(name = "user-service-feed-info")
+    public Map<Long, BadgeType> getUserBadge(Long userId) {
+        String key = USER_BADGE_KEY_PREFIX + userId;
         String cached = redisTemplate.opsForValue().get(key);
         if (cached != null) {
             try {
-                return objectMapper.readValue(cached, BadgeVideoLimitClient.class);
+                BadgeType badgeType = BadgeType.valueOf(cached);
+                return Map.of(userId, badgeType);
             } catch (Exception e) {
-                log.warn("[UserInfoCacheClient] Failed to read stale video limit badgeType={}", badgeType);
+                log.warn("[UserInfoCacheClient] Failed to deserialize badge userId={}", userId);
             }
         }
-        return null;
+
+        ApiResponse<Map<Long, BadgeType>> response = userServiceClient.getUserBadge(userId);
+        Map<Long, BadgeType> result = response.getData();
+
+        if (result != null && result.containsKey(userId)) {
+            try {
+                redisTemplate.opsForValue().set(
+                        key,
+                        result.get(userId).name(),
+                        Duration.ofMinutes(10)
+                );
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to cache badge userId={}", userId);
+            }
+        }
+
+        return result != null ? result : Map.of();
+    }
+
+    public Map<Long, BadgeType> getUserBadgeFallback(Long userId, Throwable t) {
+        log.warn("[UserInfoCacheClient] getUserBadge fallback userId={}, reason={}", userId, t.getMessage());
+        String key = USER_BADGE_KEY_PREFIX + userId;
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            try {
+                return Map.of(userId, BadgeType.valueOf(cached));
+            } catch (Exception e) {
+                log.warn("[UserInfoCacheClient] Failed to read stale badge userId={}", userId);
+            }
+        }
+        return Map.of();
     }
 }

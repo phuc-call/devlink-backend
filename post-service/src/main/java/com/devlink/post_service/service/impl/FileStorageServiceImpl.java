@@ -17,19 +17,15 @@ import java.util.UUID;
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final MinioClient minioClient;
-    private final String endpoint;
+
     private final String bucket;
     private final String publicEndpoint;
 
-
     public FileStorageServiceImpl(
             MinioClient minioClient,
-            @Value("${minio.endpoint}") String endpoint,
             @Value("${minio.bucket}") String bucket,
-            @Value("${minio.public-endpoint}") String publicEndpoint
-    ) {
+            @Value("${minio.public-endpoint}") String publicEndpoint) {
         this.minioClient = minioClient;
-        this.endpoint = endpoint;
         this.bucket = bucket;
         this.publicEndpoint = publicEndpoint;
     }
@@ -38,12 +34,10 @@ public class FileStorageServiceImpl implements FileStorageService {
     public void initBucket() {
         try {
             boolean exists = minioClient.bucketExists(
-                    BucketExistsArgs.builder().bucket(bucket).build()
-            );
+                    BucketExistsArgs.builder().bucket(bucket).build());
             if (!exists) {
                 minioClient.makeBucket(
-                        MakeBucketArgs.builder().bucket(bucket).build()
-                );
+                        MakeBucketArgs.builder().bucket(bucket).build());
                 // Set public read để client truy cập URL trực tiếp
                 String policy = """
                         {
@@ -60,8 +54,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                         SetBucketPolicyArgs.builder()
                                 .bucket(bucket)
                                 .config(policy)
-                                .build()
-                );
+                                .build());
                 log.info("[MinIO] Bucket '{}' created", bucket);
             }
         } catch (Exception e) {
@@ -81,8 +74,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                             .object(objectName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
-                            .build()
-            );
+                            .build());
 
             // Dùng publicEndpoint thay endpoint
             String url = publicEndpoint + "/" + bucket + "/" + objectName;
@@ -104,8 +96,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                     RemoveObjectArgs.builder()
                             .bucket(bucket)
                             .object(objectName)
-                            .build()
-            );
+                            .build());
             log.info("[MinIO] Deleted → {}", objectName);
         } catch (Exception e) {
             log.error("[MinIO] Delete failed: {}", fileUrl, e);
@@ -113,7 +104,8 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     private String getExtension(String filename) {
-        if (filename == null || !filename.contains(".")) return "";
+        if (filename == null || !filename.contains("."))
+            return "";
         return filename.substring(filename.lastIndexOf("."));
     }
 

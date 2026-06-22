@@ -161,3 +161,6 @@ minio:
   access-key: ${MINIO_USER:devlink_admin}
   secret-key: ${MINIO_PASSWORD:devlink_secret_123}
   bucket: ${MINIO_BUCKET:devlink-media}
+
+internal:
+  secret: ${INTERNAL_SECRET}
