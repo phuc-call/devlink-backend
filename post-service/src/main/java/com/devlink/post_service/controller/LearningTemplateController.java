@@ -1,6 +1,6 @@
 package com.devlink.post_service.controller;
 
-import com.devlink.post_service.config.Constants;
+
 import com.devlink.post_service.dto.request.CreateTemplateRequest;
 import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.enums.Difficulty;

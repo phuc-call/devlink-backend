@@ -1,0 +1,184 @@
+/* ShortVideoRow.module.css */
+
+/* ── Grid layout ── */
+.gridWrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 4px 2px;
+}
+
+/* ── Card ── */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e4e6ea;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cardHovered {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    z-index: 2;
+}
+
+/* ── Media area (9:16 ratio for shorts) ── */
+.mediaWrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+    background: #000;
+    overflow: hidden;
+}
+
+.thumbnail {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.noThumb {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #1a1a2e;
+}
+
+.video {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.videoVisible {
+    opacity: 1;
+}
+
+/* Gradient */
+.gradientOverlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 65%;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+/* Play icon when idle */
+.playOverlay {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+/* Hover controls */
+.hoverControls {
+    position: absolute;
+    top: 8px; right: 8px;
+    z-index: 5;
+    display: flex; gap: 6px;
+}
+
+.muteBtn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+}
+.muteBtn:hover { background: rgba(0,0,0,0.75); }
+
+/* Bottom meta */
+.bottomMeta {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+}
+
+.authorRow {
+    display: flex; align-items: center; gap: 6px;
+}
+
+.smallAvatar {
+    width: 22px; height: 22px;
+    border-radius: 50%; object-fit: cover;
+    border: 1.5px solid rgba(255,255,255,0.6);
+    flex-shrink: 0;
+}
+
+.smallAvatarPlaceholder {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    flex-shrink: 0;
+}
+
+.authorName {
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.viewRow {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500;
+    color: rgba(255,255,255,0.7);
+}
+
+/* ── Caption ── */
+.caption {
+    padding: 8px 10px 4px;
+    font-size: 12px; line-height: 1.4;
+    color: #050505;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* ── Actions ── */
+.actions {
+    display: flex; align-items: center;
+    padding: 4px 8px 8px;
+    gap: 2px;
+}
+
+.actionBtn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: none; border: none;
+    cursor: pointer;
+    font-size: 12px; font-weight: 600;
+    color: #65676b;
+    transition: background 0.15s, color 0.15s;
+}
+.actionBtn:hover { background: #f0f2f5; color: #050505; }
+
+.actionBtnLiked { color: #ef4444; }
+.actionBtnLiked:hover { background: rgba(239,68,68,0.08); color: #dc2626; }
+
+@keyframes likePop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.45); }
+    65%  { transform: scale(0.88); }
+    100% { transform: scale(1); }
+}
+.likeAnim { animation: likePop 0.35s ease; }

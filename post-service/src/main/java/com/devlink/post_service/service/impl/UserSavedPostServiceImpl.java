@@ -13,7 +13,7 @@ import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.UserSavedPostRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.UserSavedPostService;
-import com.devlink.post_service.service.helper.PostEnrichmentHelper;
+import com.devlink.post_service.service.helper.FeedPriorityHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,9 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +38,7 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
     private final UserSavedPostRepository savedPostRepository;
     private final PostRepository postRepository;
     private final UserRelationCacheClient userRelationCacheClient;
-    private final PostEnrichmentHelper postEnrichmentHelper;
+    private final FeedPriorityHelper feedPriorityHelper;
 
 
     @Override
@@ -126,8 +126,10 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
 
         List<Long> postIds = postIdPage.getContent();
 
-        List<FeedPostResponse> posts = postRepository.findSavedPostProjections(postIds);
-        postEnrichmentHelper.enrich(posts, postIds);
+        List<FeedPostResponse> posts = new ArrayList<>(postRepository.findSavedPostProjections(postIds));
+        // Apply 80/20 priority-discovery ranking (enrich + re-order)
+        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
+
         Map<Long, Instant> savedAtMap = savedPostRepository
                 .findSavedAtByUserIdAndPostIds(userId, postIds)
                 .stream()
@@ -135,16 +137,9 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
                         SavePostProjectionResponse::getPostId,
                         SavePostProjectionResponse::getSaveAt
                 ));
-        Map<Long, FeedPostResponse> postMap = posts.stream()
-                .collect(Collectors.toMap(FeedPostResponse::getId, p -> p));
 
-        List<FeedPostResponse> result = postIds.stream()
-                .map(postMap::get)
-                .filter(Objects::nonNull)
-                .toList();
+        ranked.forEach(p -> p.setSavedAt(savedAtMap.get(p.getId())));
 
-        result.forEach(p -> p.setSavedAt(savedAtMap.get(p.getId())));
-
-        return new PageImpl<>(result, pageable, postIdPage.getTotalElements());
+        return new PageImpl<>(ranked, pageable, postIdPage.getTotalElements());
     }
 }

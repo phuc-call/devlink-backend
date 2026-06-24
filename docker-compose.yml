@@ -149,6 +149,8 @@ services:
     build: ./post-service
     container_name: post-service
     mem_limit: 500m
+    env_file:
+      - .env
 
     environment:
       JAVA_OPTS: "-Xms64m -Xmx256m -XX:+UseContainerSupport"

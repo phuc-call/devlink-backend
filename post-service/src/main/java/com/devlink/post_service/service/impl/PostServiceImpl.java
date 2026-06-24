@@ -23,7 +23,7 @@ import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
 import com.devlink.post_service.service.PostService;
-import com.devlink.post_service.service.helper.PostEnrichmentHelper;
+import com.devlink.post_service.service.helper.FeedPriorityHelper;
 import com.devlink.post_service.service.helper.VideoLimitChecker;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,7 +49,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class PostServiceImpl implements PostService {
-
 
     @Value("${minio.public-endpoint}")
     private String publicEndpoint;
@@ -69,14 +67,13 @@ public class PostServiceImpl implements PostService {
 
     private final UserRelationCacheClient userRelationCacheClient;
 
-    private final PostEnrichmentHelper postEnrichmentHelper;
+    private final FeedPriorityHelper feedPriorityHelper;
 
     @Override
     @Transactional
     public PostResponse createPost(CreatePostRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("[PostService] createPost authorId={} postType={}", userId, request.getPostType());
-
 
         checkPostRestriction(userId);
 
@@ -87,15 +84,20 @@ public class PostServiceImpl implements PostService {
             boolean hasDoc = false;
             for (MultipartFile f : validFiles) {
                 MediaType mType = resolveMediaType(getExt(f.getOriginalFilename()));
-                if (mType == MediaType.VIDEO) hasVideo = true;
-                else if (mType != MediaType.IMAGE) hasDoc = true;
+                if (mType == MediaType.VIDEO)
+                    hasVideo = true;
+                else if (mType != MediaType.IMAGE)
+                    hasDoc = true;
             }
-            if (hasVideo) request.setPostType(PostType.VIDEO);
-            else if (hasDoc) request.setPostType(PostType.FILE);
-            else request.setPostType(PostType.IMAGE);
+            if (hasVideo)
+                request.setPostType(PostType.VIDEO);
+            else if (hasDoc)
+                request.setPostType(PostType.FILE);
+            else
+                request.setPostType(PostType.IMAGE);
         }
 
-        if(request.getPostType().equals(PostType.VIDEO)){
+        if (request.getPostType().equals(PostType.VIDEO)) {
             String badgeType = resolveBadgeType(userId);
             videoLimitChecker.checkAndIncrement(userId, request.getPostType(), validFiles, badgeType);
         }
@@ -121,13 +123,14 @@ public class PostServiceImpl implements PostService {
         boolean restricted = restrictionRepository.existsActiveRestriction(
                 userId,
                 List.of(RestrictionType.POST_BAN, RestrictionType.FULL_BAN),
-                Instant.now()
-        );
-        if (restricted) throw new AppException(ErrorCode.POST_ACCOUNT_RESTRICTED);
+                Instant.now());
+        if (restricted)
+            throw new AppException(ErrorCode.POST_ACCOUNT_RESTRICTED);
     }
 
     private List<MultipartFile> filterValidFiles(List<MultipartFile> files) {
-        if (files == null) return List.of();
+        if (files == null)
+            return List.of();
         return files.stream()
                 .filter(f -> f != null && !f.isEmpty())
                 .toList();
@@ -158,18 +161,18 @@ public class PostServiceImpl implements PostService {
     }
 
     private void addTagsToPost(Post post, List<String> tags) {
-        if (CollectionUtils.isEmpty(tags)) return;
+        if (CollectionUtils.isEmpty(tags))
+            return;
         tags.stream()
                 .filter(StringUtils::hasText)
                 .map(t -> t.trim().toLowerCase())
                 .distinct()
                 .forEach(t -> post.getTags().add(
-                        PostTag.builder().post(post).tag(t).build()
-                ));
+                        PostTag.builder().post(post).tag(t).build()));
     }
 
     private void uploadMedia(Post post, List<MultipartFile> validFiles,
-                             List<PostMedia> savedMedia, List<PostFile> filesToProcess) {
+            List<PostMedia> savedMedia, List<PostFile> filesToProcess) {
         int idx = 0;
         for (MultipartFile file : validFiles) {
             PostMedia media = uploadAndBuildMedia(file, post, idx++);
@@ -189,9 +192,9 @@ public class PostServiceImpl implements PostService {
         }
     }
 
-
     private String getExt(String name) {
-        if (name == null || !name.contains(".")) return "";
+        if (name == null || !name.contains("."))
+            return "";
         return name.substring(name.lastIndexOf('.') + 1);
     }
 
@@ -233,7 +236,7 @@ public class PostServiceImpl implements PostService {
             if (file.isEmpty())
                 throw new AppException(ErrorCode.POST_FILE_EMPTY);
 
-            //50MB
+            // 50MB
             if (file.getSize() > Constants.MAX_SIZE_BYTES)
                 throw new AppException(ErrorCode.POST_FILE_TOO_LARGE);
 
@@ -268,10 +271,10 @@ public class PostServiceImpl implements PostService {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Long> idPage = postRepository.findFeedPostIds(
-                currentUserId, friendIds, blockedIds, postTypeEnum, pageable
-        );
+                currentUserId, friendIds, blockedIds, postTypeEnum, pageable);
 
-        if (idPage.isEmpty()) return Page.empty(pageable);
+        if (idPage.isEmpty())
+            return Page.empty(pageable);
 
         List<Long> ids = idPage.getContent();
 
@@ -282,32 +285,22 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostProcedureResult> rows = postRepository.callGetFeedPosts(idsJson);
 
-        List<FeedPostResponse> posts = rows.stream().map(r -> new FeedPostResponse(
-                r.getId(),
-                r.getAuthorId(),
-                r.getContent(),
+        List<FeedPostResponse> posts = new ArrayList<>(rows.stream().map(r -> new FeedPostResponse(
+                r.getId(), r.getAuthorId(), r.getContent(),
                 PostStatus.valueOf(r.getStatus()),
                 Visibility.valueOf(r.getVisibility()),
                 PostType.valueOf(r.getPostType()),
-                r.getViewCount(),
-                r.getIsPinned(),
+                r.getViewCount(), r.getIsPinned(),
                 AiModerationStatus.valueOf(r.getAiModerationStatus()),
-                r.getCreatedAt(),
-                r.getUpdatedAt(),
-                r.getCommentCount() != null ? r.getCommentCount() : 0L
-        )).toList();
+                r.getCreatedAt(), r.getUpdatedAt(),
+                r.getCommentCount() != null ? r.getCommentCount() : 0L,
+                r.getLikeCount() != null ? r.getLikeCount() : 0L
+        )).toList());
 
-        postEnrichmentHelper.enrich(posts, ids);
+        // Apply 80/20 priority-discovery ranking (enrich + re-order)
+        List<FeedPostResponse> enrichedOrdered = feedPriorityHelper.enrichAndRank(posts, ids);
 
-        Map<Long, FeedPostResponse> postMap = posts.stream()
-                .collect(Collectors.toMap(FeedPostResponse::getId, p -> p));
-
-        List<FeedPostResponse> ordered = ids.stream()
-                .map(postMap::get)
-                .filter(Objects::nonNull)
-                .toList();
-
-        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
+        return new PageImpl<>(enrichedOrdered, pageable, idPage.getTotalElements());
     }
 
     @Override
@@ -328,12 +321,12 @@ public class PostServiceImpl implements PostService {
             return postPage;
         }
 
-        List<FeedPostResponse> posts = postPage.getContent();
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        postEnrichmentHelper.enrich(posts, postIds);
-        return postPage;
+        // Apply 80/20 priority-discovery ranking
+        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
     }
-
 
     @Override
     public PostResponse updatePost(Long postId, UpdatePostRequest request) {
@@ -352,37 +345,48 @@ public class PostServiceImpl implements PostService {
         Post saved = postRepository.save(post);
 
         processNewFiles(saved, addNewMedia(post, request.getNewMediaFiles()));
-        if (contentChanged) postAsyncService.moderatePost(saved.getId());
+        if (contentChanged)
+            postAsyncService.moderatePost(saved.getId());
 
         return toResponse(saved, saved.getMediaList());
     }
 
     private void resolveAndSetPostType(Post post, UpdatePostRequest request,
-                                       List<MultipartFile> validNewFiles, Long currentUserId) {
+            List<MultipartFile> validNewFiles, Long currentUserId) {
         boolean hasVideo = false;
         boolean hasImage = false;
         boolean hasDoc = false;
 
         for (PostMedia existing : post.getMediaList()) {
             if (request.getRemoveMediaIds() == null || !request.getRemoveMediaIds().contains(existing.getId())) {
-                if (existing.getMediaType() == MediaType.VIDEO) hasVideo = true;
-                else if (existing.getMediaType() == MediaType.IMAGE) hasImage = true;
-                else hasDoc = true;
+                if (existing.getMediaType() == MediaType.VIDEO)
+                    hasVideo = true;
+                else if (existing.getMediaType() == MediaType.IMAGE)
+                    hasImage = true;
+                else
+                    hasDoc = true;
             }
         }
 
         for (MultipartFile f : validNewFiles) {
             MediaType mType = resolveMediaType(getExt(f.getOriginalFilename()));
-            if (mType == MediaType.VIDEO) hasVideo = true;
-            else if (mType == MediaType.IMAGE) hasImage = true;
-            else hasDoc = true;
+            if (mType == MediaType.VIDEO)
+                hasVideo = true;
+            else if (mType == MediaType.IMAGE)
+                hasImage = true;
+            else
+                hasDoc = true;
         }
 
         PostType updatedPostType;
-        if (hasVideo) updatedPostType = PostType.VIDEO;
-        else if (hasDoc) updatedPostType = PostType.FILE;
-        else if (hasImage) updatedPostType = PostType.IMAGE;
-        else updatedPostType = PostType.TEXT;
+        if (hasVideo)
+            updatedPostType = PostType.VIDEO;
+        else if (hasDoc)
+            updatedPostType = PostType.FILE;
+        else if (hasImage)
+            updatedPostType = PostType.IMAGE;
+        else
+            updatedPostType = PostType.TEXT;
 
         post.setPostType(updatedPostType);
 
@@ -417,12 +421,11 @@ public class PostServiceImpl implements PostService {
         }
 
         List<PostMedia> newMediaAdded = addNewMedia(post, request.getNewMediaFiles());
-        if (!newMediaAdded.isEmpty()) contentChanged = true;
+        if (!newMediaAdded.isEmpty())
+            contentChanged = true;
 
         return contentChanged;
     }
-
-
 
     private void validatePostOwnership(Post post, Long currentUserId) {
         if (!post.getAuthorId().equals(currentUserId)) {
@@ -449,18 +452,19 @@ public class PostServiceImpl implements PostService {
         newTags.stream()
                 .filter(t -> !existingTags.contains(t))
                 .forEach(t -> post.getTags().add(
-                        PostTag.builder().post(post).tag(t).build()
-                ));
+                        PostTag.builder().post(post).tag(t).build()));
     }
 
     private List<PostMedia> addNewMedia(Post post, List<MultipartFile> files) {
-        if (files == null) return List.of();
+        if (files == null)
+            return List.of();
 
         List<MultipartFile> validFiles = files.stream()
                 .filter(f -> f != null && !f.isEmpty())
                 .toList();
 
-        if (validFiles.isEmpty()) return List.of();
+        if (validFiles.isEmpty())
+            return List.of();
 
         validateFiles(validFiles);
 
@@ -512,25 +516,22 @@ public class PostServiceImpl implements PostService {
         }
 
         Page<FeedPostResponse> postPage = postRepository.findPostsByAuthorIdAndVisibilityIn(
-                targetUserId, allowedVisibilities, pageable
-        );
+                targetUserId, allowedVisibilities, pageable);
 
         if (!postPage.hasContent()) {
             return postPage;
         }
 
-        List<FeedPostResponse> posts = postPage.getContent();
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        postEnrichmentHelper.enrich(posts, postIds);
-
-        return postPage;
+        // Apply 80/20 priority-discovery ranking
+        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
     }
-
 
     @Override
     public void deletePost(Long postId) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
@@ -539,11 +540,10 @@ public class PostServiceImpl implements PostService {
             throw new AppException(ErrorCode.POST_NOT_YOURSELF);
         }
 
-        //if delete nit do anything
+        // if delete nit do anything
         if (post.getStatus() == PostStatus.DELETED) {
             throw new AppException(ErrorCode.POST_ALREADY_DELETED);
         }
-
 
         List<Long> mediaIds = post.getMediaList().stream()
                 .map(PostMedia::getId)
@@ -553,7 +553,7 @@ public class PostServiceImpl implements PostService {
             postFileRepository.deleteByMediaIdIn(mediaIds);
         }
 
-        //Soft delete Post — tags & media xoá cascade qua orphanRemoval
+        // Soft delete Post — tags & media xoá cascade qua orphanRemoval
         post.setStatus(PostStatus.DELETED);
         post.setDeletedAt(Instant.now());
         postRepository.save(post);
@@ -584,12 +584,16 @@ public class PostServiceImpl implements PostService {
         }
         postRepository.save(post);
     }
-    /** * Retrieves the user's badge from the Redis cache (via the UserInfo Cache Client). * Fallback to
-     * "NONE" if the user-service is unavailable. */
+
+    /**
+     * * Retrieves the user's badge from the Redis cache (via the UserInfo Cache
+     * Client). * Fallback to
+     * "NONE" if the user-service is unavailable.
+     */
     private String resolveBadgeType(Long userId) {
         try {
-            Map<Long, com.devlink.post_service.entity.enums.BadgeType> badgeMap =
-                    userInfoCacheClient.getUserBadge(userId);
+            Map<Long, com.devlink.post_service.entity.enums.BadgeType> badgeMap = userInfoCacheClient
+                    .getUserBadge(userId);
             if (badgeMap != null && badgeMap.containsKey(userId)) {
                 return badgeMap.get(userId).name();
             }

@@ -30,6 +30,7 @@ public class FeedPostResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private Long commentCount;
+    private Long likeCount;
     private List<TagResponse> tags;
     private List<MediaResponse> mediaList;
     private Instant savedAt;
@@ -39,10 +40,11 @@ public class FeedPostResponse {
     @Builder
     // Constructor cho JPQL — không có tags và mediaList
     public FeedPostResponse(Long id, Long authorId, String content,
-                            PostStatus status, Visibility visibility, PostType postType,
-                            Long viewCount, Boolean isPinned,
-                            AiModerationStatus aiModerationStatus,
-                            Instant createdAt, Instant updatedAt, Long commentCount) {
+            PostStatus status, Visibility visibility, PostType postType,
+            Long viewCount, Boolean isPinned,
+            AiModerationStatus aiModerationStatus,
+            Instant createdAt, Instant updatedAt,
+            Long commentCount, Long likeCount) {
         this.id = id;
         this.authorId = authorId;
         this.content = content;
@@ -55,6 +57,7 @@ public class FeedPostResponse {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.commentCount = commentCount;
+        this.likeCount = likeCount;
     }
 
 }

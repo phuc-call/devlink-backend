@@ -36,9 +36,10 @@ public class TemplateAiConversation {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private AiConversationStatus status = AiConversationStatus.PENDING;
 
-    @Column(name = "model_used", length = 50)
+    @Column(name ="model_used", length = 50)
     private String modelUsed;
 
     @Column(name = "tokens_used")

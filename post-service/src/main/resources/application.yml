@@ -164,3 +164,13 @@ minio:
 
 internal:
   secret: ${INTERNAL_SECRET}
+
+# File-size based classification (bytes). Admin can tune these via env override.
+# Short video: 0 B  – short-max-bytes   (default ≤ 50 MB)
+# Long  video: long-min-bytes – long-max-bytes (default > 50 MB, admin-set upper limit)
+video:
+  feed:
+    short-max-bytes: ${VIDEO_SHORT_MAX_BYTES:52428800}
+    long-min-bytes:  ${VIDEO_LONG_MIN_BYTES:52428800}
+    long-max-bytes:  ${VIDEO_LONG_MAX_BYTES:10737418240}
+    discovery-ratio: ${VIDEO_DISCOVERY_RATIO:0.20}

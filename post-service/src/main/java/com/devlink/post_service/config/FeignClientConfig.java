@@ -22,7 +22,7 @@ public class FeignClientConfig {
             // Luôn thêm internal secret cho mọi Feign call tới user-service
             requestTemplate.header(INTERNAL_SECRET_HEADER, internalSecret);
 
-            // Forward user context từ request gốc (nếu có — request đến từ user qua gateway)
+           
             ServletRequestAttributes attrs =
                     (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
@@ -36,8 +36,7 @@ public class FeignClientConfig {
                 if (userEmail != null) requestTemplate.header("X-User-Email", userEmail);
                 if (userRole != null)  requestTemplate.header("X-User-Role", userRole);
             }
-            // Nếu không có request context (Kafka consumer, scheduler...) thì chỉ có
-            // X-Internal-Secret — đủ để gọi /internal/** nhưng không có user context
+    
         };
     }
 }

@@ -39,6 +39,7 @@ public class Comment {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private CommentStatus status = CommentStatus.ACTIVE;
 
     @Builder.Default
@@ -47,12 +48,14 @@ public class Comment {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ai_moderation_status", length = 20, nullable = false)
+    @Builder.Default
     private AiModerationStatus aiModerationStatus = AiModerationStatus.PENDING;
 
     @Column(name = "ai_moderation_score")
     private Double aiModerationScore;
 
     @Column(name = "like_count", nullable = false)
+    @Builder.Default
     private Long likeCount = 0L;
     @OneToMany(
             mappedBy = "comment",

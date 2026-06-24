@@ -1,7 +1,7 @@
 // src/router/index.tsx
-import {createBrowserRouter, RouterProvider, Navigate} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
-import {PublicGuard, PrivateGuard, AdminGuard} from '../features/auth/components/Guards';
+import { PublicGuard, PrivateGuard, AdminGuard } from '../features/auth/components/Guards';
 
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
@@ -31,70 +31,73 @@ import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
 import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkeditorpage.tsx';
 import SavedPage from '../features/saved/pages/SavedPage';
+import VideoFeedPage from '../features/post/pages/VideoFeedPage';
+import VideoDetailPage from '../features/post/pages/VideoDetailPage';
 
 const router = createBrowserRouter([
 
-    // ── Public ────────────────────────────────────────────────────────────────
     {
-        element: <PublicGuard/>,
+        element: <PublicGuard />,
         children: [
-            {path: '/login', element: <LoginPage/>},
-            {path: '/register', element: <RegisterPage/>},
+            { path: '/login', element: <LoginPage /> },
+            { path: '/register', element: <RegisterPage /> },
         ],
     },
 
-    {path: '/oauth2/success', element: <OAuth2SuccessPage/>},
+    { path: '/oauth2/success', element: <OAuth2SuccessPage /> },
 
     {
-        element: <PrivateGuard/>,
+        element: <PrivateGuard />,
         children: [
             {
-                element: <MainLayout/>,
+                element: <MainLayout />,
                 children: [
-                    {path: '/', element: <FeedPage/>},
-                    {path: '/following', element: <FollowingPage/>},
-                    {path: '/explore', element: <ExplorePage/>},
-                    {path: '/notifications', element: <NotificationPage/>},
-                    {path: '/chat', element: <ChatPage/>},
-                    {path: '/feature-1', element: <MyTemplatesPage/>},
-                    {path: '/saved', element: <SavedPage/>},
+                    { path: '/', element: <FeedPage /> },
+                    { path: '/following', element: <FollowingPage /> },
+                    { path: '/explore', element: <ExplorePage /> },
+                    { path: '/notifications', element: <NotificationPage /> },
+                    { path: '/chat', element: <ChatPage /> },
+                    { path: '/feature-1', element: <MyTemplatesPage /> },
+                    { path: '/saved', element: <SavedPage /> },
                     { path: '/my-violations', element: <MyViolationsPage /> },
+                    { path: '/videos', element: <VideoFeedPage /> },
+                    { path: '/videos/:id', element: <VideoDetailPage /> },
                 ],
             },
             {
-                element: <ProfileLayout/>,
+                element: <ProfileLayout />,
                 children: [
-                    {path: '/profile/me', element: <ProfilePage/>},
-                    {path: '/profile/:userId', element: <UserProfilePage/>},
+                    { path: '/profile/me', element: <ProfilePage /> },
+                    { path: '/profile/:userId', element: <UserProfilePage /> },
                 ],
             },
-            {path: '/forks/:forkId/edit', element: <ForkEditorPage/>},
+            { path: '/forks/:forkId/edit', element: <ForkEditorPage /> },
         ],
     },
 
     {
-        element: <AdminGuard/>,
+        element: <AdminGuard />,
         children: [
             {
-                element: <AdminLayout/>,
+                element: <AdminLayout />,
                 children: [
-                    {path: '/admin', element: <DashboardPage/>},
-                    {path: '/admin/analytics', element: <AdminAnalyticsPage/>},
-                    {path: '/admin/posts', element: <AdminPostsPage/>},
-                    {path: '/admin/comments', element: <AdminCommentsPage/>},
-                    {path: '/admin/templates', element: <AdminTemplatesPage/>},
-                    {path: '/admin/users', element: <AdminUsersPage/>},
-                    {path: '/admin/badges', element: <AdminBadgePage/>},
-                    {path: '/admin/reports', element: <AdminReportsPage/>},
-                    {path: '/admin/settings', element: <AdminSettingsPage/>},
+                    { path: '/admin', element: <DashboardPage /> },
+                    { path: '/admin/analytics', element: <AdminAnalyticsPage /> },
+                    { path: '/admin/posts', element: <AdminPostsPage /> },
+                    { path: '/admin/comments', element: <AdminCommentsPage /> },
+                    { path: '/admin/templates', element: <AdminTemplatesPage /> },
+                    { path: '/admin/users', element: <AdminUsersPage /> },
+                    { path: '/admin/badges', element: <AdminBadgePage /> },
+                    { path: '/admin/reports', element: <AdminReportsPage /> },
+                    { path: '/admin/settings', element: <AdminSettingsPage /> },
                 ],
             },
         ],
     },
 
-    {path: '*', element: <Navigate to="/" replace/>},
+    { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 export default function AppRouter() {
-    return <RouterProvider router={router}/>;
+    return <RouterProvider router={router} />;
 }

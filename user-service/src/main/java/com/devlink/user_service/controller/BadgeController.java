@@ -9,6 +9,8 @@ import com.devlink.user_service.dto.request.UpdateBadgeVideoLimitRequest;
 import com.devlink.user_service.entity.enums.BadgeType;
 import com.devlink.user_service.service.BadgeService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -94,7 +96,7 @@ public class BadgeController {
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>>> searchUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") @Max(10) @Min(0) int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.ok(badgeService.searchUsers(keyword, pageable)));
     }
@@ -114,7 +116,7 @@ public class BadgeController {
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>>> getUsersByBadgeType(
             @RequestParam BadgeType badgeType,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") @Max(20) @Min(0) int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.ok(badgeService.getUsersByBadgeType(badgeType, pageable)));
     }

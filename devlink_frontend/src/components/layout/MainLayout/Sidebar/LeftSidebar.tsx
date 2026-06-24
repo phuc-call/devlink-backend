@@ -11,8 +11,8 @@ const NAV_ITEMS = [
         path: '/',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
         ),
     },
@@ -21,8 +21,8 @@ const NAV_ITEMS = [
         path: '/explore',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
             </svg>
         ),
     },
@@ -31,8 +31,8 @@ const NAV_ITEMS = [
         path: '/notifications',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
         ),
     },
@@ -41,7 +41,7 @@ const NAV_ITEMS = [
         path: '/chat',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
         ),
     },
@@ -50,10 +50,10 @@ const NAV_ITEMS = [
         path: '/feature-1',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
             </svg>
         ),
     },
@@ -62,19 +62,18 @@ const NAV_ITEMS = [
         path: '/saved',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
         ),
     },
 
     {
-        label: 'Tính năng 3',
-        path: '/feature-3',
+        label: 'Video',
+        path: '/videos',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                <path d="M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                <rect x="2" y="7" width="15" height="10" rx="2" />
+                <path d="M17 9l5-2v10l-5-2V9z" />
             </svg>
         ),
     },
@@ -92,7 +91,7 @@ export default function LeftSidebar() {
 
     return (
         <div className={styles.sidebar}>
-            {/* ── PHẦN 1: Navigation ── */}
+
             <nav className={styles.nav}>
                 {NAV_ITEMS.map(item => (
                     <NavLink
@@ -111,7 +110,7 @@ export default function LeftSidebar() {
 
             <div className={styles.divider} />
 
-            {/* ── PHẦN 2: Index dữ liệu ── */}
+
             <div className={styles.indexSection}>
                 {/* Xu hướng */}
                 <div className={styles.indexGroup}>

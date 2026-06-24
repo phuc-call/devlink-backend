@@ -12,7 +12,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class AuthUserDetails implements UserDetails, java.io.Serializable {
+public class AuthUserDetails implements UserDetails{
 
     private Long id;
     private String email;

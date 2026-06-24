@@ -13,7 +13,6 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            // "/internal/**" đã xóa — được bảo vệ bởi InternalAuthFilter với X-Internal-Secret
             "/user-service/v3/api-docs/**"
     };
     public static final Long SYSTEM_ACTOR_ID = 0L;

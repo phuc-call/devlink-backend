@@ -30,8 +30,6 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(Constants.PUBLIC_ENDPOINT).permitAll()
-                        // /internal/** được bảo vệ bởi InternalAuthFilter (kiểm tra X-Internal-Secret)
-                        // Spring Security cho phép đi qua, nhưng InternalAuthFilter chặn nếu sai secret
                         .requestMatchers("/internal/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
@@ -40,9 +38,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2LoginSuccessHandler)
                 );
-
-        // InternalAuthFilter chạy TRƯỚC HeaderAuthFilter
-        http.addFilterBefore(internalAuthFilter, HeaderAuthFilter.class);
+        http.addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(headerAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

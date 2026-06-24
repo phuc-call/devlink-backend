@@ -19,13 +19,6 @@ interface SliceDatum {
     badge: BadgeType;
 }
 
-/**
- * Thống kê badge dạng donut chart cho Dashboard admin.
- * Dùng lại đúng API GET /api/users/admin/badges/stats (badgeApi.getBadgeStats) —
- * không thêm logic backend mới, không tự suy diễn số liệu.
- * Bấm vào lát cắt / dòng chú thích sẽ điều hướng sang trang Quản lý Badge,
- * kèm query param ?badge=... để trang đó tự lọc đúng badge vừa chọn.
- */
 export default function BadgeOverviewChart() {
     const [stats, setStats] = useState<BadgeStatsResponse | null>(null);
     const [loading, setLoading] = useState(true);

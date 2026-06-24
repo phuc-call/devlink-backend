@@ -17,6 +17,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -125,5 +126,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Duplicate or invalid data"));
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("[GlobalExceptionHandler] File too large: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message(ErrorCode.POST_FILE_TOO_LARGE.getMessage())
+                        .build());
+    }
 
 }

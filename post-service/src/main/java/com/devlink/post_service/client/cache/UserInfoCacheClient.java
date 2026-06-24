@@ -28,7 +28,7 @@ import java.util.Map;
  * Used by CommentService, CommentReplyService, and feed features.
  *
  * <p>NOTE: Extracted as a separate Spring bean intentionally.
- * {@link CircuitBreaker} and {@link Retry} rely on Spring AOP proxies.
+ * {@link CircuitBreaker} and {@link Retry} rely on Spring AO P proxies.
  * Self-invocation bypasses the proxy — injecting as a separate bean ensures fallback triggers correctly.
  */
 @Component

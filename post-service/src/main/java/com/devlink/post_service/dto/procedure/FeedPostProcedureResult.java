@@ -15,4 +15,5 @@ public interface FeedPostProcedureResult {
     Instant getCreatedAt();
     Instant getUpdatedAt();
     Long getCommentCount();
+    Long getLikeCount();
 }
