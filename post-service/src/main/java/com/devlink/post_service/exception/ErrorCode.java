@@ -10,7 +10,7 @@ public enum ErrorCode {
 
     POST_FILE_REQUIRED("FILE type post must have at least one attachment", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_TOO_LARGE("File exceeds the 50MB limit", HttpStatus.BAD_REQUEST),
+    POST_FILE_TOO_LARGE("File exceeds the 80MB limit", HttpStatus.BAD_REQUEST),
 
     FILE_UPLOAD_FAILED("File is invalid, please try again", HttpStatus.BAD_REQUEST),
 

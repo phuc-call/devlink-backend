@@ -267,11 +267,11 @@ public class VideoFeedServiceImpl implements VideoFeedService {
         return List.of(-1L);
     }
 
-    public VideoFeedPageResponse searchVideoFeed(String query, int page, int size) {
-        if (query == null || query.isBlank()||query.length() > 100) {
-            return emptyPage(page, size);
-        }
-
-
-    }
+//    public VideoFeedPageResponse searchVideoFeed(String query, int page, int size) {
+//        if (query == null || query.isBlank()||query.length() > 100) {
+//            return emptyPage(page, size);
+//        }
+//
+//
+//    }
 }

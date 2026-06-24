@@ -27,7 +27,7 @@ public final class Constants {
 
     public static final String USER_COMMENT = "user:comment:";
     public static final String USER_NAME = "user:name:";
-    public static final long MAX_SIZE_BYTES = 50L * 1024 * 1024;  // 50MB each file
+    public static final long MAX_SIZE_BYTES = 80L * 1024 * 1024;  // 50MB each file
     public static final long MAX_TOTAL_SIZE_BYTES = 200L * 1024 * 1024; // 200MB sum
     public static final int MAX_FILE_COUNT = 10; // tối đa 10 file
     public static final int MAX_CHARS = 50_000;
