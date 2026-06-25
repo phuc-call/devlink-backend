@@ -97,7 +97,7 @@ DevLink/
 ### 1. Clone repo
 
 ```bash
-git clone https://github.com/<your-username>/DevLink.git
+git clone https://github.com/phuc-call/devlink-backend.git
 cd DevLink
 ```
 
