@@ -1,6 +1,6 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.*;
+import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.service.UserProfileService;

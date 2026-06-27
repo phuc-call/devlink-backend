@@ -4,15 +4,18 @@ import com.devlink.user_service.common.TokenHashUtil;
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.AppProperties;
 import com.devlink.user_service.config.Constants;
-import com.devlink.user_service.dto.reponse.AuthResponse;
-import com.devlink.user_service.dto.reponse.LogoutResponse;
 import com.devlink.user_service.dto.request.*;
+import com.devlink.user_service.dto.response.AuthResponse;
+import com.devlink.user_service.dto.response.AuthTokenItemResponse;
+import com.devlink.user_service.dto.response.AuthTokenResponse;
+import com.devlink.user_service.dto.response.LogoutResponse;
 import com.devlink.user_service.entity.*;
 import com.devlink.user_service.entity.enums.*;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
 import com.devlink.user_service.security.JWTUtil;
+import com.devlink.user_service.security.SecurityUtils;
 import com.devlink.user_service.service.AuthService;
 import com.devlink.user_service.service.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-
-
 
 @Slf4j
 @Service
@@ -182,11 +183,29 @@ public class AuthServiceImpl implements AuthService {
 
         String rawRefresh = UUID.randomUUID().toString().replace("-", "");
         String hashedRefresh = TokenHashUtil.hash(rawRefresh);
+        
+        enforceMaxSessions(user.getId());
+        
         authTokeRepository.save(buildAuthToken(user, httpRequest, hashedRefresh));
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(rawRefresh)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .role(roleName)
                 .build();
+    }
+
+    private void enforceMaxSessions(Long userId) {
+        List<AuthToken> userTokens = authTokeRepository.findAllByUserIdOrderByLastUsedAtAsc(userId);
+        int maxSessions = 5;
+        if (userTokens.size() >= maxSessions) {
+            int tokensToDelete = userTokens.size() - maxSessions + 1;
+            for (int i = 0; i < tokensToDelete; i++) {
+                authTokeRepository.delete(userTokens.get(i));
+                log.info("[AUTH] Enforce max sessions: deleted old session for userId={}", userId);
+            }
+        }
     }
 
     private AuthToken buildAuthToken(User user, HttpServletRequest httpRequest, String hasToken) {
@@ -262,6 +281,9 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRawRefresh)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .role(extractRole(user))
                 .build();
     }
 
@@ -278,6 +300,63 @@ public class AuthServiceImpl implements AuthService {
             log.warn("[AUTH] Account locked: {}", user.getEmail());
         }
         userRepository.save(user);
+    }
+
+    @Override
+    public AuthTokenResponse getSessions(String refreshToken) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        List<AuthTokenItemResponse> tokens = authTokeRepository.findAuthTokenByUserIdOrderByLastUsedAtAsc(userId);
+        
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            String hash = TokenHashUtil.hash(refreshToken);
+            AuthToken currentToken = authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
+                    .orElse(null);
+
+            if (currentToken != null) {
+                tokens.forEach(t -> {
+                    if (t.getId().equals(currentToken.getId())) {
+                        t.setCurrentSession(true);
+                    }
+                });
+            }
+        }
+        
+        return AuthTokenResponse.builder()
+                .userId(userId)
+                .tokens(tokens)
+                .build();
+    }
+
+    @Override
+    public void deleteSession(Long tokenId, PasswordRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        
+        authTokeRepository.deleteByIdAndUserId(tokenId, userId);
+    }
+
+    @Override
+    public void deleteAllOtherSessions(PasswordRequest request, String refreshToken) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        
+        String hash = TokenHashUtil.hash(refreshToken);
+        AuthToken currentToken = authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
+                
+        authTokeRepository.deleteAllByUserIdExceptCurrent(userId, currentToken.getId());
     }
 
 }

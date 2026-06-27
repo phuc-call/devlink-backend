@@ -4,7 +4,7 @@ import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.internal.LanguageInternal;
 import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
 import com.devlink.user_service.dto.internal.UserNameInternal;
-import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
+import com.devlink.user_service.dto.response.UserFeedInfoResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.BadgeType;

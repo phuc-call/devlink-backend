@@ -1,4 +1,4 @@
-package com.devlink.user_service.dto.reponse;
+package com.devlink.user_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;

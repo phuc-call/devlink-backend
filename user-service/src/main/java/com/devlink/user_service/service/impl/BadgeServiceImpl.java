@@ -1,7 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.reponse.*;
+import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.dto.request.CreateBadgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateBadgeVideoLimitRequest;
 import com.devlink.user_service.entity.*;

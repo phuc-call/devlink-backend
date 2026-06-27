@@ -3,7 +3,7 @@ package com.devlink.user_service.service;
 import com.devlink.user_service.dto.internal.LanguageInternal;
 import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
 import com.devlink.user_service.dto.internal.UserNameInternal;
-import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
+import com.devlink.user_service.dto.response.UserFeedInfoResponse;
 import com.devlink.user_service.entity.enums.BadgeType;
 import org.springframework.web.bind.annotation.RequestHeader;
 

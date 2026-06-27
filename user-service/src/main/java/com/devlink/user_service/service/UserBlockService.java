@@ -1,6 +1,6 @@
 package com.devlink.user_service.service;
 
-import com.devlink.user_service.dto.reponse.BlockStatusResponse;
+import com.devlink.user_service.dto.response.BlockStatusResponse;
 
 import java.util.List;
 

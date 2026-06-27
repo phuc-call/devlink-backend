@@ -2,8 +2,8 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.Constants;
-import com.devlink.user_service.dto.reponse.NotificationBrithDay;
-import com.devlink.user_service.dto.reponse.NotificationResponse;
+import com.devlink.user_service.dto.response.NotificationBrithDay;
+import com.devlink.user_service.dto.response.NotificationResponse;
 import com.devlink.user_service.dto.request.NotificationActionRequest;
 import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
 import com.devlink.user_service.entity.EmailVerification;

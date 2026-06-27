@@ -1,9 +1,9 @@
 package com.devlink.user_service.service;
 
-import com.devlink.user_service.dto.reponse.FollowRequestModeResponse;
-import com.devlink.user_service.dto.reponse.UserProfileResponse;
-import com.devlink.user_service.dto.reponse.UserSearchPageResponse;
-import com.devlink.user_service.dto.reponse.VisibilitySettingResponse;
+import com.devlink.user_service.dto.response.FollowRequestModeResponse;
+import com.devlink.user_service.dto.response.UserProfileResponse;
+import com.devlink.user_service.dto.response.UserSearchPageResponse;
+import com.devlink.user_service.dto.response.VisibilitySettingResponse;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 

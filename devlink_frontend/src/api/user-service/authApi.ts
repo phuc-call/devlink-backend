@@ -34,4 +34,13 @@ export const authApi = {
 
     refresh: (refreshToken: string) =>
         api.post<{ data: AuthResponse }>('/auth/refresh', { refreshToken }),
-};
+
+    getSessions: () =>
+        api.get<{ data: import('../../types/auth.types.ts').AuthTokenResponse }>('/auth/me/sessions'),
+
+    deleteSession: (tokenId: number, password: string) =>
+        api.delete<{ data: null }>(`/auth/me/sessions/${tokenId}`, { data: { password } }),
+
+    deleteAllOtherSessions: (password: string) =>
+        api.delete<{ data: null }>('/auth/me/sessions/others', { data: { password } }),
+};

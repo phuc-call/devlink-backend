@@ -280,3 +280,44 @@
 
 .dropLogout svg { color: #EF4444; }
 .dropLogout:hover { background: #FEF2F2; }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 640px) {
+    .header {
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    /* Ẩn search box - trên mobile dùng /explore để tìm kiếm */
+    .searchWrap {
+        display: none;
+    }
+
+    /* Ẩn nav tabs giữa - mobile dùng bottom nav */
+    .center {
+        display: none;
+    }
+
+    .logo {
+        font-size: 17px;
+    }
+
+    .right {
+        gap: 2px;
+    }
+
+    .iconBtn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .iconBtn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .avatarBtn {
+        width: 32px;
+        height: 32px;
+    }
+}

@@ -1,6 +1,6 @@
 package com.devlink.user_service.exception;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
+import com.devlink.user_service.dto.response.ApiResponse;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,7 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
-import com.devlink.user_service.dto.reponse.BadgeVideoLimitResponse;
+import com.devlink.user_service.dto.response.ApiResponse;
+import com.devlink.user_service.dto.response.BadgeVideoLimitResponse;
 import com.devlink.user_service.service.BadgeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

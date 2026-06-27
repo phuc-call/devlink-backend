@@ -1,4 +1,4 @@
-package com.devlink.user_service.dto.reponse;
+package com.devlink.user_service.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

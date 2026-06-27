@@ -1,6 +1,6 @@
 package com.devlink.user_service.service;
 
-import com.devlink.user_service.dto.reponse.UserRecommendationResponse;
+import com.devlink.user_service.dto.response.UserRecommendationResponse;
 
 import java.util.List;
 

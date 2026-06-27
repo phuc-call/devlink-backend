@@ -53,6 +53,6 @@
 
 @media (max-width: 640px) {
     .left { display: none; }
-    .body { padding-top: 60px; }
-    .feed { padding: 12px 8px; }
-}
+    .body { padding-top: 60px; padding-bottom: 56px; } /* 56px = bottom nav height */
+    .feed { padding: 8px 0; }
+}

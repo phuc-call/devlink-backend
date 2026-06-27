@@ -1,8 +1,8 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
-import com.devlink.user_service.dto.reponse.NotificationBrithDay;
-import com.devlink.user_service.dto.reponse.NotificationResponse;
+import com.devlink.user_service.dto.response.ApiResponse;
+import com.devlink.user_service.dto.response.NotificationBrithDay;
+import com.devlink.user_service.dto.response.NotificationResponse;
 import com.devlink.user_service.dto.request.NotificationActionRequest;
 import com.devlink.user_service.dto.request.NotificationPasswordSetupRequest;
 import com.devlink.user_service.entity.enums.CountNotification;

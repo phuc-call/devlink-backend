@@ -1,9 +1,9 @@
 package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
-import com.devlink.user_service.dto.reponse.BadgeCountResponse;
-import com.devlink.user_service.dto.reponse.UserFeedInfoResponse;
-import com.devlink.user_service.dto.reponse.UserSummaryResponse;
+import com.devlink.user_service.dto.response.BadgeCountResponse;
+import com.devlink.user_service.dto.response.UserFeedInfoResponse;
+import com.devlink.user_service.dto.response.UserSummaryResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.enums.BadgeType;
 import feign.Param;
@@ -35,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("day") int day);
 
     @Query("""
-                SELECT new com.devlink.user_service.dto.reponse.UserFeedInfoResponse(
+                SELECT new com.devlink.user_service.dto.response.UserFeedInfoResponse(
                     u.id, p.fullName, p.avatarUrl, u.badge,
                     p.followerCount, p.followingCount,
                     (SELECT COUNT(f) > 0 FROM Follow f
@@ -78,7 +78,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.UserSummaryResponse(
+    SELECT new com.devlink.user_service.dto.response.UserSummaryResponse(
         u.id, u.username, u.email, u.badge, u.status, p.avatarUrl
     )
     FROM User u
@@ -94,7 +94,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.UserSummaryResponse(
+    SELECT new com.devlink.user_service.dto.response.UserSummaryResponse(
         u.id, u.username, u.email, u.badge, u.status, p.avatarUrl
     )
     FROM User u
@@ -106,7 +106,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             Pageable pageable);
 
     @Query("""
-    SELECT new com.devlink.user_service.dto.reponse.BadgeCountResponse(
+    SELECT new com.devlink.user_service.dto.response.BadgeCountResponse(
         u.badge, COUNT(u)
     )
     FROM User u

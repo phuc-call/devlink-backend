@@ -1,7 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.reponse.BlockStatusResponse;
+import com.devlink.user_service.dto.response.BlockStatusResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserBlock;
 

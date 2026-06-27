@@ -16,22 +16,31 @@ import ReportModal from '../../../components/common/ReportModal.tsx';
 import { reactionApi } from '../../../api/post-service/reactionApi';
 import type { ReactionType } from '../../../types/reaction.types';
 
-const REACTION_DETAILS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
-    LIKE: { emoji: '👍', label: 'Thích', color: '#2563EB' },
-    LOVE: { emoji: '❤️', label: 'Yêu thích', color: '#EF4444' },
-    HAHA: { emoji: '😆', label: 'Haha', color: '#F59E0B' },
-    WOW: { emoji: '😮', label: 'Wow', color: '#F59E0B' },
-    SAD: { emoji: '😢', label: 'Buồn', color: '#F59E0B' },
-    ANGRY: { emoji: '😡', label: 'Phẫn nộ', color: '#EA580C' },
+const REACTION_ICONS = {
+    LIKE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#2563EB"><path d="M2 10h4v10H2v-10zm20 2c0-1.1-.9-2-2-2h-5.3l.8-3.9v-.4c0-.4-.1-.8-.4-1l-1-1-4.7 4.8c-.3.3-.5.7-.5 1.1v8c0 1.1.9 2 2 2h6.5c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-1.6z"/></svg>,
+    LOVE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EF4444"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
+    HAHA: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M12 16.5c-2.3 0-4.3-1.4-5.2-3.5h10.4c-.9 2.1-2.9 3.5-5.2 3.5z"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/></svg>,
+    WOW: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="12" cy="16" r="2.5"/></svg>,
+    SAD: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M12 13.5c-2 0-3.8 1.1-4.7 2.8l1.7.9c.6-1 1.6-1.7 3-1.7s2.4.7 3 1.7l1.7-.9c-.9-1.7-2.7-2.8-4.7-2.8z"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/></svg>,
+    ANGRY: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EA580C"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M8.5 11c.8 0 1.5-.7 1.5-1.5S9.3 8 8.5 8 7 8.7 7 9.5 7.7 11 8.5 11zm7 0c.8 0 1.5-.7 1.5-1.5S16.3 8 15.5 8 14 8.7 14 9.5 14.7 11 15.5 11zm-3.5 3c-2.3 0-4.3 1.4-5.2 3.5h10.4c-.9-2.1-2.9-3.5-5.2-3.5z"/><path stroke="#fff" strokeWidth="2" strokeLinecap="round" d="M6 7l3 1.5M18 7l-3 1.5"/></svg>,
 };
 
-function getTopReactionEmojis(counts: Record<ReactionType, number>): string[] {
+const REACTION_DETAILS: Record<ReactionType, { icon: React.ReactNode; label: string; color: string }> = {
+    LIKE: { icon: REACTION_ICONS.LIKE, label: 'Thích', color: '#2563EB' },
+    LOVE: { icon: REACTION_ICONS.LOVE, label: 'Yêu thích', color: '#EF4444' },
+    HAHA: { icon: REACTION_ICONS.HAHA, label: 'Haha', color: '#F59E0B' },
+    WOW: { icon: REACTION_ICONS.WOW, label: 'Wow', color: '#F59E0B' },
+    SAD: { icon: REACTION_ICONS.SAD, label: 'Buồn', color: '#F59E0B' },
+    ANGRY: { icon: REACTION_ICONS.ANGRY, label: 'Phẫn nộ', color: '#EA580C' },
+};
+
+function getTopReactionIcons(counts: Record<ReactionType, number>): React.ReactNode[] {
     if (!counts) return [];
     return Object.entries(counts)
         .filter(([, count]) => count > 0)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
-        .map(([type]) => REACTION_DETAILS[type as ReactionType].emoji);
+        .map(([type]) => REACTION_DETAILS[type as ReactionType].icon);
 }
 
 
@@ -484,7 +493,7 @@ export default function PostCard({
     const popoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const currentUserId = getCurrentUserId();
-    const isOwner       = currentUserId !== null && post.authorId === currentUserId;
+    const isOwner       = currentUserId !== null && authorId === currentUserId;
     const commentOpen   = openCommentPostId === post.id;
 
     useEffect(() => {
@@ -939,8 +948,10 @@ export default function PostCard({
                         {/* Left: Emojis and count */}
                         {totalReactions > 0 ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: 14 }}>
-                                    {getTopReactionEmojis(reactionCounts).join('')}
+                                <span style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    {getTopReactionIcons(reactionCounts).map((icon, idx) => (
+                                        <span key={idx} style={{ display: 'flex' }}>{icon}</span>
+                                    ))}
                                 </span>
                                 <span style={{ fontWeight: 500 }}>
                                     {totalReactions}
@@ -1015,7 +1026,7 @@ export default function PostCard({
                                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                                             title={detail.label}
                                         >
-                                            {detail.emoji}
+                                            {detail.icon}
                                         </button>
                                     );
                                 })}
@@ -1045,8 +1056,8 @@ export default function PostCard({
                             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                         >
                             {currentUserReaction ? (
-                                <span style={{ fontSize: 14 }}>
-                                    {REACTION_DETAILS[currentUserReaction].emoji}
+                                <span style={{ fontSize: 14, display: 'flex', alignItems: 'center' }}>
+                                    {REACTION_DETAILS[currentUserReaction].icon}
                                 </span>
                             ) : (
                                 <Heart size={14} color="#6B7280" />

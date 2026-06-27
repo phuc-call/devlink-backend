@@ -2,7 +2,7 @@ package com.devlink.user_service.controller;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.Constants;
-import com.devlink.user_service.dto.reponse.*;
+import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.dto.request.CreateBadgeConfigRequest;
 import com.devlink.user_service.dto.request.GrantRedTickRequest;
 import com.devlink.user_service.dto.request.UpdateBadgeVideoLimitRequest;

@@ -1,8 +1,8 @@
 package com.devlink.user_service.service;
 
-import com.devlink.user_service.dto.reponse.FollowResponse;
-import com.devlink.user_service.dto.reponse.PageResponse;
-import com.devlink.user_service.dto.reponse.UserFollowingCardResponse;
+import com.devlink.user_service.dto.response.FollowResponse;
+import com.devlink.user_service.dto.response.PageResponse;
+import com.devlink.user_service.dto.response.UserFollowingCardResponse;
 import com.devlink.user_service.entity.enums.FollowActionResult;
 import com.devlink.user_service.entity.enums.FollowListType;
 import org.springframework.data.domain.Page;

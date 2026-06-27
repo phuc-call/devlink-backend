@@ -1,8 +1,9 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
-import com.devlink.user_service.dto.reponse.AuthResponse;
-import com.devlink.user_service.dto.reponse.LogoutResponse;
+import com.devlink.user_service.dto.response.ApiResponse;
+import com.devlink.user_service.dto.response.AuthResponse;
+import com.devlink.user_service.dto.response.LogoutResponse;
+import com.devlink.user_service.dto.response.AuthTokenResponse;
 import com.devlink.user_service.dto.request.*;
 import com.devlink.user_service.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -119,5 +120,31 @@ public class AuthController {
                 .maxAge(maxAge)
                 .sameSite("Lax")
                 .build();
+    }
+
+    @GetMapping("/me/sessions")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> getSessions(
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            @RequestHeader(value = "X-Refresh-Token", required = false) String headerRefreshToken) {
+        String token = cookieRefreshToken != null ? cookieRefreshToken : headerRefreshToken;
+        return ResponseEntity.ok(ApiResponse.ok(authService.getSessions(token)));
+    }
+
+    @DeleteMapping("/me/sessions/{tokenId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSession(
+            @PathVariable Long tokenId,
+            @RequestBody @Valid PasswordRequest request) {
+        authService.deleteSession(tokenId, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/me/sessions/others")
+    public ResponseEntity<ApiResponse<Void>> deleteAllOtherSessions(
+            @RequestBody @Valid PasswordRequest request,
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            @RequestHeader(value = "X-Refresh-Token", required = false) String headerRefreshToken) {
+        String token = cookieRefreshToken != null ? cookieRefreshToken : headerRefreshToken;
+        authService.deleteAllOtherSessions(request, token);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

@@ -1,6 +1,6 @@
 package com.devlink.user_service.repository;
 
-import com.devlink.user_service.dto.reponse.NotificationResponse;
+import com.devlink.user_service.dto.response.NotificationResponse;
 import com.devlink.user_service.entity.Notification;
 import com.devlink.user_service.entity.enums.NotificationType;
 import org.springframework.data.domain.Page;
@@ -20,7 +20,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // Lấy tất cả notification theo thời gian mới nhất
     @Query("""
-            SELECT new com.devlink.user_service.dto.reponse.NotificationResponse(
+            SELECT new com.devlink.user_service.dto.response.NotificationResponse(
                 n.id, n.actorId, p.fullName, p.avatarUrl,
                 n.type, n.content, n.isRead, n.createdAt
             )

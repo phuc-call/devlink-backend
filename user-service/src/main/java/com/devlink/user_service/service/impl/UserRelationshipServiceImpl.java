@@ -2,7 +2,7 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.internal.CandidateProfileInternal;
-import com.devlink.user_service.dto.reponse.UserRecommendationResponse;
+import com.devlink.user_service.dto.response.UserRecommendationResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.ProgrammingLanguage;

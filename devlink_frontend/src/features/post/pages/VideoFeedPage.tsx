@@ -553,32 +553,45 @@ interface ShortCardProps { video: VideoFeedResponse; onOpen: (id: number) => voi
 const ShortCard: React.FC<ShortCardProps> = ({ video, onOpen }) => {
     const vRef = useRef<HTMLVideoElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
-    const [hovering, setHovering] = useState(false);
+    const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(true);
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
 
+    // IntersectionObserver: tự play khi vào view, tự pause khi ra
     useEffect(() => {
-        const v = vRef.current; if (!v || !videoUrl) return;
-        if (hovering) { v.play().catch(() => { }); } else { v.pause(); v.currentTime = 0; }
-    }, [hovering, videoUrl]);
+        const v = vRef.current;
+        const card = cardRef.current;
+        if (!v || !card || !videoUrl) return;
+
+        const obs = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                v.play().then(() => setPlaying(true)).catch(() => { });
+            } else {
+                v.pause();
+                v.currentTime = 0;
+                setPlaying(false);
+            }
+        }, { threshold: 0.65 }); // 65% visible mới play → tránh nhiều video cùng lúc
+
+        obs.observe(card);
+        return () => obs.disconnect();
+    }, [videoUrl]);
 
     return (
         <div
             className={styles.shortCard}
             ref={cardRef}
-            onMouseEnter={() => setHovering(true)}
-            onMouseLeave={() => setHovering(false)}
             onClick={() => onOpen(video.id)}
         >
-            {thumbUrl && !hovering && <img src={thumbUrl} className={styles.shortThumb} alt="" />}
-            {!thumbUrl && !hovering && <div className={styles.shortNoThumb}><Play size={28} color="rgba(255,255,255,0.5)" /></div>}
+            {thumbUrl && !playing && <img src={thumbUrl} className={styles.shortThumb} alt="" />}
+            {!thumbUrl && !playing && <div className={styles.shortNoThumb}><Play size={28} color="rgba(255,255,255,0.5)" /></div>}
             {videoUrl && (
                 <video
                     ref={vRef}
                     src={videoUrl}
-                    className={`${styles.shortVideo} ${hovering ? styles.shortVideoOn : ''}`}
+                    className={`${styles.shortVideo} ${playing ? styles.shortVideoOn : ''}`}
                     muted={muted}
                     loop
                     playsInline
@@ -611,6 +624,7 @@ const ShortCard: React.FC<ShortCardProps> = ({ video, onOpen }) => {
         </div>
     );
 };
+
 
 // ─── LongCard (feed thumbnail) ────────────────────────────────────────────────
 interface LongCardProps { video: VideoFeedResponse; onOpen: (id: number) => void; }

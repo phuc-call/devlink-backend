@@ -1,7 +1,7 @@
 package com.devlink.user_service.controller;
 
-import com.devlink.user_service.dto.reponse.ApiResponse;
-import com.devlink.user_service.dto.reponse.UserRecommendationResponse;
+import com.devlink.user_service.dto.response.ApiResponse;
+import com.devlink.user_service.dto.response.UserRecommendationResponse;
 import com.devlink.user_service.service.UserRelationshipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
