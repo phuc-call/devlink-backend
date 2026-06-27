@@ -28,7 +28,7 @@ DevLink supports posts, comments, reactions, video feeds, real-time notification
                 │
      ┌──────────┴──────────┐
    Kafka :9092           Redis :6379
- (async events)     (token blacklist, rate limit, cache)
+ (async events)    
                 │
              MinIO :9000
           (media file storage)
@@ -97,7 +97,7 @@ DevLink/
 ### 1. Clone repo
 
 ```bash
-git clone https://github.com/<your-username>/DevLink.git
+git clone https://github.com/phuc-call/devlink-backend.git
 cd DevLink
 ```
 
