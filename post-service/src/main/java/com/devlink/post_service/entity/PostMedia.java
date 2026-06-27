@@ -7,11 +7,14 @@ import lombok.*;
 
 import java.time.Instant;
 
-
 // PostMedia.java
 @Entity
 @Table(name = "post_media")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PostMedia {
 
     @Id
@@ -39,8 +42,6 @@ public class PostMedia {
     @Column(name = "file_extension", length = 20)
     private String fileExtension;
 
-
-
     // Chỉ dùng cho VIDEO
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
@@ -49,11 +50,14 @@ public class PostMedia {
     private Long fileSize;
 
     @Column(name = "order_index", nullable = false)
+    @Builder.Default
     private Integer orderIndex = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @PrePersist
-    protected void onCreate() { this.createdAt = Instant.now(); }
+    protected void onCreate() {
+        this.createdAt = Instant.now();
+    }
 }

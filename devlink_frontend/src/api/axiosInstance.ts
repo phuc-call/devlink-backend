@@ -2,61 +2,76 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_GATEWAY_URL,
+    withCredentials: true, // Bật gửi cookie tự động
 });
 
+// Không cần gán Authorization header bằng tay nữa vì trình duyệt tự gửi cookie!
 axiosInstance.interceptors.request.use(config => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
 });
+
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (value?: unknown) => void;
+    reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
 
 axiosInstance.interceptors.response.use(
     res => res,
     async error => {
         const original = error.config;
 
-        // LOG 1: Xem request nào bị lỗi
         console.log('🔴 Request lỗi:', error.config?.url, 'Status:', error.response?.status);
 
         if (error.response?.status === 401 && !original._retry) {
-            original._retry = true;
-            const refreshToken = localStorage.getItem('refreshToken');
-
-            // LOG 2: Xem có refreshToken không
-            console.log('🔑 refreshToken:', refreshToken ? 'CÓ' : 'KHÔNG CÓ');
-
-            if (refreshToken) {
-                try {
-                    // LOG 3: Xem đang gọi URL nào
-                    console.log('🔄 Đang gọi refresh tại:', `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`);
-
-                    const res = await axios.post(
-                        `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`,
-                        { refreshToken }
-                    );
-
-                    // LOG 4: Xem response trả về gì
-                    console.log('✅ Refresh thành công:', res.data);
-
-                    const { accessToken, refreshToken: newRefreshToken } = res.data.data;
-                    localStorage.setItem('accessToken', accessToken);
-                    localStorage.setItem('refreshToken', newRefreshToken);
-                    original.headers.Authorization = `Bearer ${accessToken}`;
+            if (isRefreshing) {
+                // Đợi request refresh token đầu tiên hoàn thành
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                }).then(() => {
+                    // Trình duyệt sẽ tự gắn Cookie mới vào đây
                     return axiosInstance(original);
-                } catch (err) {
-                    // LOG 5: Xem lỗi refresh là gì
-                    console.log('❌ Refresh thất bại:', err);
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    window.location.href = '/login';
-                }
-            } else {
-                console.log('⛔ Không có refreshToken → logout');
-                localStorage.removeItem('accessToken');
-                window.location.href = '/login';
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
             }
+
+            // Không cần lấy refreshToken từ localStorage nữa, cookie tự gửi đi!
+            isRefreshing = true;
+
+            try {
+                console.log('🔄 Đang gọi refresh tại:', `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`);
+                
+                // Trình duyệt sẽ tự đính kèm cookie refreshToken vào request này
+                const res = await axios.post(
+                    `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`,
+                    {}, // Body trống
+                    { withCredentials: true } // Bắt buộc để gửi cookie
+                );
+
+                console.log('✅ Refresh thành công:', res.data);
+                
+                // Backend đã tự set lại cookie mới, ta không cần làm gì với localStorage
+                processQueue(null, null);
+                return axiosInstance(original);
+            } catch (err) {
+                    console.log('❌ Refresh thất bại:', err);
+                    processQueue(err, null);
+                    window.location.href = '/login';
+                } finally {
+                    isRefreshing = false;
+                }
         }
         return Promise.reject(error);
     }

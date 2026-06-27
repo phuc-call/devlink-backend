@@ -32,12 +32,20 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
 
             String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("Missing or invalid Authorization header for path: {}", path);
-                return responseUtil.writeError(exchange, GatewayErrorCode.MISSING_AUTH_HEADER);
+            String token = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            } else {
+                org.springframework.http.HttpCookie cookie = request.getCookies().getFirst("accessToken");
+                if (cookie != null) {
+                    token = cookie.getValue();
+                }
             }
 
-            String token = authHeader.substring(7);
+            if (token == null || token.isBlank()) {
+                log.warn("Missing or invalid Authorization header/cookie for path: {}", path);
+                return responseUtil.writeError(exchange, GatewayErrorCode.MISSING_AUTH_HEADER);
+            }
 
             if (!jwtUtil.isValid(token)) {
                 log.warn("Invalid JWT token for path: {}", path);

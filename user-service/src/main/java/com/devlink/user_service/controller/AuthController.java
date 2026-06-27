@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,39 +36,88 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> registerComplete(
             @RequestBody @Valid RegisterCompleteRequest request,
             HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.registerComplete(request, httpRequest)));
+        AuthResponse auth = authService.registerComplete(request, httpRequest);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, createCookie("accessToken", auth.getAccessToken(), 15 * 60).toString())
+                .header(HttpHeaders.SET_COOKIE, createCookie("refreshToken", auth.getRefreshToken(), 30 * 24 * 60 * 60).toString())
+                .body(ApiResponse.ok(auth));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @RequestBody @Valid LoginRequest request,
             HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.login(request, httpRequest)));
+        AuthResponse auth = authService.login(request, httpRequest);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, createCookie("accessToken", auth.getAccessToken(), 15 * 60).toString())
+                .header(HttpHeaders.SET_COOKIE, createCookie("refreshToken", auth.getRefreshToken(), 30 * 24 * 60 * 60).toString())
+                .body(ApiResponse.ok(auth));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
-            @RequestBody @Valid RefreshTokenRequest request, HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.refresh(request, httpRequest)));
+            @RequestBody(required = false) RefreshTokenRequest request,
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            HttpServletRequest httpRequest) {
+        
+        String token = request != null && request.getRefreshToken() != null ? request.getRefreshToken() : cookieRefreshToken;
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Refresh token is required");
+        }
+        
+        RefreshTokenRequest finalRequest = new RefreshTokenRequest(token);
+        AuthResponse auth = authService.refresh(finalRequest, httpRequest);
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, createCookie("accessToken", auth.getAccessToken(), 15 * 60).toString())
+                .header(HttpHeaders.SET_COOKIE, createCookie("refreshToken", auth.getRefreshToken(), 30 * 24 * 60 * 60).toString())
+                .body(ApiResponse.ok(auth));
     }
 
     // need token
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<LogoutResponse>> logout(
-            @RequestBody @Valid RefreshTokenRequest request,
-            @RequestHeader("Authorization") String authHeader) {
-        String accessToken = authHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.logout(request, accessToken)));
+            @RequestBody(required = false) RefreshTokenRequest request,
+            @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @CookieValue(name = "accessToken", required = false) String cookieToken) {
+        
+        String accessToken = (authHeader != null && authHeader.startsWith("Bearer ")) 
+                ? authHeader.replace("Bearer ", "") 
+                : cookieToken;
+                
+        String refToken = request != null && request.getRefreshToken() != null ? request.getRefreshToken() : cookieRefreshToken;
+        RefreshTokenRequest finalRequest = new RefreshTokenRequest(refToken);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, createCookie("accessToken", "", 0).toString())
+                .header(HttpHeaders.SET_COOKIE, createCookie("refreshToken", "", 0).toString())
+                .body(ApiResponse.ok(authService.logout(finalRequest, accessToken)));
     }
     @PostMapping("/logout/all")
     public ResponseEntity<ApiResponse<LogoutResponse>> logoutAll(
-            @RequestHeader("Authorization") String authHeader) {
-        String accessToken = authHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(ApiResponse.ok(
-                authService.logoutAll(accessToken)));
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @CookieValue(name = "accessToken", required = false) String cookieToken) {
+        String accessToken = (authHeader != null && authHeader.startsWith("Bearer ")) 
+                ? authHeader.replace("Bearer ", "") 
+                : cookieToken;
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, createCookie("accessToken", "", 0).toString())
+                .header(HttpHeaders.SET_COOKIE, createCookie("refreshToken", "", 0).toString())
+                .body(ApiResponse.ok(authService.logoutAll(accessToken)));
+    }
+
+    private ResponseCookie createCookie(String name, String value, long maxAge) {
+        String safeName = name != null ? name : "unknown";
+        String safeValue = value != null ? value : "";
+        
+        return ResponseCookie.from(safeName, safeValue)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(maxAge)
+                .sameSite("Lax")
+                .build();
     }
 }

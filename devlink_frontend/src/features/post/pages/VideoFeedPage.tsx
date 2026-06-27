@@ -12,7 +12,7 @@ import { commentApi } from '../../../api/post-service/commentApi';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
 import type { VideoFeedResponse } from '../../../types/video.types';
 import type { ReactionResponse } from '../../../types/reaction.types';
-import type { CommentSummaryResponse, CommentReplyResponse, SpringPage } from '../../../types/comment.types';
+import type { CommentSummaryResponse, CommentReplySummaryResponse, SpringPage } from '../../../types/comment.types';
 import styles from './VideoFeedPage.module.css';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ interface CommentItemProps {
     onReply: (commentId: number, name: string) => void;
 }
 const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
-    const [replies, setReplies] = useState<CommentReplyResponse[]>([]);
+    const [replies, setReplies] = useState<CommentReplySummaryResponse[]>([]);
     const [replyPage, setReplyPage] = useState(0);
     const [replyHasMore, setReplyHasMore] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
@@ -53,7 +53,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
         setLoadingReplies(true);
         try {
             const r = await commentApi.getReplies(comment.id, pg);
-            const d: SpringPage<CommentReplyResponse> = r.data.data as any;
+            const d: SpringPage<CommentReplySummaryResponse> = r.data.data as any;
             setReplies(prev => pg === 0 ? d.content : [...prev, ...d.content]);
             setReplyHasMore(!d.last);
             setReplyPage(pg);
@@ -162,12 +162,8 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
     hasMore,
     onLoadMore,
 }) => {
-    // activeIndex: 0 = video được bấm, 1+ = video tiếp theo cùng loại
-    const [activeIdx, setActiveIdx] = useState(0);
-
     // Danh sách video đang hiển thị trong detail scroll
     const detailList = [initialVideo, ...siblingVideos];
-    const activeVideo = detailList[activeIdx] ?? initialVideo;
 
     return (
         <div className={styles.detailPage}>
@@ -181,12 +177,10 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
 
             {/* ── Scroll container: danh sách video detail ── */}
             <div className={styles.detailScroll}>
-                {detailList.map((v, idx) => (
+                {detailList.map((v) => (
                     <VideoDetailItem
                         key={v.id}
                         video={v}
-                        isActive={idx === activeIdx}
-                        onVisible={() => setActiveIdx(idx)}
                     />
                 ))}
 
@@ -210,13 +204,10 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
 // Mỗi card trong trang detail: player (16:9) + info + comment
 interface DetailItemProps {
     video: VideoFeedResponse;
-    isActive: boolean;
-    onVisible: () => void;
 }
-const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isActive, onVisible }) => {
+const VideoDetailItem: React.FC<DetailItemProps> = ({ video }) => {
     const vRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [detailVideo, setDetailVideo] = useState<VideoFeedResponse>(video);
     const [reaction, setReaction] = useState<ReactionResponse | null>(null);
     const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(false);
@@ -252,7 +243,6 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isActive, onVisible
         if (!el) return;
         const obs = new IntersectionObserver(([entry]) => {
             if (entry.isIntersecting) {
-                onVisible();
                 vRef.current?.play().then(() => setPlaying(true)).catch(() => { });
             } else {
                 vRef.current?.pause();
@@ -261,7 +251,7 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isActive, onVisible
         }, { threshold: 0.5 });
         obs.observe(el);
         return () => obs.disconnect();
-    }, [onVisible]);
+    }, []);
 
     const loadComments = async (pg: number) => {
         setCLoading(true);
@@ -879,9 +869,6 @@ const VideoFeedPage: React.FC = () => {
                     </div>
                     {longLoading && longVideos.length > 0 && (
                         <div className={styles.centerState}><div className={styles.spinnerSm} /></div>
-                    )}
-                    {!longHasMore && longVideos.length > 0 && (
-                        <p className={styles.endMsg}>Đã xem hết 🎬</p>
                     )}
                 </section>
             </div>

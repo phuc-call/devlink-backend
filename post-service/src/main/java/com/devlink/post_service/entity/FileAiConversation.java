@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.time.Instant;
 
-
 // FileAiConversation.java
 @Entity
 @Table(name = "file_ai_conversations")
@@ -35,6 +34,7 @@ public class FileAiConversation {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private AiConversationStatus status = AiConversationStatus.PENDING;
 
     @Column(name = "model_used", length = 50)
@@ -47,5 +47,7 @@ public class FileAiConversation {
     private Instant createdAt;
 
     @PrePersist
-    protected void onCreate() { this.createdAt = Instant.now(); }
+    protected void onCreate() {
+        this.createdAt = Instant.now();
+    }
 }
