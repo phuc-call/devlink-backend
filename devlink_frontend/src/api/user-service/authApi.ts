@@ -13,12 +13,7 @@ const BASE_URL = import.meta.env.VITE_API_GATEWAY_URL ?? 'http://localhost:8080'
 const api = axios.create({
     baseURL: BASE_URL,
     headers: { 'Content-Type': 'application/json' },
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
+    withCredentials: true,
 });
 
 export const authApi = {
@@ -34,8 +29,8 @@ export const authApi = {
     login: (data: LoginRequest) =>
         api.post<{ data: AuthResponse }>('/auth/login', data),
 
-    logout: (refreshToken: string) =>
-        api.post<{ data: LogoutResponse }>('/auth/logout', { refreshToken }),
+    logout: () =>
+        api.post<{ data: LogoutResponse }>('/auth/logout', {}),
 
     refresh: (refreshToken: string) =>
         api.post<{ data: AuthResponse }>('/auth/refresh', { refreshToken }),

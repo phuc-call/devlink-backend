@@ -16,9 +16,17 @@ export default function LoginPage() {
         setLoading(true);
         try {
             const res = await authApi.login({ email, password });
-            const { accessToken, refreshToken } = res.data.data;
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
+            const data = res.data?.data;
+            if (data) {
+                // Backend đã set HttpOnly cookie, chỉ lưu metadata cần thiết
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userId', String(data.userId));
+                localStorage.setItem('role', data.role ?? '');
+                localStorage.setItem('username', data.username ?? '');
+                // Xóa token cũ nếu còn
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+            }
             navigate('/');
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string; code?: string } } };

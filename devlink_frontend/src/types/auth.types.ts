@@ -21,6 +21,9 @@ export interface LoginRequest {
 export interface AuthResponse {
     accessToken: string;
     refreshToken: string;
+    userId: number;
+    username: string;
+    role: string;
 }
 
 export interface LogoutResponse {

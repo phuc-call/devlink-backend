@@ -68,6 +68,10 @@ axiosInstance.interceptors.response.use(
             } catch (err) {
                     console.log('❌ Refresh thất bại:', err);
                     processQueue(err, null);
+                    // Xóa flag auth để tránh redirect loop
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
                     window.location.href = '/login';
                 } finally {
                     isRefreshing = false;

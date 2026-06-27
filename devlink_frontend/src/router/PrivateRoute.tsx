@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 
-const isAuthenticated = () => !!localStorage.getItem('accessToken');
+const isAuthenticated = () => localStorage.getItem('isLoggedIn') === 'true';
 
 interface Props {
     children: React.ReactNode;
