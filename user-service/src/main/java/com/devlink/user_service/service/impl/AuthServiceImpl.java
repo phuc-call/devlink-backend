@@ -309,16 +309,13 @@ public class AuthServiceImpl implements AuthService {
         
         if (refreshToken != null && !refreshToken.isEmpty()) {
             String hash = TokenHashUtil.hash(refreshToken);
-            AuthToken currentToken = authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())
-                    .orElse(null);
+            authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now()).ifPresent(
+                    currentToken -> tokens.forEach(t -> {
+                if (t.getId().equals(currentToken.getId())) {
+                    t.setCurrentSession(true);
+                }
+            }));
 
-            if (currentToken != null) {
-                tokens.forEach(t -> {
-                    if (t.getId().equals(currentToken.getId())) {
-                        t.setCurrentSession(true);
-                    }
-                });
-            }
         }
         
         return AuthTokenResponse.builder()

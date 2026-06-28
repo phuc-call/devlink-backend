@@ -1,5 +1,10 @@
-import {useState, useEffect} from 'react';
-import {userProfileApi} from '../../../../api/user-service/userProfileApi';
+import { useState, useEffect, ReactNode } from 'react';
+import { 
+    User, Code, Lock, Eye, MonitorSmartphone, 
+    Globe, Users, Check, ChevronRight, ArrowLeft,
+    CheckCircle, XCircle
+} from 'lucide-react';
+import { userProfileApi } from '../../../../api/user-service/userProfileApi';
 import type {
     UserProfileResponse,
     UpdateProfileRequest,
@@ -8,6 +13,7 @@ import type {
     VisibilitySettingResponse,
 } from '../../../../types/profile.types';
 import styles from './EditProfilePanel.module.css';
+import { SessionManager } from '../SessionManager';
 
 interface Props {
     profile: UserProfileResponse | null;
@@ -15,7 +21,7 @@ interface Props {
     onCancel: () => void;
 }
 
-type Section = 'basic' | 'language' | 'follow' | 'visibility';
+type Section = 'basic' | 'language' | 'follow' | 'visibility' | 'session';
 
 const PROGRAMMING_LANGUAGES: ProgrammingLanguage[] = [
     'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO',
@@ -35,14 +41,15 @@ const LANG_COLORS: Record<ProgrammingLanguage, string> = {
     PHP: '#4F5D95', RUBY: '#701516',
 };
 
-const MENU_ITEMS: { key: Section; label: string; icon: string; desc: string }[] = [
-    {key: 'basic', label: 'Thông tin cơ bản', icon: '👤', desc: 'Tên, bio, trường, ngành, vị trí'},
-    {key: 'language', label: 'Ngôn ngữ lập trình', icon: '💻', desc: 'Chọn tối đa 3 ngôn ngữ yêu thích'},
-    {key: 'follow', label: 'Chế độ theo dõi', icon: '🔒', desc: 'Duyệt follow thủ công hay tự động'},
-    {key: 'visibility', label: 'Chế độ hiển thị', icon: '👁️', desc: 'Kiểm soát ai có thể xem hồ sơ của bạn'},
+const MENU_ITEMS: { key: Section; label: string; icon: ReactNode; desc: string }[] = [
+    { key: 'basic', label: 'Thông tin cơ bản', icon: <User size={18} />, desc: 'Tên, bio, trường, ngành, vị trí' },
+    { key: 'language', label: 'Ngôn ngữ lập trình', icon: <Code size={18} />, desc: 'Chọn tối đa 3 ngôn ngữ yêu thích' },
+    { key: 'follow', label: 'Chế độ theo dõi', icon: <Lock size={18} />, desc: 'Duyệt follow thủ công hay tự động' },
+    { key: 'visibility', label: 'Chế độ hiển thị', icon: <Eye size={18} />, desc: 'Kiểm soát ai có thể xem hồ sơ của bạn' },
+    { key: 'session', label: 'Thiết bị đăng nhập', icon: <MonitorSmartphone size={18} />, desc: 'Quản lý các thiết bị đang hoạt động' },
 ];
 
-export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
+export default function EditProfilePanel({ profile, onDone, onCancel }: Props) {
     const [section, setSection] = useState<Section>('basic');
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -69,7 +76,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
     const [selectedVisibility, setSelectedVisibility] = useState<ProfileVisibility | null>(null);
 
     const showToast = (msg: string, type: 'success' | 'error') => {
-        setToast({msg, type});
+        setToast({ msg, type });
         setTimeout(() => setToast(null), 3000);
     };
 
@@ -131,7 +138,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
     const handleSaveLanguage = async () => {
         setSaving(true);
         try {
-            const res = await userProfileApi.updateProfile({favoriteLanguage: langs});
+            const res = await userProfileApi.updateProfile({ favoriteLanguage: langs });
             showToast('Cập nhật ngôn ngữ thành công!', 'success');
             setTimeout(() => onDone(res.data.data), 1200);
         } catch {
@@ -177,7 +184,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
         );
 
     const setBasicField = (key: keyof UpdateProfileRequest, value: string) =>
-        setBasic(b => ({...b, [key]: value}));
+        setBasic(b => ({ ...b, [key]: value }));
 
     const renderBasic = () => (
         <div className={styles.formWrap}>
@@ -187,18 +194,18 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             </div>
 
             {([
-                {key: 'fullName', label: 'Họ và tên', placeholder: 'Nguyễn Văn A'},
-                {key: 'bio', label: 'Giới thiệu', placeholder: 'Một vài câu về bạn...'},
-                {key: 'school', label: 'Trường học', placeholder: 'Đại học Bách Khoa'},
-                {key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin'},
-                {key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh'},
-                {key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN'},
-                {key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh'},
+                { key: 'fullName', label: 'Họ và tên', placeholder: 'Nguyễn Văn A' },
+                { key: 'bio', label: 'Giới thiệu', placeholder: 'Một vài câu về bạn...' },
+                { key: 'school', label: 'Trường học', placeholder: 'Đại học Bách Khoa' },
+                { key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin' },
+                { key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh' },
+                { key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN' },
+                { key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh' },
             ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({
-                                                                                                     key,
-                                                                                                     label,
-                                                                                                     placeholder
-                                                                                                 }) => (
+                key,
+                label,
+                placeholder
+            }) => (
                 <div key={key} className={styles.field}>
                     <label className={styles.label}>{label}</label>
                     {key === 'bio' ? (
@@ -224,7 +231,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
                 <button className={styles.btnSave} onClick={handleSaveBasic} disabled={saving}>
-                    {saving ? <span className={styles.spinner}/> : 'Lưu thay đổi'}
+                    {saving ? <span className={styles.spinner} /> : 'Lưu thay đổi'}
                 </button>
             </div>
         </div>
@@ -252,9 +259,9 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                                 backgroundColor: LANG_COLORS[lang] + '18'
                             } : {}}
                         >
-                            <span className={styles.langDot} style={{background: LANG_COLORS[lang]}}/>
+                            <span className={styles.langDot} style={{ background: LANG_COLORS[lang] }} />
                             {LANG_LABELS[lang]}
-                            {selected && <span className={styles.langCheck}>✓</span>}
+                            {selected && <span className={styles.langCheck}><Check size={16} strokeWidth={3} /></span>}
                         </button>
                     );
                 })}
@@ -265,7 +272,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
                 <button className={styles.btnSave} onClick={handleSaveLanguage} disabled={saving}>
-                    {saving ? <span className={styles.spinner}/> : 'Lưu ngôn ngữ'}
+                    {saving ? <span className={styles.spinner} /> : 'Lưu ngôn ngữ'}
                 </button>
             </div>
         </div>
@@ -280,24 +287,24 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
 
             {followLoading || followMode === null ? (
                 <div className={styles.loadingWrap}>
-                    <span className={styles.spinner}/>
+                    <span className={styles.spinner} />
                 </div>
             ) : (
                 <div className={styles.followCards}>
                     {([
                         {
                             value: false,
-                            icon: '🌍',
+                            icon: <Globe size={24} />,
                             title: 'Tự động chấp nhận',
                             desc: 'Mọi người có thể follow bạn ngay lập tức, không cần duyệt'
                         },
                         {
                             value: true,
-                            icon: '🔒',
+                            icon: <Lock size={24} />,
                             title: 'Duyệt thủ công',
                             desc: 'Bạn sẽ xem xét và chấp nhận từng yêu cầu theo dõi'
                         },
-                    ] as { value: boolean; icon: string; title: string; desc: string }[]).map(opt => (
+                    ] as { value: boolean; icon: ReactNode; title: string; desc: string }[]).map(opt => (
                         <button
                             key={String(opt.value)}
                             className={`${styles.followCard} ${followMode === opt.value ? styles.followCardActive : ''}`}
@@ -308,7 +315,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                                 <strong>{opt.title}</strong>
                                 <p>{opt.desc}</p>
                             </div>
-                            {followMode === opt.value && <span className={styles.followCheck}>✓</span>}
+                            {followMode === opt.value && <span className={styles.followCheck}><Check size={14} strokeWidth={3} /></span>}
                         </button>
                     ))}
                 </div>
@@ -317,8 +324,8 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
                 <button className={styles.btnSave} onClick={handleSaveFollow}
-                        disabled={saving || followLoading || followMode === null}>
-                    {saving ? <span className={styles.spinner}/> : 'Lưu cài đặt'}
+                    disabled={saving || followLoading || followMode === null}>
+                    {saving ? <span className={styles.spinner} /> : 'Lưu cài đặt'}
                 </button>
             </div>
         </div>
@@ -333,7 +340,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
 
             {visibilityLoading || !visibilitySetting ? (
                 <div className={styles.loadingWrap}>
-                    <span className={styles.spinner}/>
+                    <span className={styles.spinner} />
                 </div>
             ) : (
                 <div className={styles.followCards}>
@@ -344,7 +351,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                             onClick={() => setSelectedVisibility(opt)}
                         >
                             <div className={styles.followCardIcon}>
-                                {opt === 'PUBLIC' ? '🌍' : opt === 'PROTECTED' ? '🤝' : '🔒'}
+                                {opt === 'PUBLIC' ? <Globe size={24} /> : opt === 'PROTECTED' ? <Users size={24} /> : <Lock size={24} />}
                             </div>
                             <div className={styles.followCardContent}>
                                 <strong>
@@ -358,7 +365,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                                             : 'Chỉ bạn mới xem được hồ sơ của mình'}
                                 </p>
                             </div>
-                            {selectedVisibility === opt && <span className={styles.followCheck}>✓</span>}
+                            {selectedVisibility === opt && <span className={styles.followCheck}><Check size={14} strokeWidth={3} /></span>}
                         </button>
                     ))}
                 </div>
@@ -367,8 +374,8 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
             <div className={styles.actions}>
                 <button className={styles.btnCancel} onClick={onCancel}>Hủy</button>
                 <button className={styles.btnSave} onClick={handleSaveVisibility}
-                        disabled={saving || visibilityLoading || !selectedVisibility}>
-                    {saving ? <span className={styles.spinner}/> : 'Lưu cài đặt'}
+                    disabled={saving || visibilityLoading || !selectedVisibility}>
+                    {saving ? <span className={styles.spinner} /> : 'Lưu cài đặt'}
                 </button>
             </div>
         </div>
@@ -384,6 +391,8 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                 return renderFollow();
             case 'visibility':
                 return renderVisibility();
+            case 'session':
+                return <SessionManager />;
         }
     };
 
@@ -391,13 +400,16 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
         <div className={styles.panel}>
             {toast && (
                 <div className={`${styles.toast} ${styles[`toast_${toast.type}`]}`}>
-                    {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+                    {toast.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />} 
+                    <span>{toast.msg}</span>
                 </div>
             )}
 
             <nav className={styles.menu}>
                 <div className={styles.menuHeader}>
-                    <button className={styles.backBtn} onClick={onCancel}>← Quay lại</button>
+                    <button className={styles.backBtn} onClick={onCancel}>
+                        <ArrowLeft size={16} /> Quay lại
+                    </button>
                     <span className={styles.menuTitle}>sửa hồ sơ</span>
                 </div>
 
@@ -412,7 +424,7 @@ export default function EditProfilePanel({profile, onDone, onCancel}: Props) {
                             <span className={styles.menuItemLabel}>{item.label}</span>
                             <span className={styles.menuItemDesc}>{item.desc}</span>
                         </div>
-                        {section === item.key && <span className={styles.menuArrow}>›</span>}
+                        {section === item.key && <span className={styles.menuArrow}><ChevronRight size={18} /></span>}
                     </button>
                 ))}
             </nav>

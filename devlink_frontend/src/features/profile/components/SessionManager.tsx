@@ -46,17 +46,17 @@ export const SessionManager: React.FC = () => {
             setError('Vui lòng nhập mật khẩu.');
             return;
         }
-        
+
         try {
             setActionLoading(true);
             setError(null);
-            
+
             if (passwordPrompt.tokenId === 'ALL') {
                 await authApi.deleteAllOtherSessions(password);
             } else if (passwordPrompt.tokenId) {
                 await authApi.deleteSession(passwordPrompt.tokenId, password);
             }
-            
+
             // Refresh list
             setPasswordPrompt({ isOpen: false });
             setPassword('');
@@ -74,7 +74,7 @@ export const SessionManager: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Lịch sử đăng nhập</h2>
                 {sessions.length > 1 && (
-                    <button 
+                    <button
                         onClick={() => setPasswordPrompt({ isOpen: true, tokenId: 'ALL' })}
                         className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
                     >
@@ -112,7 +112,7 @@ export const SessionManager: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {!session.currentSession && (
                                 <button
                                     onClick={() => setPasswordPrompt({ isOpen: true, tokenId: session.id })}
@@ -134,7 +134,7 @@ export const SessionManager: React.FC = () => {
                         <p className="text-sm text-gray-600 mb-4">
                             Vui lòng nhập mật khẩu của bạn để đăng xuất thiết bị này.
                         </p>
-                        
+
                         <input
                             type="password"
                             className="w-full border rounded p-2 mb-2"
@@ -142,9 +142,9 @@ export const SessionManager: React.FC = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                        
+
                         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                        
+
                         <div className="flex justify-end gap-2 mt-4">
                             <button
                                 disabled={actionLoading}

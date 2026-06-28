@@ -231,6 +231,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         return toFullResponse(owner);
     }
 
+
+
     @Override
     @Transactional(readOnly = true)
     public VisibilitySettingResponse getVisibilitySetting() {

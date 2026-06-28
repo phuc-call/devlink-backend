@@ -18,6 +18,8 @@ public interface AuthTokeRepository extends JpaRepository<AuthToken,Long> {
     Optional<AuthToken>findByTokenHashAndExpiresAtAfter(String tokenHash, LocalDateTime now);
     List<AuthToken> findAllByUserId(Long userId);
     
+    List<AuthToken> findAllByUserIdOrderByLastUsedAtAsc(Long userId);
+    
     List<AuthToken> findAllByUserIdAndExpiresAtAfter(Long userId, LocalDateTime now);
 
     int deleteAllByUserId(Long userId);

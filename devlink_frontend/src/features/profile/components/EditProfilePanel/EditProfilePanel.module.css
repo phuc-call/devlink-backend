@@ -370,6 +370,9 @@
     z-index: 100;
     animation: fadeIn 0.2s ease;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .toast_success { background: #22C55E; color: #fff; }
 .toast_error   { background: #EF4444; color: #fff; }

@@ -7,6 +7,7 @@ import com.devlink.gateway_service.util.ResponseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -17,11 +18,13 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
 
     private final JwtUtil jwtUtil;
     private final ResponseUtil responseUtil;
+    private final ReactiveStringRedisTemplate redisTemplate;
 
-    public JwtAuthFilter(JwtUtil jwtUtil,ResponseUtil responseUtil){
+    public JwtAuthFilter(JwtUtil jwtUtil,ResponseUtil responseUtil, ReactiveStringRedisTemplate redisTemplate){
         super(Config.class);
         this.jwtUtil = jwtUtil;
         this.responseUtil = responseUtil;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -52,31 +55,41 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 return responseUtil.writeError(exchange,GatewayErrorCode.INVALID_TOKEN);
             }
 
-            String email = jwtUtil.getEmail(token);
-            String role  = jwtUtil.getRole(token);
-            Long userId  = jwtUtil.getUserId(token);
+            final String finalToken = token;
 
-            if (email == null || role == null || userId == null) {
-                log.warn("Missing claims in token for path: {}", path);
-                return responseUtil.writeError(exchange, GatewayErrorCode.INVALID_TOKEN_DATA);
-            }
+            return redisTemplate.hasKey("blacklist:" + finalToken)
+                    .flatMap(isBlacklisted -> {
+                        if (Boolean.TRUE.equals(isBlacklisted)) {
+                            log.warn("Token is blacklisted for path: {}", path);
+                            return responseUtil.writeError(exchange, GatewayErrorCode.INVALID_TOKEN);
+                        }
 
-            log.info("JWT valid - email={}, role={}, userId={}, path={}",
-                    email, role, userId, path);
+                        String email = jwtUtil.getEmail(finalToken);
+                        String role  = jwtUtil.getRole(finalToken);
+                        Long userId  = jwtUtil.getUserId(finalToken);
 
-            ServerHttpRequest mutatedRequest = request.mutate()
-                    .headers(h -> {
-                        h.remove(HeaderConstants.USER_ID);
-                        h.remove(HeaderConstants.USER_ROLE);
-                        h.remove(HeaderConstants.USER_EMAIL);
-                        h.remove("X-Internal-Secret"); // Không để client giả mạo internal service call
-                    })
-                    .header(HeaderConstants.USER_EMAIL, email)
-                    .header(HeaderConstants.USER_ROLE, role)
-                    .header(HeaderConstants.USER_ID, userId.toString())
-                    .build();
+                        if (email == null || role == null || userId == null) {
+                            log.warn("Missing claims in token for path: {}", path);
+                            return responseUtil.writeError(exchange, GatewayErrorCode.INVALID_TOKEN_DATA);
+                        }
 
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                        log.info("JWT valid - email={}, role={}, userId={}, path={}",
+                                email, role, userId, path);
+
+                        ServerHttpRequest mutatedRequest = request.mutate()
+                                .headers(h -> {
+                                    h.remove(HeaderConstants.USER_ID);
+                                    h.remove(HeaderConstants.USER_ROLE);
+                                    h.remove(HeaderConstants.USER_EMAIL);
+                                    h.remove("X-Internal-Secret"); // Không để client giả mạo internal service call
+                                })
+                                .header(HeaderConstants.USER_EMAIL, email)
+                                .header(HeaderConstants.USER_ROLE, role)
+                                .header(HeaderConstants.USER_ID, userId.toString())
+                                .build();
+
+                        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                    });
         };
     }
 

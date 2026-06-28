@@ -8,4 +8,4 @@ interface Props {
 
 export default function PublicRoute({ children }: Props) {
     return !isAuthenticated() ? <>{children}</> : <Navigate to="/" replace />;
-}
+}   
