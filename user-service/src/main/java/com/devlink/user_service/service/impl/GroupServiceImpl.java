@@ -3,6 +3,8 @@ package com.devlink.user_service.service.impl;
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
+import com.devlink.user_service.dto.response.GroupSearchResponse;
+import com.devlink.user_service.dto.response.UserSearchResponse;
 import com.devlink.user_service.entity.Group;
 import com.devlink.user_service.entity.GroupMember;
 import com.devlink.user_service.entity.enums.GroupRole;
@@ -12,6 +14,8 @@ import com.devlink.user_service.repository.GroupMemberRepository;
 import com.devlink.user_service.repository.GroupRepository;
 import com.devlink.user_service.service.GroupService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +25,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class GroupServiceImpl implements GroupService {
 
     private final GroupRepository groupRepository;
@@ -29,7 +34,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserHelper userHelper;
 
     @Override
-    @Transactional
+
     public GroupResponse createGroup(CreateGroupRequest request) {
         Long currentUserId = userHelper.getCurrentUser().getId();
 
@@ -38,7 +43,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         List<Long> validMemberIds = new ArrayList<>();
-        
+
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             List<Long> friendIds = followRepository.findFriendIds(currentUserId);
             for (Long memberId : request.getMemberIds()) {
@@ -92,5 +97,35 @@ public class GroupServiceImpl implements GroupService {
                 .inviteCode(savedGroup.getInviteCode())
                 .createdAt(savedGroup.getCreatedAt())
                 .build();
+    }
+
+
+
+    @Override
+    public Page<GroupSearchResponse> searchGroupsByName(String name, Pageable pageable) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+        List<Long> friendIds = followRepository.findFriendIds(currentUserId);
+
+        Page<Group> groupPage = groupRepository.findByNameContainingIgnoreCase(name, pageable);
+        return groupPage.map(group -> {
+            String desc = group.getDescription();
+            if (desc != null && desc.length() > 200) {
+                desc = desc.substring(0, 200) + "...";
+            }
+
+            List<UserSearchResponse> mutualFriends = List.of();
+            if (friendIds != null && !friendIds.isEmpty()) {
+                mutualFriends = groupMemberRepository.findMutualFriendsInGroup(group.getId(), friendIds);
+            }
+
+            return GroupSearchResponse.builder()
+                    .id(group.getId())
+                    .name(group.getName())
+                    .description(desc)
+                    .coverImage(group.getCoverImage())
+                    .memberCount(group.getMemberCount())
+                    .mutualFriends(mutualFriends)
+                    .build();
+        });
     }
 }
