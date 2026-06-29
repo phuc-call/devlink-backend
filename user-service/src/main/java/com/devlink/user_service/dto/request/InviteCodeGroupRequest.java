@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class JoinGroupByCodeRequest {
+public class InviteCodeGroupRequest {
     @NotBlank(message = "Invite code is required")
     @Size(max = Constants.INVITE_CODE_MAX_LENGTH, message = "Invite code must not exceed 100 characters")
     private String code;

@@ -41,6 +41,7 @@ public enum ErrorCode {
     GET_AVATAR_FAILED("Avatar cat not get beaces it save", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST),
     IMAGE_NOT_FOUND("Image not found", HttpStatus.NOT_FOUND),
+    INVALID_INVITE_CODE("Invalid invite code", HttpStatus.BAD_REQUEST),
     NO_PERMISSION("You do not have permission to view this", HttpStatus.FORBIDDEN);
 
     private final String message;

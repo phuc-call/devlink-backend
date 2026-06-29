@@ -2,7 +2,7 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
-import com.devlink.user_service.dto.request.JoinGroupByCodeRequest;
+import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
@@ -10,6 +10,8 @@ import com.devlink.user_service.entity.Group;
 import com.devlink.user_service.entity.GroupMember;
 import com.devlink.user_service.entity.enums.GroupRole;
 import com.devlink.user_service.entity.enums.MemberStatus;
+import com.devlink.user_service.exception.AppException;
+import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
 import com.devlink.user_service.repository.GroupMemberRepository;
 import com.devlink.user_service.repository.GroupRepository;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -101,7 +104,6 @@ public class GroupServiceImpl implements GroupService {
     }
 
 
-
     @Override
     public Page<GroupSearchResponse> searchGroupsByName(String name, Pageable pageable) {
         Long currentUserId = userHelper.getCurrentUser().getId();
@@ -131,11 +133,10 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public void userJoinGroupByInviteCode(JoinGroupByCodeRequest inviteCode){
+    public void userJoinGroupByInviteCode(InviteCodeGroupRequest inviteCode) {
         Long currentUserId = userHelper.getCurrentUser().getId();
         Group group = groupRepository.findByInviteCode(inviteCode.getCode())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid invite code"));
-
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_INVITE_CODE));
         boolean isAlreadyMember = groupMemberRepository.existsByGroupIdAndUserId(group.getId(), currentUserId);
         if (isAlreadyMember) {
             throw new IllegalArgumentException("User is already a member of this group");
@@ -147,14 +148,37 @@ public class GroupServiceImpl implements GroupService {
                 .role(GroupRole.MEMBER)
                 .status(MemberStatus.APPROVED)
                 .build();
-        
+
         groupMemberRepository.save(newMember);
 
         // Update member count
         group.setMemberCount(group.getMemberCount() + 1);
         groupRepository.save(group);
-        
+
         // TODO: Fire Kafka Event GROUP_MEMBER_JOINED
     }
 
+    @Override
+    public String createNewInviteCode(InviteCodeGroupRequest inviteCode) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+        Group group = groupRepository.findByInviteCode(inviteCode.getCode())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_INVITE_CODE));
+        Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
+        if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.INVALID_INVITE_CODE);
+        }
+
+        if (inviteCode.getCode().equals(group.getInviteCode())) {
+            throw new AppException(ErrorCode.INVALID_INVITE_CODE);
+        }
+
+        if (inviteCode.getCode().isBlank()) {
+            String newInviteCode = UUID.randomUUID().toString().substring(0, 20);
+            group.setInviteCode(newInviteCode);
+            groupRepository.save(group);
+            return newInviteCode;
+        }
+        group.setInviteCode(inviteCode.getCode());
+        return group.getInviteCode();
+    }
 }
