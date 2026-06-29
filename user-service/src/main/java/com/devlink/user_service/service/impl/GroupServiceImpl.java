@@ -3,6 +3,7 @@ package com.devlink.user_service.service.impl;
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
+import com.devlink.user_service.dto.request.UpdateGroupRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
@@ -180,5 +181,49 @@ public class GroupServiceImpl implements GroupService {
         }
         group.setInviteCode(inviteCode.getCode());
         return group.getInviteCode();
+    }
+
+    @Override
+    public GroupResponse updateGroup(Long groupId, UpdateGroupRequest request) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
+        if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+        if (request.getName() != null && !request.getName().isBlank()) {
+
+            if (!group.getName().equals(request.getName()) && groupRepository.existsByName(request.getName())) {
+                throw new IllegalArgumentException("Group name already exists");
+            }
+            group.setName(request.getName());
+        }
+
+        if (request.getDescription() != null) {
+            group.setDescription(request.getDescription());
+        }
+        if(request.getAvatarUrl() != null) {
+            group.setCoverImage(request.getAvatarUrl());
+        }
+
+        if (request.getPrivacy() != null) {
+            group.setPrivacy(request.getPrivacy());
+        }
+
+        Group savedGroup = groupRepository.save(group);
+
+        return GroupResponse.builder()
+                .id(savedGroup.getId())
+                .name(savedGroup.getName())
+                .description(savedGroup.getDescription())
+                .coverImage(savedGroup.getCoverImage())
+                .privacy(savedGroup.getPrivacy())
+                .memberCount(savedGroup.getMemberCount())
+                .inviteCode(savedGroup.getInviteCode())
+                .createdAt(savedGroup.getCreatedAt())
+                .build();
     }
 }

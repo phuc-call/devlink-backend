@@ -3,6 +3,7 @@ package com.devlink.user_service.controller;
 import com.devlink.user_service.config.Constants;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
+import com.devlink.user_service.dto.request.UpdateGroupRequest;
 import com.devlink.user_service.dto.response.ApiResponse;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
@@ -59,6 +60,12 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok(newCode));
     }
 
-
+    @PutMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<GroupResponse>> updateGroup(
+            @PathVariable Long groupId,
+            @Valid @RequestBody UpdateGroupRequest request) {
+        GroupResponse updatedGroup = groupService.updateGroup(groupId, request);
+        return ResponseEntity.ok(ApiResponse.ok(updatedGroup));
+    }
 
 }

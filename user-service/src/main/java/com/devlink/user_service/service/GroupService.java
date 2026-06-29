@@ -2,6 +2,7 @@ package com.devlink.user_service.service;
 
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
+import com.devlink.user_service.dto.request.UpdateGroupRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import org.springframework.data.domain.Page;
@@ -21,27 +22,31 @@ public interface GroupService {
      */
     GroupResponse createGroup(CreateGroupRequest request);
 
-
     /**
-     * Searches for groups by their name and returns optimized data for group search.
-     * Only essential fields (id, name, truncated description, coverImage, memberCount)
+     * Searches for groups by their name and returns optimized data for group
+     * search.
+     * Only essential fields (id, name, truncated description, coverImage,
+     * memberCount)
      * and mutual friends of the current user in those groups are fetched.
      *
-     * @param name the keyword to search for within group names
-     * @param pageable pagination parameters (should include sort by memberCount desc)
+     * @param name     the keyword to search for within group names
+     * @param pageable pagination parameters (should include sort by memberCount
+     *                 desc)
      * @return a paginated list of GroupSearchResponse DTOs
      */
     Page<GroupSearchResponse> searchGroupsByName(String name, Pageable pageable);
 
     /**
      * Allows the current user to join a group using a valid invite code.
-     * This method validates the invite code and checks if the user is already a member.
+     * This method validates the invite code and checks if the user is already a
+     * member.
      * If successful, it creates a new approved group member, increments the group's
      * member count, and saves the changes.
      * Note: Firing the Kafka event GROUP_MEMBER_JOINED is currently pending (TODO).
      *
      * @param inviteCode the request payload containing the invite code string
-     * @throws IllegalArgumentException if the invite code is invalid or if the user is already a member of the group
+     * @throws IllegalArgumentException if the invite code is invalid or if the user
+     *                                  is already a member of the group
      */
     void userJoinGroupByInviteCode(InviteCodeGroupRequest inviteCode);
 
@@ -49,12 +54,25 @@ public interface GroupService {
      * Generates or sets a new invite code for a group.
      *
      * This method verifies if the current user has ADMIN privileges for the group
-     * associated with the provided invite code. If the code in the request is blank, 
-     * it generates a random 20-character invite code. Otherwise, it updates the group
+     * associated with the provided invite code. If the code in the request is
+     * blank,
+     * it generates a random 20-character invite code. Otherwise, it updates the
+     * group
      * with the provided code and saves the changes.
      *
      * @param inviteCode the request payload containing the invite code information
      * @return the newly generated or updated invite code as a String
      */
-     String createNewInviteCode(InviteCodeGroupRequest inviteCode);
+    String createNewInviteCode(InviteCodeGroupRequest inviteCode);
+
+    /**
+     * Updates an existing group's basic information (name, description, privacy).
+     * Requires the current user to be an ADMIN of the group.
+     * Fires a GROUP_UPDATED Kafka event upon success.
+     *
+     * @param groupId the ID of the group to update
+     * @param request the request payload containing updated group details
+     * @return a GroupResponse DTO with the updated group's information
+     **/
+    GroupResponse updateGroup(Long groupId, UpdateGroupRequest request);
 }
