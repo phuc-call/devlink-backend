@@ -42,7 +42,7 @@ public final class Constants {
     public static final int FEATURED_LIMIT_MIN = 1;
     public static final int FEATURED_LIMIT_MAX = 3;
     public static final int FEATURED_EXPIRE_MIN_HOURS = 24;
-
+    public static final int INVITE_CODE_MAX_LENGTH = 20;
     // number of mutual friends
     public static final int MAX_MUTUAL_FRIENDS = 5;
     public static final int SCORE_PER_MUTUAL_FRIEND = 5;

@@ -24,4 +24,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     List<UserSearchResponse> findMutualFriendsInGroup(
             @Param("groupId") Long groupId, 
             @Param("friendIds") List<Long> friendIds);
+
+    boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 }

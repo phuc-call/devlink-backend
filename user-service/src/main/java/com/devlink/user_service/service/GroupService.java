@@ -1,6 +1,7 @@
 package com.devlink.user_service.service;
 
 import com.devlink.user_service.dto.request.CreateGroupRequest;
+import com.devlink.user_service.dto.request.JoinGroupByCodeRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import org.springframework.data.domain.Page;
@@ -31,4 +32,6 @@ public interface GroupService {
      * @return a paginated list of GroupSearchResponse DTOs
      */
     Page<GroupSearchResponse> searchGroupsByName(String name, Pageable pageable);
+
+    void userJoinGroupByInviteCode(JoinGroupByCodeRequest inviteCode);
 }

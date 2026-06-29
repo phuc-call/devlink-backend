@@ -10,4 +10,8 @@ import org.springframework.stereotype.Repository;
 public interface GroupRepository extends JpaRepository<Group,Long> {
     boolean existsByName(String name);
     Page<Group> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    boolean existsByInviteCode(String inviteCode);
+    
+    java.util.Optional<Group> findByInviteCode(String inviteCode);
 }

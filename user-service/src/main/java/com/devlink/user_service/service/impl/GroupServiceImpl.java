@@ -2,6 +2,7 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
+import com.devlink.user_service.dto.request.JoinGroupByCodeRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
@@ -128,4 +129,32 @@ public class GroupServiceImpl implements GroupService {
                     .build();
         });
     }
+
+    @Override
+    public void userJoinGroupByInviteCode(JoinGroupByCodeRequest inviteCode){
+        Long currentUserId = userHelper.getCurrentUser().getId();
+        Group group = groupRepository.findByInviteCode(inviteCode.getCode())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid invite code"));
+
+        boolean isAlreadyMember = groupMemberRepository.existsByGroupIdAndUserId(group.getId(), currentUserId);
+        if (isAlreadyMember) {
+            throw new IllegalArgumentException("User is already a member of this group");
+        }
+
+        GroupMember newMember = GroupMember.builder()
+                .group(group)
+                .userId(currentUserId)
+                .role(GroupRole.MEMBER)
+                .status(MemberStatus.APPROVED)
+                .build();
+        
+        groupMemberRepository.save(newMember);
+
+        // Update member count
+        group.setMemberCount(group.getMemberCount() + 1);
+        groupRepository.save(group);
+        
+        // TODO: Fire Kafka Event GROUP_MEMBER_JOINED
+    }
+
 }
