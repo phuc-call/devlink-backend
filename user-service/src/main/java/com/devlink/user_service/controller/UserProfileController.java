@@ -12,7 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
+
+import static com.devlink.user_service.config.Constants.*;
 
 @RestController
 @RequestMapping("api/users")
@@ -34,8 +39,18 @@ public class UserProfileController {
                 "Update success"));
     }
 
+    @PostMapping(value = "/me/profile/avatar", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> updateAvatar(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.updateAvatar(file), "Update avatar success"));
+    }
+
+    @PostMapping(value = "/me/profile/cover", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> updateCoverImage(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.updateCoverImage(file), "Update cover image success"));
+    }
+
     @PatchMapping("/me/profile/nudge-dismiss")
-    public ResponseEntity<ApiResponse<Void>> dismissNudge(@RequestParam(defaultValue = "false") boolean forever) {
+    public ResponseEntity<ApiResponse<Void>> dismissNudge(@RequestParam(defaultValue = DEFAULT_BOOLEAN_FALSE) boolean forever) {
         userProfileService.dismissNudge(forever);
         return ResponseEntity.ok(ApiResponse.ok(null, "Dismiss nudge success"));
     }
@@ -77,11 +92,11 @@ public class UserProfileController {
             @RequestParam @NotBlank String name,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String address,
-            @RequestParam(defaultValue = "false") Boolean friendsOnly,
-            @RequestParam(defaultValue = "false") Boolean followersOnly,
-            @RequestParam(defaultValue = "false") Boolean followingOnly,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size
+            @RequestParam(defaultValue = DEFAULT_BOOLEAN_FALSE) Boolean friendsOnly,
+            @RequestParam(defaultValue = DEFAULT_BOOLEAN_FALSE) Boolean followersOnly,
+            @RequestParam(defaultValue = DEFAULT_BOOLEAN_FALSE) Boolean followingOnly,
+            @RequestParam(defaultValue = DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) @Min(1) @Max(50) int size
     ) {
         UserSearchPageResponse result = userProfileService.search(
                 name, city, address, friendsOnly, followersOnly, followingOnly, page, size
@@ -92,5 +107,15 @@ public class UserProfileController {
     @GetMapping("/provinces")
     public ResponseEntity<ApiResponse<List<String>>> getProvinces() {
         return ResponseEntity.ok(ApiResponse.ok(userProfileService.getProvinces()));
+    }
+
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<ApiResponse<String>> getAvatarUrl(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getAvatarUrl(id)));
+    }
+
+    @GetMapping("/{id}/cover")
+    public ResponseEntity<ApiResponse<String>> getCoverImageUrl(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(userProfileService.getCoverImageUrl(id)));
     }
 }

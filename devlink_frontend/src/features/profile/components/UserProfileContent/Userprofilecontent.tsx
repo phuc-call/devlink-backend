@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import type { FeedPostResponse } from '../../../../types/post.types';
 import { postApi } from '../../../../api/post-service/postApi';
@@ -15,11 +15,19 @@ export default function UserProfileContent({ profile }: Props) {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [openCommentPostId, setOpenCommentPostId] = useState<number | null>(null);
     const loadingRef = useRef(false);
 
+    // Dùng field `limited` do backend trả về — không đoán bằng heuristic
+    const isLimited = profile?.limited === true;
+    const isPrivate = profile?.profileVisibility === 'PRIVATE';
+
     const loadPosts = useCallback((pageNum: number, reset = false) => {
-        if (loadingRef.current || !profile) return;
+        if (loadingRef.current || !profile || isLimited) {
+            setInitialLoading(false);
+            return;
+        }
         loadingRef.current = true;
         setLoading(true);
 
@@ -38,8 +46,9 @@ export default function UserProfileContent({ profile }: Props) {
             .finally(() => {
                 loadingRef.current = false;
                 setLoading(false);
+                setInitialLoading(false);
             });
-    }, [profile]);
+    }, [profile, isLimited]);
 
     useEffect(() => {
         if (profile) {
@@ -48,8 +57,10 @@ export default function UserProfileContent({ profile }: Props) {
     }, [profile, loadPosts]);
 
     const handleLoadMore = useCallback(() => {
-        loadPosts(page + 1);
-    }, [page, loadPosts]);
+        if (!isLimited) {
+            loadPosts(page + 1);
+        }
+    }, [page, loadPosts, isLimited]);
 
     const triggerRef = useInfiniteScroll({
         onLoadMore: handleLoadMore,
@@ -69,7 +80,45 @@ export default function UserProfileContent({ profile }: Props) {
         setOpenCommentPostId(prev => (prev === postId ? null : postId));
     }, []);
 
-    if (!profile || posts.length === 0) {
+    if (isLimited) {
+        return (
+            <div className={styles.wrap}>
+                <div className={styles.emptyCard}>
+                    <div className={styles.emptyIcon} style={{ background: isPrivate ? '#FEF2F2' : '#F0FDF4' }}>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                             stroke={isPrivate ? '#DC2626' : '#16A34A'}
+                             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            {isPrivate && <path d="M12 8v4"/>}
+                            {isPrivate && <circle cx="12" cy="16" r="1"/>}
+                        </svg>
+                    </div>
+                    <p className={styles.emptyTitle}>
+                        {isPrivate ? 'Hồ sơ đã được đặt ở chế độ riêng tư' : 'Hồ sơ chỉ hiển thị với bạn bè'}
+                    </p>
+                    <p className={styles.emptySub}>
+                        {isPrivate
+                            ? 'Chủ hồ sơ đã chọn ẩn nội dung với tất cả mọi người.'
+                            : `Theo dõi ${profile?.fullName || 'người này'} và chờ họ theo dõi lại để xem nội dung.`}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) return null;
+
+    if (initialLoading) {
+        return (
+            <div className={styles.wrap}>
+                <div className={styles.emptyCard}>
+                    <div className={styles.spinner} />
+                </div>
+            </div>
+        );
+    }
+
+    if (posts.length === 0) {
         return (
             <div className={styles.wrap}>
                 <div className={styles.emptyCard}>

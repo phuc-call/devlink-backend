@@ -4,29 +4,32 @@ import {userProfileApi} from '../../../api/user-service/userProfileApi';
 import type {ProgrammingLanguage, UpdateProfileRequest} from '../../../types/profile.types';
 
 const LANGUAGES: ProgrammingLanguage[] = [
-    'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO',
-    'RUST', 'CPP', 'CSHARP', 'KOTLIN', 'SWIFT', 'PHP', 'RUBY',
+    'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO', 'CSHARP', 'PHP'
 ];
 
 const LANG_LABELS: Record<ProgrammingLanguage, string> = {
     JAVASCRIPT: 'JavaScript', TYPESCRIPT: 'TypeScript', PYTHON: 'Python',
-    JAVA: 'Java', GO: 'Go', RUST: 'Rust', CPP: 'C++',
-    CSHARP: 'C#', KOTLIN: 'Kotlin', SWIFT: 'Swift', PHP: 'PHP', RUBY: 'Ruby',
+    JAVA: 'Java', GO: 'Go', CSHARP: 'C#', PHP: 'PHP',
+    RUST: 'Rust', CPP: 'C++', KOTLIN: 'Kotlin', SWIFT: 'Swift', RUBY: 'Ruby'
 };
 
 type Step = 1 | 2;
 
 interface Props {
     onClose: () => void;
+    nudgeSentCount?: number;
+    avatarUrl?: string;
 }
 
-export default function ProfileSetupModal({onClose}: Props) {
+export default function ProfileSetupModal({onClose, nudgeSentCount = 0, avatarUrl}: Props) {
     const [step, setStep] = useState<Step>(1);
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
     const [school, setSchool] = useState('');
     const [major, setMajor] = useState('');
     const [selectedLangs, setSelectedLangs] = useState<ProgrammingLanguage[]>([]);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -60,6 +63,12 @@ export default function ProfileSetupModal({onClose}: Props) {
         setLoading(true);
         setError('');
         try {
+            if (avatarFile) {
+                const formData = new FormData();
+                formData.append('file', avatarFile);
+                await userProfileApi.updateAvatar(formData);
+            }
+
             const payload: UpdateProfileRequest = {
                 fullName,
                 bio: bio || undefined,
@@ -72,7 +81,6 @@ export default function ProfileSetupModal({onClose}: Props) {
         } catch (err: unknown) {
             const e = err as {response?: {data?: {message?: string}}};
             setError(e.response?.data?.message ?? 'Cập nhật thất bại, thử lại nhé');
-            setStep(1);
         } finally {
             setLoading(false);
         }
@@ -103,6 +111,33 @@ export default function ProfileSetupModal({onClose}: Props) {
 
                     {step === 1 && (
                         <>
+                            {(!avatarUrl && nudgeSentCount === 0) && (
+                                <div className="psu-field psu-avatar-upload">
+                                    <label>Ảnh đại diện</label>
+                                    <div className="psu-avatar-preview" onClick={() => document.getElementById('psu-avatar-input')?.click()}>
+                                        {avatarPreview ? (
+                                            <img src={avatarPreview} alt="Avatar Preview" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                                <span style={{ fontSize: '24px', color: '#999' }}>+</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <input
+                                        id="psu-avatar-input"
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setAvatarFile(file);
+                                                setAvatarPreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )}
                             <div className="psu-field">
                                 <label htmlFor="psu-fullname">Tên hiển thị</label>
                                 <input

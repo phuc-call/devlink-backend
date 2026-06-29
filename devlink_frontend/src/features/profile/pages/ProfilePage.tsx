@@ -7,6 +7,7 @@ import ProfileContent from '../components/ProfileContent/ProfileContent.tsx';
 import UserProfileContent from '../components/UserProfileContent/Userprofilecontent.tsx';
 import FollowListPanel from '../components/FollowListPanel/Followlistpanel.tsx';
 import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
+import ImageViewer from '../components/ImageViewer/ImageViewer';
 import styles from './ProfilePage.module.css';
 
 type FollowListType = 'FOLLOWING' | 'FOLLOWERS' | 'FRIENDS';
@@ -17,6 +18,7 @@ export default function ProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('Bài viết');
     const [followTab, setFollowTab] = useState<FollowListType>('FOLLOWING');
+    const [viewImage, setViewImage] = useState<{ type: 'avatar' | 'cover', userId: number } | null>(null);
 
     useEffect(() => {
         userProfileApi.getProfile()
@@ -28,6 +30,18 @@ export default function ProfilePage() {
     const handleEditDone = (updated: UserProfileResponse) => {
         setProfile(updated);
         setIsEditing(false);
+    };
+
+    const handleAvatarUpdate = (newAvatarUrl: string) => {
+        if (profile) {
+            setProfile({ ...profile, avatarUrl: newAvatarUrl });
+        }
+    };
+
+    const handleCoverUpdate = (newCoverUrl: string) => {
+        if (profile) {
+            setProfile({ ...profile, coverImageUrl: newCoverUrl });
+        }
     };
 
     const handleFollowerClick = () => {
@@ -56,6 +70,10 @@ export default function ProfilePage() {
                 profile={profile}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
+                onCoverUpdate={handleCoverUpdate}
+                onCoverClick={() => {
+                    if (profile?.userId) setViewImage({ type: 'cover', userId: profile.userId });
+                }}
             />
 
             {isFollowTab ? (
@@ -73,6 +91,10 @@ export default function ProfilePage() {
                             onEdit={() => setIsEditing(true)}
                             onFollowerClick={handleFollowerClick}
                             onFollowingClick={handleFollowingClick}
+                            onAvatarUpdate={handleAvatarUpdate}
+                            onAvatarClick={() => {
+                                if (profile?.userId) setViewImage({ type: 'avatar', userId: profile.userId });
+                            }}
                         />
                     </aside>
                     <main className={styles.content}>
@@ -90,6 +112,14 @@ export default function ProfilePage() {
                         )}
                     </main>
                 </div>
+            )}
+
+            {viewImage && (
+                <ImageViewer 
+                    userId={viewImage.userId} 
+                    type={viewImage.type} 
+                    onClose={() => setViewImage(null)} 
+                />
             )}
         </div>
     );

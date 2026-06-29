@@ -1,7 +1,7 @@
 
 export type ProgrammingLanguage =
-    | 'JAVASCRIPT' | 'TYPESCRIPT' | 'PYTHON' | 'JAVA' | 'GO'
-    | 'RUST' | 'CPP' | 'CSHARP' | 'KOTLIN' | 'SWIFT' | 'PHP' | 'RUBY';
+    | 'JAVASCRIPT' | 'TYPESCRIPT' | 'PYTHON' | 'JAVA' | 'GO' | 'CSHARP' | 'PHP'
+    | 'RUST' | 'CPP' | 'KOTLIN' | 'SWIFT' | 'RUBY';
 
 export interface UpdateProfileRequest {
     fullName?: string;
@@ -48,6 +48,10 @@ export interface UserProfileResponse {
     country?: string;
     timezone?: string;
     userId: number;
+    profileVisibility?: 'PRIVATE' | 'PUBLIC' | 'PROTECTED';
+    nudgeSentCount?: number;
+    /** true khi backend trả về hồ sơ bị giới hạn */
+    limited?: boolean;
 }
 export interface FollowRequestModeResponse {
     followRequestMode: boolean;

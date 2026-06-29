@@ -1,9 +1,9 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
-import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
+import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.entity.ProfileNudgeConfig;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
@@ -14,6 +14,7 @@ import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
 import com.devlink.user_service.security.SecurityUtils;
+import com.devlink.user_service.service.FileStorageService;
 import com.devlink.user_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,11 +32,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 @Service
@@ -47,6 +50,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserProfileRepository userProfileRepository;
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
     private final UserBlockRepository userBlockRepository;
+    private final FileStorageService fileStorageService;
 
     private final RestTemplate restTemplate;
     private final ModelMapper modelMapper;
@@ -98,6 +102,36 @@ public class UserProfileServiceImpl implements UserProfileService {
         log.info("User {} updated profile. Completion: {}%", user.getId(), percent);
         UserProfile savedProfile = userProfileRepository.save(userProfile);
         return modelMapper.map(savedProfile, UserProfileResponse.class);
+    }
+
+    @Override
+    public String updateAvatar(MultipartFile file) {
+        User user = userHelper.getCurrentUser();
+        UserProfile userProfile = getOrCreateProfile(user);
+        
+        if (userProfile.getAvatarUrl() != null && !userProfile.getAvatarUrl().isEmpty()) {
+            fileStorageService.delete(userProfile.getAvatarUrl());
+        }
+        
+        String avatarUrl = fileStorageService.upload(file, "avatars");
+        userProfile.setAvatarUrl(avatarUrl);
+        userProfileRepository.save(userProfile);
+        return avatarUrl;
+    }
+
+    @Override
+    public String updateCoverImage(MultipartFile file) {
+        User user = userHelper.getCurrentUser();
+        UserProfile userProfile = getOrCreateProfile(user);
+        
+        if (userProfile.getCoverImageUrl() != null && !userProfile.getCoverImageUrl().isEmpty()) {
+            fileStorageService.delete(userProfile.getCoverImageUrl());
+        }
+        
+        String coverUrl = fileStorageService.upload(file, "covers");
+        userProfile.setCoverImageUrl(coverUrl);
+        userProfileRepository.save(userProfile);
+        return coverUrl;
     }
 
     @Override
@@ -264,12 +298,17 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .userId(owner.getId())
                 .avatarUrl(profile.getAvatarUrl())
                 .coverImageUrl(profile.getCoverImageUrl())
+                .profileVisibility(owner.getProfileVisibility() != null ? owner.getProfileVisibility().name() : null)
+                .limited(true)
                 .build();
     }
 
     private UserProfileResponse toFullResponse(User owner) {
         UserProfileResponse res = modelMapper.map(owner.getProfile(), UserProfileResponse.class);
         res.setUserId(owner.getId());
+        if (owner.getProfileVisibility() != null) {
+            res.setProfileVisibility(owner.getProfileVisibility().name());
+        }
         return res;
     }
 
@@ -391,6 +430,50 @@ public class UserProfileServiceImpl implements UserProfileService {
         return UserSearchPageResponse.builder()
                 .users(users)
                 .build();
+    }
+
+
+    private String getProfileImageUrl(Long userId, Function<UserProfile, String> imageExtractor) {
+        User user = userHelper.getUser(userId);
+        UserProfile profile = user.getProfile();
+
+        String imageUrl = profile != null ? imageExtractor.apply(profile) : null;
+        checkNullAvatar(imageUrl);
+
+        Long currentUserId = userHelper.getCurrentUser().getId();
+        if (user.getId().equals(currentUserId)) {
+            return imageUrl;
+        }
+
+        ProfileVisibility visibility = user.getProfileVisibility();
+        if (visibility == ProfileVisibility.PUBLIC) {
+            return imageUrl;
+        } else if (visibility == ProfileVisibility.PROTECTED) {
+            boolean isMutual = followRepository.existsByFollowerIdAndFollowingIdAndStatus(
+                    currentUserId, user.getId(), FollowStatus.ACCEPTED);
+            if (isMutual) {
+                return imageUrl;
+            } else {
+                throw new AppException(ErrorCode.NO_PERMISSION);
+            }
+        } else {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+    }
+
+    @Override
+    public String getAvatarUrl(Long userId) {
+        return getProfileImageUrl(userId, UserProfile::getAvatarUrl);
+    }
+
+    @Override
+    public String getCoverImageUrl(Long userId) {
+        return getProfileImageUrl(userId, UserProfile::getCoverImageUrl);
+    }
+    private void checkNullAvatar(String avatarUrl) {
+        if(avatarUrl == null || avatarUrl.isBlank()) {
+            throw new AppException(ErrorCode.IMAGE_NOT_FOUND);
+        }
     }
 
 }

@@ -1,26 +1,21 @@
-:root {
-    --font-profile-name:    20px;
-    --font-section-title:   14px;
-    --font-body:            13px;
-    --font-caption:         11px;
-    --font-badge:           11px;
-}
-
 .page {
     width: 100%;
-    background: #F0F2F5;
     min-height: calc(100vh - 60px);
+    background: #F3F4F6;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .body {
     display: flex;
-    gap: 16px;
-    padding: 20px 0 48px;
+    gap: 20px;
+    padding: 24px 24px 48px;
     align-items: flex-start;
+    max-width: 1100px;
+    margin: 0 auto;
 }
 
 .sidebar {
-    width: 296px;
+    width: 300px;
     flex-shrink: 0;
     position: sticky;
     top: 80px;
@@ -29,14 +24,18 @@
 .content {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* Follow tab — full width, no sidebar */
 .followWrap {
-    padding: 20px 0 48px;
-    width: 100%;
-    max-width: 1200px;
+    padding: 24px 24px 48px;
+    max-width: 1100px;
     margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .loadingWrap {
@@ -47,32 +46,26 @@
 }
 
 .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #E5E7EB;
-    border-top-color: #374151;
+    width: 28px;
+    height: 28px;
+    border: 3px solid #E5E7EB;
+    border-top-color: #3B82F6;
     border-radius: 50%;
     animation: spin 0.65s linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .body {
         flex-direction: column;
-        padding: 12px 8px 40px;
+        padding: 16px 16px 40px;
     }
     .sidebar {
         width: 100%;
         position: static;
     }
     .followWrap {
-        padding: 12px 8px 40px;
+        padding: 16px 16px 40px;
     }
-
-}
-.followWrap {
-    padding: 20px 16px 48px;
-    width: 100%;
-    box-sizing: border-box;
 }

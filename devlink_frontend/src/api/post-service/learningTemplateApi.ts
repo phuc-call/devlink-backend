@@ -127,8 +127,8 @@ export const updateAdminTemplate = async (
 };
 
 export const getTemplateOverview = async (
-    startDate: string, // ISO string, VD: "2026-05-01T00:00:00.000Z"
-    endDate: string,   // ISO string, VD: "2026-05-07T23:59:59.000Z"
+    startDate?: string, // ISO string, VD: "2026-05-01T00:00:00.000Z"
+    endDate?: string,   // ISO string, VD: "2026-05-07T23:59:59.000Z"
 ): Promise<OverviewOfTemplate> => {
     const res = await axiosInstance.get('/api/templates/admin/overview', {
         params: { startDate, endDate },

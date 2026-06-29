@@ -17,6 +17,14 @@ public final class Constants {
     };
     public static final Long SYSTEM_ACTOR_ID = 0L;
 
+    /**
+     * Default values for request parameters
+     */
+    public static final String DEFAULT_PAGE = "0";
+    public static final String DEFAULT_PAGE_SIZE = "20";
+    public static final String DEFAULT_PAGE_SIZE_SMALL = "10";
+    public static final String DEFAULT_BOOLEAN_FALSE = "false";
+
     public static final int OPS_EXPIRATION_MINUTES = 5;
 
     public static final String MSG_LOGOUT_SUCCESS = "Logout successful";

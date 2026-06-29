@@ -6,11 +6,16 @@ import com.devlink.user_service.dto.response.UserSearchPageResponse;
 import com.devlink.user_service.dto.response.VisibilitySettingResponse;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface UserProfileService {
     UserProfileResponse updateUserProfile(UpdateProfileRequest request);
+
+    String updateAvatar(MultipartFile file);
+    
+    String updateCoverImage(MultipartFile file);
 
     UserProfileResponse getProfile();
 
@@ -53,6 +58,9 @@ public interface UserProfileService {
     );
 
     List<String> getProvinces();
-    
+
+    String getAvatarUrl(Long userId);
+
+    String getCoverImageUrl(Long userId);
 
 }

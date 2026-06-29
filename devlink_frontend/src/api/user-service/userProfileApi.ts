@@ -14,6 +14,16 @@ export const userProfileApi = {
     updateProfile: (data: UpdateProfileRequest) =>
         axiosInstance.put<{data: UserProfileResponse}>('/api/users/me/profile', data),
 
+    updateAvatar: (formData: FormData) =>
+        axiosInstance.post<{data: string}>('/api/users/me/profile/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    updateCoverImage: (formData: FormData) =>
+        axiosInstance.post<{data: string}>('/api/users/me/profile/cover', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
     dismissNudge: (dismissForever: boolean) =>
         axiosInstance.patch(`/api/users/me/profile/nudge-dismiss?dismissNudge=${dismissForever}`),
 
@@ -46,4 +56,9 @@ export const userProfileApi = {
     getProvinces: () =>
         axiosInstance.get<{data: string[]}>('/api/users/provinces'),
 
+    getAvatarUrl: (userId: number) =>
+        axiosInstance.get<{data: string}>(`/api/users/${userId}/avatar`),
+
+    getCoverImageUrl: (userId: number) =>
+        axiosInstance.get<{data: string}>(`/api/users/${userId}/cover`),
 };

@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static com.devlink.user_service.config.Constants.*;
+
 @RestController
 @RequestMapping("api/users")
 @RequiredArgsConstructor
@@ -95,8 +97,8 @@ public class BadgeController {
     @GetMapping("/admin/users/search")
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>>> searchUsers(
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") @Max(10) @Min(0) int size) {
+            @RequestParam(defaultValue = DEFAULT_PAGE) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE_SMALL) @Max(10) @Min(0) int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.ok(badgeService.searchUsers(keyword, pageable)));
     }
@@ -115,8 +117,8 @@ public class BadgeController {
     @GetMapping("/admin/badges/users")
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>>> getUsersByBadgeType(
             @RequestParam BadgeType badgeType,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") @Max(20) @Min(0) int size) {
+            @RequestParam(defaultValue = DEFAULT_PAGE) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) @Max(20) @Min(0) int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.ok(badgeService.getUsersByBadgeType(badgeType, pageable)));
     }

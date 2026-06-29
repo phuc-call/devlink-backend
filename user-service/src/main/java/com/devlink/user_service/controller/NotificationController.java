@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static com.devlink.user_service.config.Constants.DEFAULT_PAGE;
+import static com.devlink.user_service.config.Constants.DEFAULT_PAGE_SIZE;
+
 @RestController
 @RequestMapping("api/users/notifications")
 @RequiredArgsConstructor
@@ -29,8 +32,8 @@ public class NotificationController {
     }
     @GetMapping
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getNotifications(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = DEFAULT_PAGE) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
                 notificationService.getNotifications(page, size)

@@ -14,11 +14,15 @@ const LANG_COLORS: Record<string, string> = {
     PHP: '#4F5D95', RUBY: '#701516',
 };
 
+import { userProfileApi } from '../../../../api/user-service/userProfileApi';
+
 interface Props {
     profile: UserProfileResponse | null;
     onEdit: () => void;
     onFollowerClick: () => void;
     onFollowingClick: () => void;
+    onAvatarUpdate?: (newAvatarUrl: string) => void;
+    onAvatarClick?: () => void;
 }
 
 function formatCount(n: number): string {
@@ -27,20 +31,50 @@ function formatCount(n: number): string {
     return String(n);
 }
 
-export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFollowingClick }: Props) {
+export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFollowingClick, onAvatarUpdate, onAvatarClick }: Props) {
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await userProfileApi.updateAvatar(formData);
+            if (onAvatarUpdate) onAvatarUpdate(res.data.data);
+        } catch (err) {
+            console.error('Failed to update avatar', err);
+            alert('Cập nhật ảnh đại diện thất bại!');
+        }
+    };
     const initials = profile?.fullName
         ? profile.fullName.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase()
         : '?';
 
     return (
-        <div className={styles.wrap}>
-            <div className={styles.avatarBlock}>
-                <div className={styles.avatarWrap}>
+        <div className={styles.card}>
+            <div className={styles.header}>
+                <div 
+                    className={styles.avatarWrap} 
+                    onClick={(e) => {
+                        if ((e.target as HTMLElement).closest(`.${styles.avatarEditBtn}`)) return;
+                        if (onAvatarClick && profile?.avatarUrl) onAvatarClick();
+                    }}
+                    style={onAvatarClick && profile?.avatarUrl ? { cursor: 'pointer' } : {}}
+                >
                     {profile?.avatarUrl
-                        ? <img src={profile.avatarUrl} alt="avatar" className={styles.avatarImg} />
+                        ? <img src={profile.avatarUrl} alt="avatar" className={styles.avatar} />
                         : <span className={styles.avatarInitials}>{initials}</span>
                     }
-                    <button className={styles.avatarEditBtn} title="Đổi ảnh đại diện">
+                    <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        id="avatar-upload" 
+                        onChange={handleAvatarUpload} 
+                    />
+                    <button className={styles.avatarEditBtn} title="Đổi ảnh đại diện" onClick={(e) => {
+                        e.stopPropagation();
+                        document.getElementById('avatar-upload')?.click();
+                    }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -53,25 +87,25 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                 {profile?.bio && <p className={styles.bio}>{profile.bio}</p>}
 
                 <div className={styles.statsRow}>
-                    <button className={styles.statBtn} onClick={onFollowerClick}>
-                        <span className={styles.statNum}>{formatCount(profile?.followerCount ?? 0)}</span>
-                        <span className={styles.statLabel}>followers</span>
+                    <button className={styles.statBtn} onClick={onFollowerClick} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span className={styles.stat}><strong>{formatCount(profile?.followerCount ?? 0)}</strong> followers</span>
                     </button>
                     <span className={styles.statDot}>·</span>
-                    <button className={styles.statBtn} onClick={onFollowingClick}>
-                        <span className={styles.statNum}>{formatCount(profile?.followingCount ?? 0)}</span>
-                        <span className={styles.statLabel}>following</span>
+                    <button className={styles.statBtn} onClick={onFollowingClick} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span className={styles.stat}><strong>{formatCount(profile?.followingCount ?? 0)}</strong> following</span>
                     </button>
                 </div>
 
-                <button className={styles.editBtn} onClick={onEdit}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                    Chỉnh sửa hồ sơ
-                </button>
+                <div className={styles.actions}>
+                    <button className={styles.btnSecondary} onClick={onEdit} style={{ width: '100%' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Chỉnh sửa hồ sơ
+                    </button>
+                </div>
             </div>
 
             <div className={styles.divider} />

@@ -15,6 +15,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static com.devlink.user_service.config.Constants.DEFAULT_PAGE;
+import static com.devlink.user_service.config.Constants.DEFAULT_PAGE_SIZE;
+
 @RestController
 @RequestMapping("api/users")
 @RequiredArgsConstructor
@@ -41,8 +44,8 @@ public class FollowController {
     }
     @GetMapping("/me/following/cards")
     public ResponseEntity<ApiResponse<Page<UserFollowingCardResponse>>> getFollowingCards(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size
+            @RequestParam(defaultValue = DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) @Min(1) @Max(50) int size
     ) {
         return ResponseEntity.ok(ApiResponse.ok(followService.getFollowingCards(page, size)));
     }
@@ -56,8 +59,8 @@ public class FollowController {
     @GetMapping("/me/follows")
     public ResponseEntity<ApiResponse<PageResponse<FollowResponse>>> getFollowList(
             @RequestParam FollowListType type,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "20") Integer size) {
+            @RequestParam(defaultValue = DEFAULT_PAGE) Integer page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) Integer size) {
         return ResponseEntity.ok(ApiResponse.ok(followService.getFollowList(type, page, size), "Success"));
     }
 

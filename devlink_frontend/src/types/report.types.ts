@@ -107,29 +107,7 @@ export interface ReportPageResponse {
     totalPages:    number;
 }
 
-// Chi tiết báo cáo — người tố cáo xem (gắn với notificationId)
-export interface ReportDetailResponse {
-    reportId:       number;
-    targetType:     string;
-    targetId:       number;
-    reason:         string;
-    description:    string | null;
-    targetContent:  unknown;   // snapshot: Post / Comment / CommentReply object
-    contentDeleted: boolean;
-}
 
-// Vi phạm của chính mình
-export interface MyViolationResponse {
-    restrictionId:   number;
-    restrictionType: RestrictionType;
-    reason:          string;
-    permanent:       boolean;
-    restrictedUntil: string | null;  // ISO instant
-    createdAt:       string;
-    targetType:      ReportTargetType | null;
-    targetId:        number | null;
-    deletedSnapshot: unknown;        // null nếu Redis TTL hết
-}
 
 export interface PostSnapshot {
     id: number;

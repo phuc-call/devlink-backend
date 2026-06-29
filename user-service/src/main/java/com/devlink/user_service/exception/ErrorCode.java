@@ -37,7 +37,11 @@ public enum ErrorCode {
     NOTIFICATION_PASSWORD_WRONG("Notification password is incorrect", HttpStatus.BAD_REQUEST),
     NOTIFICATION_PASSWORD_INVALID("Notification password must be 4 digits", HttpStatus.BAD_REQUEST),
     NOTIFICATION_ALREADY_HIDDEN("Notification has already been hidden", HttpStatus.BAD_REQUEST),
-    NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST);
+    FILE_UPLOAD_FAILED("File is invalid, please try again", HttpStatus.BAD_REQUEST),
+    GET_AVATAR_FAILED("Avatar cat not get beaces it save", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST),
+    IMAGE_NOT_FOUND("Image not found", HttpStatus.NOT_FOUND),
+    NO_PERMISSION("You do not have permission to view this", HttpStatus.FORBIDDEN);
 
     private final String message;
     private final HttpStatus httpStatus;

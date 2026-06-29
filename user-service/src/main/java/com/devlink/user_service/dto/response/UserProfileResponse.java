@@ -24,6 +24,7 @@ public class UserProfileResponse {
     private Integer followerCount;
     private Integer followingCount;
     private Boolean shouldShowNudge;
+    private Integer nudgeSentCount;
     private String coverAvatar;
 
     private String city;
@@ -32,5 +33,10 @@ public class UserProfileResponse {
     private String address;
 
     private Long userId;
+
+    private String profileVisibility;
+
+    /** true khi backend trả về hồ sơ bị giới hạn (PRIVATE hoặc PROTECTED không phải bạn bè) */
+    private Boolean limited;
 
 }

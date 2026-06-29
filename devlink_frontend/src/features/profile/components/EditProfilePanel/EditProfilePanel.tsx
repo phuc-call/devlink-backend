@@ -1,4 +1,5 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { 
     User, Code, Lock, Eye, MonitorSmartphone, 
     Globe, Users, Check, ChevronRight, ArrowLeft,
@@ -24,14 +25,14 @@ interface Props {
 type Section = 'basic' | 'language' | 'follow' | 'visibility' | 'session';
 
 const PROGRAMMING_LANGUAGES: ProgrammingLanguage[] = [
-    'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO',
-    'RUST', 'CPP', 'CSHARP', 'KOTLIN', 'SWIFT', 'PHP', 'RUBY',
+    'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO', 'CSHARP', 'PHP',
+    'RUST', 'CPP', 'KOTLIN', 'SWIFT', 'RUBY'
 ];
 
 const LANG_LABELS: Record<ProgrammingLanguage, string> = {
     JAVASCRIPT: 'JavaScript', TYPESCRIPT: 'TypeScript', PYTHON: 'Python',
-    JAVA: 'Java', GO: 'Go', RUST: 'Rust', CPP: 'C++', CSHARP: 'C#',
-    KOTLIN: 'Kotlin', SWIFT: 'Swift', PHP: 'PHP', RUBY: 'Ruby',
+    JAVA: 'Java', GO: 'Go', CSHARP: 'C#', PHP: 'PHP',
+    RUST: 'Rust', CPP: 'C++', KOTLIN: 'Kotlin', SWIFT: 'Swift', RUBY: 'Ruby'
 };
 
 const LANG_COLORS: Record<ProgrammingLanguage, string> = {
