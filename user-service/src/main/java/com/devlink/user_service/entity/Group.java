@@ -20,7 +20,7 @@ public class Group {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 100, unique = true)
     private String name;
     @Column(length = 500)
     private String description;
@@ -31,7 +31,12 @@ public class Group {
     private String inviteCode;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private GroupPrivacy privacy;
+    @Builder.Default
+    private GroupPrivacy privacy=GroupPrivacy.PUBLIC;
+
+    @Column(name = "member_count")
+    @Builder.Default
+    private Integer memberCount = 0;
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
