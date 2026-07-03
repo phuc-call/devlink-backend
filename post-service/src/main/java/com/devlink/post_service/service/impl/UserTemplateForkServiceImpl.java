@@ -53,9 +53,17 @@ public class UserTemplateForkServiceImpl implements UserTemplateForkService {
                 .findById(fork.getTemplateId())
                 .orElseThrow(() -> new AppException(ErrorCode.TEMPLATE_NOT_FOUND));
 
-        if (template.getFileType() == TemplateFileType.CODE
-                && (request.getContent() == null || request.getContent().isBlank())) {
-            throw new AppException(ErrorCode.POST_CONTENT_EMPTY);
+        if (template.getFileType() == TemplateFileType.CODE) {
+            String content = request.getContent();
+            // Remove HTML tags and common blank entities/characters like &nbsp;
+            boolean isEmpty = (content == null || content.replaceAll("<[^>]*>", "")
+                                                         .replaceAll("&nbsp;", "")
+                                                         .replaceAll("\\s+", "")
+                                                         .trim().isEmpty());
+            
+            if (isEmpty) {
+                throw new AppException(ErrorCode.POST_CONTENT_EMPTY);
+            }
         }
 
 

@@ -1,9 +1,13 @@
 package com.devlink.user_service.repository;
 
+import com.devlink.user_service.dto.response.GroupCandidateResponse;
+import com.devlink.user_service.dto.response.GroupMemberResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
 import com.devlink.user_service.entity.Group;
 import com.devlink.user_service.entity.GroupMember;
 import com.devlink.user_service.entity.enums.GroupRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +35,51 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 
     @Query("""
-            SELECT GroupMember.role FROM GroupMember WHERE GroupMember.userId=:userId AND GroupMember.group=:group""")
+        SELECT gm.role FROM GroupMember gm
+        WHERE gm.userId = :userId AND gm.group = :group
+        """)
     Optional<GroupRole> findRoleByUserIdAndGroup(@Param("userId") Long userId, @Param("group") Group group);
+
+    Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
+
+    @Query("""
+        SELECT new com.devlink.user_service.dto.response.GroupCandidateResponse(
+            gm.userId, p.fullName, p.avatarUrl
+        )
+        FROM GroupMember gm
+        JOIN UserProfile p ON p.user.id = gm.userId
+        WHERE gm.group.id = :groupId
+        AND gm.userId != :adminId
+        ORDER BY
+            CASE WHEN gm.role = 'MODERATOR' THEN 1 ELSE 2 END ASC,
+            CASE WHEN gm.userId IN :friendIds THEN 1 ELSE 2 END ASC
+    """)
+    Page<GroupCandidateResponse> findReplacementCandidates(
+            @Param("groupId") Long groupId, 
+            @Param("adminId") Long adminId,
+            @Param("friendIds") List<Long> friendIds, 
+            Pageable pageable);
+
+    @Query("""
+        SELECT new com.devlink.user_service.dto.response.UserSearchResponse(
+            gm.userId, p.fullName, p.avatarUrl
+        )
+        FROM GroupMember gm
+        JOIN UserProfile p ON p.user.id = gm.userId
+        WHERE gm.group.id = :groupId
+        AND gm.status = 'PENDING'
+    """)
+    Page<UserSearchResponse> findPendingMembers(@Param("groupId") Long groupId, Pageable pageable);
+
+    @Query("""
+        SELECT new com.devlink.user_service.dto.response.GroupMemberResponse(
+            gm.userId, p.fullName, p.avatarUrl, gm.role, gm.joinedAt
+        )
+        FROM GroupMember gm
+        JOIN UserProfile p ON p.user.id = gm.userId
+        WHERE gm.group.id = :groupId
+        AND gm.status = 'APPROVED'
+        ORDER BY gm.joinedAt ASC
+    """)
+    Page<GroupMemberResponse> findApprovedMembers(@Param("groupId") Long groupId, Pageable pageable);
 }

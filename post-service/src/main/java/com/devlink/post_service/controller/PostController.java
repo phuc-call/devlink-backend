@@ -1,5 +1,6 @@
 package com.devlink.post_service.controller;
 
+import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
 import com.devlink.post_service.dto.response.ApiResponse;
@@ -35,13 +36,13 @@ public class PostController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response,
-                        "Bài viết đã được tạo và đang chờ kiểm duyệt"));
+                        Constants.SUCCESS));
     }
 
     @GetMapping("/feed")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "4") @Max(5) int size,
+            @RequestParam(defaultValue = "4") @Max(20) int size,
             @RequestParam(required = false) String postType) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFeed(page, size, postType), SUCCESS)
@@ -59,7 +60,7 @@ public class PostController {
     @GetMapping("/following")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFollowingFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "3") @Max(5) int size
+            @RequestParam(defaultValue = "3") @Max(20) int size
     ) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFollowingFeed(page, size), SUCCESS)
@@ -71,7 +72,7 @@ public class PostController {
     public ApiResponse<Void> deletePost(@PathVariable Long id) {
         postService.deletePost(id);
         return ApiResponse.<Void>builder()
-                .message("Xoá bài viết thành công")
+                .message("Deleted a post successfully")
                 .build();
     }
 
@@ -79,7 +80,7 @@ public class PostController {
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getUserPosts(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") @Max(10) int size
+            @RequestParam(defaultValue = "10") @Max(20) int size
     ) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getUserPosts(userId, page, size), SUCCESS)

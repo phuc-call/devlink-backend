@@ -7,8 +7,11 @@ import com.devlink.user_service.dto.request.UpdateGroupRequest;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
+import com.devlink.user_service.dto.response.GroupCandidateResponse;
+import com.devlink.user_service.dto.response.GroupMemberResponse;
 import com.devlink.user_service.entity.Group;
 import com.devlink.user_service.entity.GroupMember;
+import com.devlink.user_service.entity.enums.GroupPrivacy;
 import com.devlink.user_service.entity.enums.GroupRole;
 import com.devlink.user_service.entity.enums.MemberStatus;
 import com.devlink.user_service.exception.AppException;
@@ -43,8 +46,11 @@ public class GroupServiceImpl implements GroupService {
     public GroupResponse createGroup(CreateGroupRequest request) {
         Long currentUserId = userHelper.getCurrentUser().getId();
 
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Group name is required");
+        }
         if (groupRepository.existsByName(request.getName())) {
-            throw new IllegalArgumentException("Group name already exists");
+            throw new AppException(ErrorCode.GROUP_NAME_ALREADY_EXISTS);
         }
 
         List<Long> validMemberIds = new ArrayList<>();
@@ -106,6 +112,7 @@ public class GroupServiceImpl implements GroupService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public Page<GroupSearchResponse> searchGroupsByName(String name, Pageable pageable) {
         Long currentUserId = userHelper.getCurrentUser().getId();
         List<Long> friendIds = followRepository.findFriendIds(currentUserId);
@@ -140,7 +147,7 @@ public class GroupServiceImpl implements GroupService {
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_INVITE_CODE));
         boolean isAlreadyMember = groupMemberRepository.existsByGroupIdAndUserId(group.getId(), currentUserId);
         if (isAlreadyMember) {
-            throw new IllegalArgumentException("User is already a member of this group");
+            throw new AppException(ErrorCode.USER_ALREADY_IN_GROUP);
         }
 
         GroupMember newMember = GroupMember.builder()
@@ -152,34 +159,70 @@ public class GroupServiceImpl implements GroupService {
 
         groupMemberRepository.save(newMember);
 
-        // Update member count
-        group.setMemberCount(group.getMemberCount() + 1);
-        groupRepository.save(group);
+        // Tham gia bằng Invite Code sẽ bypass duyệt Group Privacy (Public/Private), tự động APPROVED
+        groupRepository.incrementMemberCount(group.getId());
 
         // TODO: Fire Kafka Event GROUP_MEMBER_JOINED
     }
 
     @Override
-    public String createNewInviteCode(InviteCodeGroupRequest inviteCode) {
+    public void joinGroup(Long groupId) {
         Long currentUserId = userHelper.getCurrentUser().getId();
-        Group group = groupRepository.findByInviteCode(inviteCode.getCode())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_INVITE_CODE));
+
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        if (groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUserId)) {
+            throw new AppException(ErrorCode.USER_ALREADY_IN_GROUP);
+        }
+
+        // Xử lý logic Public / Private
+        MemberStatus status = group.getPrivacy() == GroupPrivacy.PUBLIC
+                ? MemberStatus.APPROVED 
+                : MemberStatus.PENDING;
+
+        GroupMember newMember = GroupMember.builder()
+                .group(group)
+                .userId(currentUserId)
+                .role(GroupRole.MEMBER)
+                .status(status)
+                .build();
+        groupMemberRepository.save(newMember);
+        if (status == MemberStatus.APPROVED) {
+            groupRepository.incrementMemberCount(groupId);
+            
+            // TODO: Phần bắn Kafka
+            // kafkaTemplate.send("group-events", "GROUP_MEMBER_JOINED", 
+            //         new GroupMemberJoinedEvent(groupId, currentUserId));
+        }
+    }
+
+    @Override
+    public String createNewInviteCode(Long groupId, InviteCodeGroupRequest inviteCode) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
         Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
         if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
-            throw new AppException(ErrorCode.INVALID_INVITE_CODE);
+            throw new AppException(ErrorCode.NO_PERMISSION);
         }
 
-        if (inviteCode.getCode().equals(group.getInviteCode())) {
-            throw new AppException(ErrorCode.INVALID_INVITE_CODE);
-        }
-
-        if (inviteCode.getCode().isBlank()) {
+        if (inviteCode.getCode() != null && !inviteCode.getCode().isBlank()) {
+            if (inviteCode.getCode().equals(group.getInviteCode())) {
+                throw new AppException(ErrorCode.INVITE_CODE_ALREADY_EXISTS);
+            }
+            if (groupRepository.existsByInviteCode(inviteCode.getCode())) {
+                throw new AppException(ErrorCode.INVITE_CODE_ALREADY_EXISTS);
+            }
+            group.setInviteCode(inviteCode.getCode());
+        } else {
             String newInviteCode = UUID.randomUUID().toString().substring(0, 20);
             group.setInviteCode(newInviteCode);
-            groupRepository.save(group);
-            return newInviteCode;
         }
-        group.setInviteCode(inviteCode.getCode());
+        
+        groupRepository.save(group);
         return group.getInviteCode();
     }
 
@@ -188,7 +231,7 @@ public class GroupServiceImpl implements GroupService {
         Long currentUserId = userHelper.getCurrentUser().getId();
 
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
 
         Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
         if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
@@ -197,7 +240,7 @@ public class GroupServiceImpl implements GroupService {
         if (request.getName() != null && !request.getName().isBlank()) {
 
             if (!group.getName().equals(request.getName()) && groupRepository.existsByName(request.getName())) {
-                throw new IllegalArgumentException("Group name already exists");
+                throw new AppException(ErrorCode.GROUP_NAME_ALREADY_EXISTS);
             }
             group.setName(request.getName());
         }
@@ -225,5 +268,170 @@ public class GroupServiceImpl implements GroupService {
                 .inviteCode(savedGroup.getInviteCode())
                 .createdAt(savedGroup.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    public void leaveOrDeleteGroup(Long groupId, Long newAdminId) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
+        if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+
+        if (newAdminId == null) {
+            // Trường hợp 1: Admin không chọn người thay thế -> Xóa group.
+            // Do đã config cascade = CascadeType.ALL ở entity Group, toàn bộ GroupMember cũng sẽ bị xóa.
+            groupRepository.delete(group);
+        } else {
+            // Trường hợp 2: Admin chọn một người khác làm Admin mới.
+            GroupMember newAdminMember = groupMemberRepository.findByGroupIdAndUserId(groupId, newAdminId)
+                    .orElseThrow(() -> new AppException(ErrorCode.GROUP_MEMBER_NOT_FOUND));
+            
+            newAdminMember.setRole(GroupRole.ADMIN);
+            groupMemberRepository.save(newAdminMember);
+
+            // Xóa admin hiện tại khỏi group
+            GroupMember currentAdminMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                    .orElseThrow(() -> new AppException(ErrorCode.GROUP_MEMBER_NOT_FOUND));
+            groupMemberRepository.delete(currentAdminMember);
+
+            groupRepository.decrementMemberCount(groupId);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<GroupCandidateResponse> getReplacementCandidates(Long groupId, Pageable pageable) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        Optional<GroupRole> role = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group);
+        if (role.isEmpty() || role.get() != GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+
+        List<Long> friendIds = followRepository.findFriendIds(currentUserId);
+        if (friendIds == null || friendIds.isEmpty()) {
+            friendIds = List.of(-1L); // Đảm bảo câu IN trong SQL không bị lỗi cú pháp khi danh sách rỗng
+        }
+
+        return groupMemberRepository.findReplacementCandidates(groupId, currentUserId, friendIds, pageable);
+    }
+
+    @Override
+    public void leaveGroup(Long groupId) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_MEMBER_NOT_FOUND));
+
+        if (currentMember.getRole() == GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION); // Admin phải dùng API leaveOrDeleteGroup
+        }
+
+        groupMemberRepository.delete(currentMember);
+        
+        if (currentMember.getStatus() == MemberStatus.APPROVED) {
+            groupRepository.decrementMemberCount(groupId);
+        }
+    }
+
+    @Override
+    public void kickMember(Long groupId, Long memberId) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupRole currentRole = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group)
+                .orElseThrow(() -> new AppException(ErrorCode.NO_PERMISSION));
+        
+        if (currentRole != GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId, memberId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_MEMBER_NOT_FOUND));
+
+        if (targetMember.getRole() == GroupRole.ADMIN) {
+            throw new AppException(ErrorCode.NO_PERMISSION); // Không thể kick Admin
+        }
+
+        groupMemberRepository.delete(targetMember);
+
+        if (targetMember.getStatus() == MemberStatus.APPROVED) {
+            groupRepository.decrementMemberCount(groupId);
+        }
+    }
+
+    @Override
+    public void handlePendingMember(Long groupId, Long memberId, boolean isApprove) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupRole currentRole = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group)
+                .orElseThrow(() -> new AppException(ErrorCode.NO_PERMISSION));
+        
+        if (currentRole == GroupRole.MEMBER) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId, memberId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_MEMBER_NOT_FOUND));
+
+        if (targetMember.getStatus() != MemberStatus.PENDING) {
+            throw new AppException(ErrorCode.MEMBER_NOT_PENDING);
+        }
+
+        if (isApprove) {
+            targetMember.setStatus(MemberStatus.APPROVED);
+            groupMemberRepository.save(targetMember);
+            groupRepository.incrementMemberCount(groupId);
+        } else {
+            groupMemberRepository.delete(targetMember);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserSearchResponse> getPendingMembers(Long groupId, Pageable pageable) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupRole currentRole = groupMemberRepository.findRoleByUserIdAndGroup(currentUserId, group)
+                .orElseThrow(() -> new AppException(ErrorCode.NO_PERMISSION));
+        
+        if (currentRole == GroupRole.MEMBER) {
+            throw new AppException(ErrorCode.NO_PERMISSION);
+        }
+
+        return groupMemberRepository.findPendingMembers(groupId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<GroupMemberResponse> getGroupMembers(Long groupId, Pageable pageable) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+
+        if (group.getPrivacy() == GroupPrivacy.PRIVACY) {
+            Long currentUserId = userHelper.getCurrentUser().getId();
+            boolean isMember = groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUserId);
+            if (!isMember) {
+                throw new AppException(ErrorCode.NO_PERMISSION);
+            }
+        }
+
+        return groupMemberRepository.findApprovedMembers(groupId, pageable);
     }
 }

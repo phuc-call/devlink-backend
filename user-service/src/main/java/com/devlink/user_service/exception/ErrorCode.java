@@ -42,7 +42,13 @@ public enum ErrorCode {
     NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST),
     IMAGE_NOT_FOUND("Image not found", HttpStatus.NOT_FOUND),
     INVALID_INVITE_CODE("Invalid invite code", HttpStatus.BAD_REQUEST),
-    NO_PERMISSION("You do not have permission to view this", HttpStatus.FORBIDDEN);
+    NO_PERMISSION("You do not have permission to view this", HttpStatus.FORBIDDEN),
+    GROUP_NOT_FOUND("Group not found", HttpStatus.NOT_FOUND),
+    GROUP_MEMBER_NOT_FOUND("Group member not found", HttpStatus.NOT_FOUND),
+    GROUP_NAME_ALREADY_EXISTS("Group name already exists", HttpStatus.CONFLICT),
+    USER_ALREADY_IN_GROUP("User is already a member of this group", HttpStatus.CONFLICT),
+    INVITE_CODE_ALREADY_EXISTS("Invite code is already taken", HttpStatus.CONFLICT),
+    MEMBER_NOT_PENDING("Member is not pending approval", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

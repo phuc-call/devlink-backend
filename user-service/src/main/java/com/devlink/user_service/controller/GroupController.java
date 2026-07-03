@@ -7,6 +7,9 @@ import com.devlink.user_service.dto.request.UpdateGroupRequest;
 import com.devlink.user_service.dto.response.ApiResponse;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
+import com.devlink.user_service.dto.response.GroupMemberResponse;
+import com.devlink.user_service.dto.response.GroupCandidateResponse;
+import com.devlink.user_service.dto.response.UserSearchResponse;
 import com.devlink.user_service.service.GroupService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -53,10 +56,11 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok("Joined group successfully"));
     }
 
-    @PostMapping("/new-invite-code")
+    @PostMapping("/{groupId}/new-invite-code")
     public ResponseEntity<ApiResponse<String>> createNewInviteCode(
+            @PathVariable Long groupId,
             @Valid @RequestBody InviteCodeGroupRequest request) {
-        String newCode = groupService.createNewInviteCode(request);
+        String newCode = groupService.createNewInviteCode(groupId, request);
         return ResponseEntity.ok(ApiResponse.ok(newCode));
     }
 
@@ -68,4 +72,60 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok(updatedGroup));
     }
 
+    @PostMapping("/{groupId}/leave")
+    public ResponseEntity<ApiResponse<Void>> leaveGroup(@PathVariable Long groupId) {
+        groupService.leaveGroup(groupId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{groupId}/members/{memberId}")
+    public ResponseEntity<ApiResponse<Void>> kickMember(@PathVariable Long groupId, @PathVariable Long memberId) {
+        groupService.kickMember(groupId, memberId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/{groupId}/members/{memberId}/approve")
+    public ResponseEntity<ApiResponse<Void>> approveMember(@PathVariable Long groupId, @PathVariable Long memberId) {
+        groupService.handlePendingMember(groupId, memberId, true);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/{groupId}/members/{memberId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectMember(@PathVariable Long groupId, @PathVariable Long memberId) {
+        groupService.handlePendingMember(groupId, memberId, false);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/{groupId}/pending-members")
+    public ResponseEntity<ApiResponse<Page<UserSearchResponse>>> getPendingMembers(
+            @PathVariable Long groupId,
+            @RequestParam(value = "page", defaultValue = Constants.DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(value = "size", defaultValue = Constants.DEFAULT_PAGE_SIZE_SMALL) @Min(0) @Max(20) int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UserSearchResponse> pendingMembers = groupService.getPendingMembers(groupId, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(pendingMembers));
+    }
+
+    @GetMapping("/{groupId}/members")
+    public ResponseEntity<ApiResponse<Page<GroupMemberResponse>>> getGroupMembers(
+            @PathVariable Long groupId,
+            @RequestParam(value = "page", defaultValue = Constants.DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(value = "size", defaultValue = Constants.DEFAULT_PAGE_SIZE_SMALL) @Min(0) @Max(20) int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GroupMemberResponse> members = groupService.getGroupMembers(groupId, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(members));
+    }
+
+    @GetMapping("/{groupId}/replacement-candidates")
+    public ResponseEntity<ApiResponse<Page<GroupCandidateResponse>>> getReplacementCandidates(
+            @PathVariable Long groupId,
+            @RequestParam(value = "page", defaultValue = Constants.DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(value = "size", defaultValue = Constants.DEFAULT_PAGE_SIZE_SMALL) @Min(0) @Max(20) int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GroupCandidateResponse> candidates = groupService.getReplacementCandidates(groupId, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(candidates));
+    }
 }

@@ -3,8 +3,11 @@ package com.devlink.user_service.service;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
 import com.devlink.user_service.dto.request.UpdateGroupRequest;
+import com.devlink.user_service.dto.response.GroupCandidateResponse;
+import com.devlink.user_service.dto.response.GroupMemberResponse;
 import com.devlink.user_service.dto.response.GroupResponse;
 import com.devlink.user_service.dto.response.GroupSearchResponse;
+import com.devlink.user_service.dto.response.UserSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -60,10 +63,11 @@ public interface GroupService {
      * group
      * with the provided code and saves the changes.
      *
+     * @param groupId the ID of the group
      * @param inviteCode the request payload containing the invite code information
      * @return the newly generated or updated invite code as a String
      */
-    String createNewInviteCode(InviteCodeGroupRequest inviteCode);
+    String createNewInviteCode(Long groupId, InviteCodeGroupRequest inviteCode);
 
     /**
      * Updates an existing group's basic information (name, description, privacy).
@@ -75,4 +79,43 @@ public interface GroupService {
      * @return a GroupResponse DTO with the updated group's information
      **/
     GroupResponse updateGroup(Long groupId, UpdateGroupRequest request);
+
+    void joinGroup(Long groupId);
+
+    /**
+     * Admin leaves the group. If newAdminId is provided, that user becomes the new admin.
+     * If newAdminId is null, the group is deleted.
+     */
+    void leaveOrDeleteGroup(Long groupId, Long newAdminId);
+
+    /**
+     * Get paginated list of potential replacement candidates.
+     * Priorities: Vice Admin (MODERATOR), then Friends of the current Admin.
+     */
+    Page<GroupCandidateResponse> getReplacementCandidates(Long groupId, Pageable pageable);
+
+    /**
+     * Normal member leaves the group.
+     */
+    void leaveGroup(Long groupId);
+
+    /**
+     * Admin or Moderator kicks a member out of the group.
+     */
+    void kickMember(Long groupId, Long memberId);
+
+    /**
+     * Admin or Moderator approves or rejects a pending member.
+     */
+    void handlePendingMember(Long groupId, Long memberId, boolean isApprove);
+
+    /**
+     * Get a list of users who are pending approval for the group.
+     */
+    Page<UserSearchResponse> getPendingMembers(Long groupId, Pageable pageable);
+
+    /**
+     * Get a list of approved members of the group, ordered by join date.
+     */
+    Page<GroupMemberResponse> getGroupMembers(Long groupId, Pageable pageable);
 }
