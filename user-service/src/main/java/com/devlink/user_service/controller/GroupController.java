@@ -38,6 +38,12 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok(createdGroup));
     }
 
+    @PostMapping(value = "/cover-image", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> uploadCoverImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        String coverUrl = groupService.uploadGroupCover(file);
+        return ResponseEntity.ok(ApiResponse.ok(coverUrl));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<Page<GroupSearchResponse>>> searchGroups(
             @RequestParam("name") String name,
@@ -49,11 +55,38 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
+    @GetMapping("/recommend")
+    public ResponseEntity<ApiResponse<Page<GroupSearchResponse>>> getRecommendedGroups(
+            @RequestParam(value = "page", defaultValue = Constants.DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(value = "size", defaultValue = Constants.DEFAULT_PAGE_SIZE_SMALL) @Min(0) @Max(20) int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GroupSearchResponse> result = groupService.getRecommendedGroups(pageable);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @GetMapping("/my-groups")
+    public ResponseEntity<ApiResponse<Page<GroupSearchResponse>>> getMyGroups(
+            @RequestParam(value = "role", required = false) com.devlink.user_service.entity.enums.GroupRole role,
+            @RequestParam(value = "page", defaultValue = Constants.DEFAULT_PAGE) @Min(0) int page,
+            @RequestParam(value = "size", defaultValue = Constants.DEFAULT_PAGE_SIZE_SMALL) @Min(0) @Max(20) int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GroupSearchResponse> result = groupService.getMyGroups(role, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
     @PostMapping("/join-by-code")
     public ResponseEntity<ApiResponse<String>> joinGroupByCode(
             @Valid @RequestBody InviteCodeGroupRequest request) {
         groupService.userJoinGroupByInviteCode(request);
         return ResponseEntity.ok(ApiResponse.ok("Joined group successfully"));
+    }
+
+    @PostMapping("/{groupId}/join")
+    public ResponseEntity<ApiResponse<Void>> joinGroup(@PathVariable Long groupId) {
+        groupService.joinGroup(groupId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @PostMapping("/{groupId}/new-invite-code")
@@ -127,5 +160,11 @@ public class GroupController {
         Pageable pageable = PageRequest.of(page, size);
         Page<GroupCandidateResponse> candidates = groupService.getReplacementCandidates(groupId, pageable);
         return ResponseEntity.ok(ApiResponse.ok(candidates));
+    }
+
+    @GetMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<GroupResponse>> getGroupById(@PathVariable Long groupId) {
+        GroupResponse group = groupService.getGroupById(groupId);
+        return ResponseEntity.ok(ApiResponse.ok(group));
     }
 }

@@ -1,6 +1,11 @@
 import AppRouter from './router';
+import { ToastProvider } from './context/Toastcontext';
 
 export default function App() {
-    return <AppRouter />;
+    return (
+        <ToastProvider>
+            <AppRouter />
+        </ToastProvider>
+    );
 }
  

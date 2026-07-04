@@ -21,4 +21,6 @@ public class GroupResponse {
     private Integer memberCount;
     private String inviteCode;
     private LocalDateTime createdAt;
+    private MemberStatus joinStatus;
+    private GroupRole role;
 }

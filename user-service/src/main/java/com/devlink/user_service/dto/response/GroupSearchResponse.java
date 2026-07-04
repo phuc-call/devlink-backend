@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.devlink.user_service.entity.enums.GroupRole;
 
 import java.util.List;
 
@@ -18,4 +19,6 @@ public class GroupSearchResponse {
     private String coverImage;
     private Integer memberCount;
     private List<UserSearchResponse> mutualFriends;
+    private MemberStatus joinStatus;
+    private GroupRole role;
 }

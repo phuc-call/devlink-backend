@@ -2,7 +2,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import styles from './LeftSidebar.module.css';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
+import { groupApi } from '../../../../api/user-service/groupApi.ts';
 import type { UserRecommendationResponse } from '../../../../types/profile.types.ts';
+import type { GroupSearchResponse } from '../../../../types/group.types.ts';
 
 /* ─── Nav chính ─── */
 const NAV_ITEMS = [
@@ -81,13 +83,25 @@ const NAV_ITEMS = [
 
 export default function LeftSidebar() {
     const [recommendations, setRecommendations] = useState<UserRecommendationResponse[]>([]);
+    const [myGroups, setMyGroups] = useState<GroupSearchResponse[]>([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         userProfileApi.getNormalRecommendations()
             .then(res => setRecommendations(res.data.data))
             .catch(() => setRecommendations([]));
+            
+        groupApi.getMyGroups(undefined, 0, 5)
+            .then(res => setMyGroups(res.data.data.content))
+            .catch(() => setMyGroups([]));
     }, []);
+
+    const getGroupBorderStyle = (role?: string | null) => {
+        if (role === 'ADMIN') return { border: '3px solid red' };
+        if (role === 'MODERATOR') return { border: '3px solid blue' };
+        return {};
+    };
+
 
     return (
         <div className={styles.sidebar}>
@@ -112,16 +126,37 @@ export default function LeftSidebar() {
 
 
             <div className={styles.indexSection}>
-                {/* Xu hướng */}
+                {/* Nhóm của tôi */}
                 <div className={styles.indexGroup}>
-                    <h4 className={styles.indexTitle}>Xu hướng</h4>
+                    <h4 className={styles.indexTitle}>Nhóm của tôi</h4>
                     <ul className={styles.indexList}>
-                        {['#ReactJS', '#SpringBoot', '#TypeScript', '#DevOps', '#AI'].map(item => (
-                            <li key={item}>
-                                <button className={styles.indexItem}>{item}</button>
-                            </li>
-                        ))}
+                        {myGroups.length === 0 ? (
+                            <li className={styles.indexItem}>Chưa tham gia nhóm nào</li>
+                        ) : (
+                            myGroups.map(group => (
+                                <li key={group.id}>
+                                    <button 
+                                        className={`${styles.indexItem} ${styles.groupItem}`}
+                                        onClick={() => navigate(`/groups/${group.id}`)}
+                                        style={getGroupBorderStyle(group.role)}
+                                    >
+                                        <div className={styles.groupInfo}>
+                                            <span className={styles.groupName}>{group.name}</span>
+                                            <span className={styles.groupMemberCount}>{group.memberCount} thành viên</span>
+                                        </div>
+                                    </button>
+                                </li>
+                            ))
+                        )}
                     </ul>
+                    {myGroups.length > 0 && (
+                        <button 
+                            className={styles.viewMoreBtn}
+                            onClick={() => navigate('/groups/my-groups')}
+                        >
+                            Xem thêm
+                        </button>
+                    )}
                 </div>
 
                 {/* Gợi ý theo dõi */}

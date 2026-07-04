@@ -11,6 +11,8 @@ import MainLayout from '../components/layout/MainLayout';
 import FeedPage from '../features/post/pages/FeedPage';
 import FollowingPage from '../features/post/pages/FollowingPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
+import CreateGroupPage from '../features/post/pages/CreateGroupPage';
+import GroupDetailPage from '../features/post/pages/GroupDetailPage';
 import NotificationPage from '../features/notification/pages/NotificationPage';
 import ChatPage from '../features/chat/pages/ChatPage';
 import MyViolationsPage from '../features/notification/pages/MyViolationsPage/MyViolationsPage.tsx';
@@ -18,6 +20,7 @@ import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
 import MyTemplatesPage from '../features/post/pages/MyTemplatesPage/MyTemplatesPage';
+import MyGroupsPage from '../features/post/pages/MyGroupsPage/MyGroupsPage';
 
 import AdminLayout from '../components/layout/AdminLayout/AdminLayout';
 import DashboardPage from '../features/admin/pages/DashboardPage';
@@ -55,6 +58,9 @@ const router = createBrowserRouter([
                     { path: '/', element: <FeedPage /> },
                     { path: '/following', element: <FollowingPage /> },
                     { path: '/explore', element: <ExplorePage /> },
+                    { path: '/groups/create', element: <CreateGroupPage /> },
+                    { path: '/groups/my-groups', element: <MyGroupsPage /> },
+                    { path: '/groups/:id', element: <GroupDetailPage /> },
                     { path: '/notifications', element: <NotificationPage /> },
                     { path: '/chat', element: <ChatPage /> },
                     { path: '/feature-1', element: <MyTemplatesPage /> },

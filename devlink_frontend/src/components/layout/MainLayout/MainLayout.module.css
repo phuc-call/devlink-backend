@@ -6,7 +6,7 @@
 
 .body {
     display: flex;
-    max-width: 1200px;
+    max-width: 1400px; /* Tăng từ 1200 lên 1400 để đẩy 2 bên ra xa */
     margin: 0 auto;
     padding-top: 60px; /* header height */
     gap: 0;
@@ -28,7 +28,7 @@
 .feed {
     flex: 1;
     min-width: 0;
-    max-width: 680px;
+    max-width: 800px; /* Tăng từ 680 lên 800 để cho main to ra */
     margin: 0 auto;
     padding: 20px 16px;
 }

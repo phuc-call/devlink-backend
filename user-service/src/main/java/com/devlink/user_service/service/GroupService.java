@@ -10,6 +10,7 @@ import com.devlink.user_service.dto.response.GroupSearchResponse;
 import com.devlink.user_service.dto.response.UserSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface GroupService {
 
@@ -24,6 +25,22 @@ public interface GroupService {
      * @throws IllegalArgumentException if the group name already exists
      */
     GroupResponse createGroup(CreateGroupRequest request);
+
+    /**
+     * Gets recommended groups for the current user based on their profile.
+     * Includes the user's current joinStatus in the group.
+     */
+    Page<GroupSearchResponse> getRecommendedGroups(Pageable pageable);
+
+    /**
+     * Gets groups that the current user has joined.
+     *
+     * @param role optional role to filter by
+     * @param pageable pagination parameters
+     * @return a paginated list of GroupSearchResponse DTOs
+     */
+    Page<GroupSearchResponse> getMyGroups(com.devlink.user_service.entity.enums.GroupRole role, Pageable pageable);
+
 
     /**
      * Searches for groups by their name and returns optimized data for group
@@ -118,4 +135,14 @@ public interface GroupService {
      * Get a list of approved members of the group, ordered by join date.
      */
     Page<GroupMemberResponse> getGroupMembers(Long groupId, Pageable pageable);
+
+    /**
+     * Upload cover image for group and return URL.
+     */
+    String uploadGroupCover(MultipartFile file);
+
+    /**
+     * Get group details by ID
+     */
+    GroupResponse getGroupById(Long groupId);
 }

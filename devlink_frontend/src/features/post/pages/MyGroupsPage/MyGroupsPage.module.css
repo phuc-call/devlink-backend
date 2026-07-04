@@ -1,0 +1,161 @@
+/* MyGroupsPage.module.css */
+.container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filterLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4B5563;
+}
+
+.filterSelect {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #D1D5DB;
+    font-size: 14px;
+    color: #111827;
+    background-color: white;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.filterSelect:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    /* Default border if no inline style is applied */
+    border: 1px solid #E5E7EB;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+
+.cardCover {
+    height: 120px;
+    width: 100%;
+    background: #F3F4F6;
+}
+
+.cardCover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.placeholderCover {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
+}
+
+.cardContent {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.cardTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+
+.cardDesc {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0 0 16px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.memberCount {
+    font-size: 13px;
+    color: #9CA3AF;
+    font-weight: 500;
+}
+
+.roleTag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.roleTag[data-role="ADMIN"] {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+.roleTag[data-role="MODERATOR"] {
+    background-color: #DBEAFE;
+    color: #2563EB;
+}
+
+.roleTag[data-role="MEMBER"] {
+    background-color: #F3F4F6;
+    color: #4B5563;
+}
+
+.loading, .empty {
+    text-align: center;
+    padding: 64px 0;
+    color: #6B7280;
+    font-size: 16px;
+}

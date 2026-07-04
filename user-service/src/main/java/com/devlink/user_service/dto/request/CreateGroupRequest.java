@@ -22,7 +22,10 @@ public class CreateGroupRequest {
 
     @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
-
+    
+    @NotBlank(message = "Cover image is required")
+    private String coverImage;
+    
     private GroupPrivacy privacy;
     private List<Long> memberIds;
 }
