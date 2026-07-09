@@ -111,9 +111,9 @@ MAIL_USERNAME=your_gmail@gmail.com
 MAIL_PASSWORD=your_16_char_app_password
 
 # MinIO
-MINIO_USER=devlink_admin
-MINIO_PASSWORD=devlink_secret_123
-MINIO_BUCKET=devlink-media
+MINIO_USER=demo
+MINIO_PASSWORD=demo
+MINIO_BUCKET=demo
 
 # Secret dùng cho giao tiếp nội bộ giữa các service
 INTERNAL_SECRET=your_random_secret_here
