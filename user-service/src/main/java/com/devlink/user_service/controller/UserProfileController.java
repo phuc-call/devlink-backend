@@ -3,6 +3,9 @@ package com.devlink.user_service.controller;
 import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
+import com.devlink.user_service.dto.internal.LanguageInternal;
+import com.devlink.user_service.dto.internal.UserNameInternal;
+import com.devlink.user_service.service.PostServiceClient;
 import com.devlink.user_service.service.UserProfileService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -24,6 +27,17 @@ import static com.devlink.user_service.config.Constants.*;
 @RequiredArgsConstructor
 public class UserProfileController {
     private final UserProfileService userProfileService;
+    private final PostServiceClient postServiceClient;
+
+    @GetMapping("/{userId}/name")
+    public ResponseEntity<ApiResponse<UserNameInternal>> getUserNameById(@PathVariable Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(postServiceClient.getCurrentUser(userId)));
+    }
+
+    @GetMapping("/languages")
+    public ResponseEntity<ApiResponse<LanguageInternal>> getLanguages() {
+        return ResponseEntity.ok(ApiResponse.ok(postServiceClient.getListLange()));
+    }
 
     @GetMapping("/me/profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile() {

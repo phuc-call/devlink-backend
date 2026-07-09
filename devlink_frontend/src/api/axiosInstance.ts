@@ -32,8 +32,6 @@ axiosInstance.interceptors.response.use(
     async error => {
         const original = error.config;
 
-        console.log('🔴 Request lỗi:', error.config?.url, 'Status:', error.response?.status);
-
         if (error.response?.status === 401 && !original._retry) {
             if (isRefreshing) {
                 // Đợi request refresh token đầu tiên hoàn thành
@@ -47,21 +45,18 @@ axiosInstance.interceptors.response.use(
                 });
             }
 
+            original._retry = true;
             // Không cần lấy refreshToken từ localStorage nữa, cookie tự gửi đi!
             isRefreshing = true;
 
             try {
-                console.log('🔄 Đang gọi refresh tại:', `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`);
-                
                 // Trình duyệt sẽ tự đính kèm cookie refreshToken vào request này
                 const res = await axios.post(
-                    `${import.meta.env.VITE_API_GATEWAY_URL}/auth/refresh`,
+                    '/auth/refresh',
                     {}, // Body trống
                     { withCredentials: true } // Bắt buộc để gửi cookie
                 );
 
-                console.log('✅ Refresh thành công:', res.data);
-                
                 // Backend đã tự set lại cookie mới, ta không cần làm gì với localStorage
                 processQueue(null, null);
                 return axiosInstance(original);

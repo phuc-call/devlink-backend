@@ -71,7 +71,7 @@ function parseJsonArray(raw: string | null): string[] {
 
 async function fetchAuthorInfo(userId: number): Promise<TemplateAuthorInfo | null> {
     try {
-        const res = await axiosInstance.get(`/internal/users/${userId}/name`);
+        const res = await axiosInstance.get(`/api/users/${userId}/name`);
         return res.data.data ?? null;
     } catch {
         return null;

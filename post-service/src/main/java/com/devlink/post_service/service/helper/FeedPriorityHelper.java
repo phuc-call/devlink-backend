@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * score = badgeWeight * 10_000 + authorFollowerCount * 0.5 + likeCount * 1.0
  * Badge weights: RED_TICK=3, BLUE_TICK=2, POPULAR=1, NONE=0.
  *Bucket split per page
- {@code 1 - discoveryRatio} sorted by score DESC  (PRIORITY bucket)</li>
+ {@code 1 - discoveryRatio} sorted by score DESC (PRIORITY bucket)</li>
  {@code discoveryRatio} randomly shuffled (DISCOVERY bucket)</li>
  {@code discoveryRatio} defaults to 0.20 and is read from {@link VideoFeedProperties}.
  */
@@ -66,7 +66,7 @@ public class FeedPriorityHelper {
                 .toList();
 
         Map<Long, UserFeedInfoClient> authorMap = safeGetFeedInfo(authorIds);
-        Map<Long, Integer> badgeWeights = resolveBadgeWeights(authorIds);
+        Map<Long, Integer> badgeWeights = resolveBadgeWeights(authorIds, authorMap);
 
         // Enrich every post
         posts.forEach( p -> {
@@ -113,17 +113,12 @@ public class FeedPriorityHelper {
         return result;
     }
 
-    public Map<Long, Integer> resolveBadgeWeights(List<Long> authorIds) {
+    public Map<Long, Integer> resolveBadgeWeights(List<Long> authorIds, Map<Long, UserFeedInfoClient> authorMap) {
         Map<Long, Integer> result = new HashMap<>();
         for (Long authorId : authorIds) {
-            try {
-                Map<Long, BadgeType> badgeMap = userInfoCacheClient.getUserBadge(authorId);
-                result.put(authorId, badgeWeight(
-                        badgeMap != null ? badgeMap.get(authorId) : null));
-            } catch (Exception e) {
-                log.warn("[FeedPriorityHelper] badge lookup failed authorId={}", authorId);
-                result.put(authorId, 0);
-            }
+            UserFeedInfoClient info = authorMap.get(authorId);
+            BadgeType badge = info != null ? info.getBadge() : null;
+            result.put(authorId, badgeWeight(badge));
         }
         return result;
     }

@@ -67,6 +67,28 @@ spring:
                     redis-rate-limiter.replenishRate: 10
                     redis-rate-limiter.burstCapacity: 20
                     key-resolver: "#{@userKeyResolver}"
+            - id: user-service-internal
+              uri: lb://user-service
+              predicates:
+                - Path=/internal/**
+              filters:
+                - name: LoggingFilter
+            # post-service — AI ask endpoint
+            - id: post-service-ai
+              uri: lb://post-service
+              predicates:
+                - Path=/api/templates/*/ask
+              filters:
+                - name: JwtAuthFilter
+                - name: LoggingFilter
+                - name: RequestRateLimiter
+                  args:
+                    # 3 request/giây, burst tối đa 5 — đủ dùng, chặn tool phá
+                    redis-rate-limiter.replenishRate: 3
+                    redis-rate-limiter.burstCapacity: 5
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+
             # post-service
             - id: post-service
               uri: lb://post-service

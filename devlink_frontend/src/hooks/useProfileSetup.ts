@@ -6,12 +6,14 @@ export function useProfileSetup() {
     const [checked, setChecked] = useState(false);
     const [nudgeSentCount, setNudgeSentCount] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+    const [fullName, setFullName] = useState<string>('');
 
     useEffect(() => {
         userProfileApi.getProfile()
             .then(res => {
                 setNudgeSentCount(res.data.data.nudgeSentCount || 0);
                 setAvatarUrl(res.data.data.avatarUrl);
+                setFullName(res.data.data.fullName || '');
                 if (res.data.data.shouldShowNudge) {
                     setShowModal(true);
                 }
@@ -20,5 +22,5 @@ export function useProfileSetup() {
             .finally(() => setChecked(true));
     }, []);
 
-    return {showModal, checked, nudgeSentCount, avatarUrl, closeModal: () => setShowModal(false)};
+    return {showModal, checked, nudgeSentCount, avatarUrl, fullName, closeModal: () => setShowModal(false)};
 }

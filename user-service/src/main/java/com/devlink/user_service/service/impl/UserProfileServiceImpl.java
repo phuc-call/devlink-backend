@@ -157,7 +157,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     private void scheduleNudge(UserProfile userProfile, int percent, ProfileNudgeConfig profileNudgeConfig) {
-        if (percent > profileNudgeConfig.getCompletionThreshold()) {
+        if (percent >= profileNudgeConfig.getCompletionThreshold()) {
             userProfile.setNextNudgeAt(null);
             userProfile.setNudgeDismissedForever(true);
             return;
@@ -359,6 +359,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         if (profile == null) {
             profile = new UserProfile();
             profile.setUser(user);
+            profile.setFullName(user.getUsername());
             userProfileRepository.save(profile);
         }
         return profile;

@@ -1,6 +1,8 @@
 package com.devlink.user_service.dto.response;
 
 import com.devlink.user_service.entity.enums.GroupPrivacy;
+import com.devlink.user_service.entity.enums.GroupRole;
+import com.devlink.user_service.entity.enums.MemberStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -47,7 +47,7 @@ const router = createBrowserRouter([
         ],
     },
 
-    { path: '/oauth2/success', element: <OAuth2SuccessPage /> },
+    { path: '/oauth-success', element: <OAuth2SuccessPage /> },
 
     {
         element: <PrivateGuard />,

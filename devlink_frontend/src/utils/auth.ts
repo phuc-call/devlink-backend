@@ -18,7 +18,7 @@ export async function getCurrentUserInfo(): Promise<{ userName: string; avatar: 
     if (!id) return null;
     try {
         const res = await fetch(
-            `${import.meta.env.VITE_API_GATEWAY_URL}/internal/users/${id}/name`,
+            `${import.meta.env.VITE_API_GATEWAY_URL}/api/users/${id}/name`,
             { credentials: 'include' } // Cookie được gửi tự động
         );
         const json = await res.json();
@@ -33,7 +33,7 @@ export async function getUserInfoById(
 ): Promise<{ userName: string; avatar: string | null } | null> {
     try {
         const res = await fetch(
-            `${import.meta.env.VITE_API_GATEWAY_URL}/internal/users/${userId}/name`,
+            `${import.meta.env.VITE_API_GATEWAY_URL}/api/users/${userId}/name`,
             { credentials: 'include' } // Cookie được gửi tự động
         );
         const json = await res.json();

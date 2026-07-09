@@ -97,7 +97,7 @@ public class VideoFeedServiceImpl implements VideoFeedService {
                 .toList();
 
         Map<Long, UserFeedInfoClient> authorMap = feedPriorityHelper.safeGetFeedInfo(authorIds);
-        Map<Long, Integer> badgeWeights = feedPriorityHelper.resolveBadgeWeights(authorIds);
+        Map<Long, Integer> badgeWeights = feedPriorityHelper.resolveBadgeWeights(authorIds, authorMap);
 
         List<ScoredVideo> scored = rawPosts.stream().map(p -> {
             int badgeWeight = badgeWeights.getOrDefault(p.getAuthorId(), 0);
@@ -208,7 +208,8 @@ public class VideoFeedServiceImpl implements VideoFeedService {
                 .build();
     }
 
-    private record ScoredVideo(VideoPostResponse post, double score) {}
+    private record ScoredVideo(VideoPostResponse post, double score) {
+    }
 
     @Override
     public VideoFeedResponse getVideoDetail(Long postId) {
@@ -225,7 +226,7 @@ public class VideoFeedServiceImpl implements VideoFeedService {
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
         List<Long> postIds = List.of(p.getPostId());
-        List<TagResponse>   tags      = postTagRepository.findTagsByPostIds(postIds);
+        List<TagResponse> tags = postTagRepository.findTagsByPostIds(postIds);
         List<MediaResponse> mediaList = postMediaRepository.findMediaByPostIds(postIds);
 
         UserFeedInfoClient author = feedPriorityHelper
@@ -266,12 +267,4 @@ public class VideoFeedServiceImpl implements VideoFeedService {
         }
         return List.of(-1L);
     }
-
-//    public VideoFeedPageResponse searchVideoFeed(String query, int page, int size) {
-//        if (query == null || query.isBlank()||query.length() > 100) {
-//            return emptyPage(page, size);
-//        }
-//
-//
-//    }
 }

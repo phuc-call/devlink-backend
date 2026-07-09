@@ -118,6 +118,15 @@ gemini:
     key: AIzaSyAQuAvLi9u-JdRbfMFpq7jT7UKEwvv_d5Q
     model: "gemini-2.0-flash"
 
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+    url: ${OPENAI_API_URL:https://api.openai.com/v1/chat/completions}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    max-tokens: 1024
+    timeout-ms: 30000
+
 feign:
   circuitbreaker:
     enabled: true

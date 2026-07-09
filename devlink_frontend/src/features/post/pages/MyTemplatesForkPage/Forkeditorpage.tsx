@@ -7,9 +7,10 @@ import {
     ChevronUp, X, Send, Loader2, AlertTriangle,
     CheckCircle, FileText, Clock, Hash, XCircle,
 } from 'lucide-react';
-import axiosInstance from '../../../../api/axiosInstance';
 import styles from './ForkEditorPage.module.css';
 import SuggestionModal from '../../../post/components/Suggestionmodal.tsx';
+import axiosInstance from '../../../../api/axiosInstance';
+import {askAboutTemplate} from '../../../../api/post-service/learningTemplateApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,13 +51,7 @@ const resetFork = async (forkId: number): Promise<ForkResponse> => {
     return res.data;
 };
 
-const askAI = async (templateId: number, question: string, contextCode?: string) => {
-    const res = await axiosInstance.post(`/api/templates/templates/${templateId}/ask`, {
-        question,
-        contextCode: contextCode || undefined,
-    });
-    return res.data;
-};
+
 
 // PUT /api/templates/suggestions/{suggestionId}/cancel
 const cancelSuggestionApi = async (suggestionId: number): Promise<void> => {
@@ -107,10 +102,13 @@ function AIPanel({templateId, selectedText, onClose}: AIPanelProps) {
         setLoading(true);
         setError(null);
         try {
-            const res = await askAI(templateId, question, selectedText || undefined);
-            setAnswer(res?.answer ?? 'Không có phản hồi.');
+            const res = await askAboutTemplate(templateId, {
+                question,
+                contextCode: selectedText || undefined,
+            });
+            setAnswer(res.answer ?? 'Không có phản hồi.');
         } catch {
-            setError('Gemini AI tạm thời không khả dụng. Vui lòng thử lại.');
+            setError('AI tạm thời không khả dụng. Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
@@ -121,7 +119,7 @@ function AIPanel({templateId, selectedText, onClose}: AIPanelProps) {
             <div className={styles.aiHeader}>
                 <div className={styles.aiTitle}>
                     <Sparkles size={15} color="#8B5CF6"/>
-                    <span>Hỏi Gemini AI</span>
+                    <span>Hỏi OpenAI</span>
                 </div>
                 <div className={styles.aiHeaderActions}>
                     <button className={styles.aiToggleBtn} onClick={() => setCollapsed(v => !v)}
@@ -160,7 +158,7 @@ function AIPanel({templateId, selectedText, onClose}: AIPanelProps) {
                     {error && <div className={styles.aiError}><AlertTriangle size={13}/> {error}</div>}
                     {answer && (
                         <div className={styles.answerBox}>
-                            <div className={styles.answerLabel}><Sparkles size={12}/> Gemini trả lời:</div>
+                            <div className={styles.answerLabel}><Sparkles size={12}/> OpenAI trả lời:</div>
                             <p className={styles.answerText}>{answer}</p>
                         </div>
                     )}
@@ -367,9 +365,9 @@ export default function ForkEditorPage() {
                     <button
                         className={`${styles.topBtn} ${styles.btnAI} ${showAI ? styles.btnAIActive : ''}`}
                         onClick={() => setShowAI(v => !v)}
-                        title="Hỏi Gemini AI"
+                        title="Hỏi OpenAI"
                     >
-                        <Sparkles size={14}/> Gemini AI
+                        <Sparkles size={14}/> OpenAI
                     </button>
 
                     <button className={`${styles.topBtn} ${styles.btnDanger}`} onClick={() => setConfirmReset(true)}

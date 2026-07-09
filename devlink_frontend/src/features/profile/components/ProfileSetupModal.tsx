@@ -19,11 +19,12 @@ interface Props {
     onClose: () => void;
     nudgeSentCount?: number;
     avatarUrl?: string;
+    initialFullName?: string;
 }
 
-export default function ProfileSetupModal({onClose, nudgeSentCount = 0, avatarUrl}: Props) {
+export default function ProfileSetupModal({onClose, nudgeSentCount = 0, avatarUrl, initialFullName = ''}: Props) {
     const [step, setStep] = useState<Step>(1);
-    const [fullName, setFullName] = useState('');
+    const [fullName, setFullName] = useState(initialFullName);
     const [bio, setBio] = useState('');
     const [school, setSchool] = useState('');
     const [major, setMajor] = useState('');

@@ -4,3 +4,15 @@ export interface ForkResponse {
     title: string;
     isModified: boolean;
 }
+
+
+export interface AskAIRequest {
+    question: string;
+    contextCode?: string;
+}
+
+export interface AskAIResponse {
+    answer: string;
+    model: string;
+    templateId: number;
+}

@@ -87,7 +87,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
 
             // Redirect frontend
-            response.sendRedirect(appProperties.getFrontendUrl() + "/oauth2-success");
+            String redirectUrl = String.format("%s/oauth-success?userId=%d&username=%s&role=%s",
+                    appProperties.getFrontendUrl(), result.userId(), result.username(), result.roleName());
+            response.sendRedirect(redirectUrl);
 
         } catch (AppException e) {
             clearCookie(response, MODE_OAUTH);
@@ -163,7 +165,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         authTokeRepository.save(refreshToken);
 
 
-        return new AuthResult(accessToken, rawRefreshToken); // raw
+        return new AuthResult(accessToken, rawRefreshToken, user.getId(), user.getUsername(), roleName);
     }
 
     // build AuthToken
@@ -227,6 +229,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 name + "=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
     }
 
-    private record AuthResult(String accessToken, String refreshToken) {
+    private record AuthResult(String accessToken, String refreshToken, Long userId, String username, String roleName) {
     }
 }

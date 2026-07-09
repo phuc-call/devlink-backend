@@ -76,10 +76,9 @@ export async function getUserInfoById(
     userId: number
 ): Promise<{ userName: string; avatar: string | null } | null> {
     try {
-        const token = localStorage.getItem('accessToken');
         const res = await fetch(
-            `${import.meta.env.VITE_API_GATEWAY_URL}/internal/users/${userId}/name`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            `${import.meta.env.VITE_API_GATEWAY_URL}/api/users/${userId}/name`,
+            { credentials: 'include' }
         );
         const json = await res.json();
         return json.data ?? null;

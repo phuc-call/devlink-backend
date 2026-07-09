@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service @Slf4j
-@Transactional @RequiredArgsConstructor
+@RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailTemplateRepository emailTemplateRepository;
     private final EmailVerificationRepository emailVerificationRepository;
@@ -71,6 +71,7 @@ public class EmailServiceImpl implements EmailService {
         return result;
     }
 
+    @Transactional
     public void verifyOtp(String email, String code, VerificationType type){
 
         EmailVerification ev =emailVerificationRepository.

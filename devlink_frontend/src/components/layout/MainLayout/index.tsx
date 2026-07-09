@@ -8,11 +8,11 @@ import { useProfileSetup } from '../../../hooks/useProfileSetup';
 import styles from './MainLayout.module.css';
 
 export default function MainLayout() {
-    const { showModal, closeModal, nudgeSentCount, avatarUrl } = useProfileSetup();
+    const { showModal, closeModal, nudgeSentCount, avatarUrl, fullName } = useProfileSetup();
 
     return (
         <div className={styles.root}>
-            {showModal && <ProfileSetupModal onClose={closeModal} nudgeSentCount={nudgeSentCount} avatarUrl={avatarUrl} />}
+            {showModal && <ProfileSetupModal onClose={closeModal} nudgeSentCount={nudgeSentCount} avatarUrl={avatarUrl} initialFullName={fullName} />}
             <Header />
             <div className={styles.body}>
                 <aside className={styles.left}>

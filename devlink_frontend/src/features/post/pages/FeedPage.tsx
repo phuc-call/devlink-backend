@@ -165,7 +165,7 @@ export default function FeedPage() {
 
     return (
         <>
-            {showModal && <ProfileSetupModal onClose={closeModal} />}
+            {showModal && <ProfileSetupModal onClose={closeModal} initialFullName={fullName} />}
 
             {showCreatePost && (
                 <CreatePostModal

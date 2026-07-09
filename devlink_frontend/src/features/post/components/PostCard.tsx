@@ -17,12 +17,12 @@ import { reactionApi } from '../../../api/post-service/reactionApi';
 import type { ReactionType } from '../../../types/reaction.types';
 
 const REACTION_ICONS = {
-    LIKE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#2563EB"><path d="M2 10h4v10H2v-10zm20 2c0-1.1-.9-2-2-2h-5.3l.8-3.9v-.4c0-.4-.1-.8-.4-1l-1-1-4.7 4.8c-.3.3-.5.7-.5 1.1v8c0 1.1.9 2 2 2h6.5c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-1.6z"/></svg>,
-    LOVE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EF4444"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
-    HAHA: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M12 16.5c-2.3 0-4.3-1.4-5.2-3.5h10.4c-.9 2.1-2.9 3.5-5.2 3.5z"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/></svg>,
-    WOW: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="12" cy="16" r="2.5"/></svg>,
-    SAD: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M12 13.5c-2 0-3.8 1.1-4.7 2.8l1.7.9c.6-1 1.6-1.7 3-1.7s2.4.7 3 1.7l1.7-.9c-.9-1.7-2.7-2.8-4.7-2.8z"/><circle fill="#fff" cx="8.5" cy="9.5" r="1.5"/><circle fill="#fff" cx="15.5" cy="9.5" r="1.5"/></svg>,
-    ANGRY: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EA580C"><circle cx="12" cy="12" r="10"/><path fill="#fff" d="M8.5 11c.8 0 1.5-.7 1.5-1.5S9.3 8 8.5 8 7 8.7 7 9.5 7.7 11 8.5 11zm7 0c.8 0 1.5-.7 1.5-1.5S16.3 8 15.5 8 14 8.7 14 9.5 14.7 11 15.5 11zm-3.5 3c-2.3 0-4.3 1.4-5.2 3.5h10.4c-.9-2.1-2.9-3.5-5.2-3.5z"/><path stroke="#fff" strokeWidth="2" strokeLinecap="round" d="M6 7l3 1.5M18 7l-3 1.5"/></svg>,
+    LIKE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#2563EB"><path d="M2 10h4v10H2v-10zm20 2c0-1.1-.9-2-2-2h-5.3l.8-3.9v-.4c0-.4-.1-.8-.4-1l-1-1-4.7 4.8c-.3.3-.5.7-.5 1.1v8c0 1.1.9 2 2 2h6.5c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-1.6z" /></svg>,
+    LOVE: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EF4444"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>,
+    HAHA: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10" /><path fill="#fff" d="M12 16.5c-2.3 0-4.3-1.4-5.2-3.5h10.4c-.9 2.1-2.9 3.5-5.2 3.5z" /><circle fill="#fff" cx="8.5" cy="9.5" r="1.5" /><circle fill="#fff" cx="15.5" cy="9.5" r="1.5" /></svg>,
+    WOW: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10" /><circle fill="#fff" cx="8.5" cy="9.5" r="1.5" /><circle fill="#fff" cx="15.5" cy="9.5" r="1.5" /><circle fill="#fff" cx="12" cy="16" r="2.5" /></svg>,
+    SAD: <svg viewBox="0 0 24 24" width="18" height="18" fill="#F59E0B"><circle cx="12" cy="12" r="10" /><path fill="#fff" d="M12 13.5c-2 0-3.8 1.1-4.7 2.8l1.7.9c.6-1 1.6-1.7 3-1.7s2.4.7 3 1.7l1.7-.9c-.9-1.7-2.7-2.8-4.7-2.8z" /><circle fill="#fff" cx="8.5" cy="9.5" r="1.5" /><circle fill="#fff" cx="15.5" cy="9.5" r="1.5" /></svg>,
+    ANGRY: <svg viewBox="0 0 24 24" width="18" height="18" fill="#EA580C"><circle cx="12" cy="12" r="10" /><path fill="#fff" d="M8.5 11c.8 0 1.5-.7 1.5-1.5S9.3 8 8.5 8 7 8.7 7 9.5 7.7 11 8.5 11zm7 0c.8 0 1.5-.7 1.5-1.5S16.3 8 15.5 8 14 8.7 14 9.5 14.7 11 15.5 11zm-3.5 3c-2.3 0-4.3 1.4-5.2 3.5h10.4c-.9-2.1-2.9-3.5-5.2-3.5z" /><path stroke="#fff" strokeWidth="2" strokeLinecap="round" d="M6 7l3 1.5M18 7l-3 1.5" /></svg>,
 };
 
 const REACTION_DETAILS: Record<ReactionType, { icon: React.ReactNode; label: string; color: string }> = {
@@ -62,10 +62,10 @@ const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
 
 function visibilityLabel(v: string): { icon: React.ReactNode; text: string } {
     switch (v) {
-        case 'PUBLIC':           return { icon: <Globe size={12} />, text: 'Công khai' };
-        case 'FOLLOWERS_ONLY':   return { icon: <Users size={12} />, text: 'Người theo dõi' };
-        case 'PRIVATE':          return { icon: <Lock size={12} />, text: 'Chỉ mình tôi' };
-        default:                 return { icon: <Globe size={12} />, text: v };
+        case 'PUBLIC': return { icon: <Globe size={12} />, text: 'Công khai' };
+        case 'FOLLOWERS_ONLY': return { icon: <Users size={12} />, text: 'Người theo dõi' };
+        case 'PRIVATE': return { icon: <Lock size={12} />, text: 'Chỉ mình tôi' };
+        default: return { icon: <Globe size={12} />, text: v };
     }
 }
 
@@ -77,15 +77,15 @@ interface InlineEditFormProps {
 }
 
 function InlineEditForm({ post, onCancel, onSaved }: InlineEditFormProps) {
-    const [content, setContent]           = useState(post.content ?? '');
-    const [visibility, setVisibility]     = useState<Visibility>(post.visibility as Visibility);
+    const [content, setContent] = useState(post.content ?? '');
+    const [visibility, setVisibility] = useState<Visibility>(post.visibility as Visibility);
     const [existingMedia, setExistingMedia] = useState<MediaResponse[]>(post.mediaList ?? []);
-    const [removeIds, setRemoveIds]       = useState<number[]>([]);
-    const [newFiles, setNewFiles]         = useState<File[]>([]);
-    const [newPreviews, setNewPreviews]   = useState<string[]>([]);
-    const [tagInput, setTagInput]         = useState((post.tags ?? []).map(t => t.tag).join(', '));
-    const [loading, setLoading]           = useState(false);
-    const [error, setError]               = useState('');
+    const [removeIds, setRemoveIds] = useState<number[]>([]);
+    const [newFiles, setNewFiles] = useState<File[]>([]);
+    const [newPreviews, setNewPreviews] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState((post.tags ?? []).map(t => t.tag).join(', '));
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
@@ -182,7 +182,7 @@ function InlineEditForm({ post, onCancel, onSaved }: InlineEditFormProps) {
                         <div key={m.id} style={{ position: 'relative', display: 'inline-block' }}>
                             {m.mediaType === 'IMAGE' ? (
                                 <img src={m.url} alt={m.originalName}
-                                     style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6 }} />
+                                    style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6 }} />
                             ) : (
                                 <div style={{
                                     width: 72, height: 72, borderRadius: 6,
@@ -220,7 +220,7 @@ function InlineEditForm({ post, onCancel, onSaved }: InlineEditFormProps) {
                         <div key={url} style={{ position: 'relative', display: 'inline-block' }}>
                             {newFiles[idx]?.type.startsWith('image/') ? (
                                 <img src={url} alt=""
-                                     style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6, border: '2px solid #3B82F6' }} />
+                                    style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6, border: '2px solid #3B82F6' }} />
                             ) : (
                                 <div style={{
                                     width: 72, height: 72, borderRadius: 6,
@@ -461,18 +461,18 @@ function FooterBtn({ icon, label }: FooterBtnProps) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 export default function PostCard({
-                                     post: initialPost, onDeleted, onUpdated,
-                                     openCommentPostId, onToggleComment,isSaved = false,
-                                 }: Props) {
+    post: initialPost, onDeleted, onUpdated,
+    openCommentPostId, onToggleComment, isSaved = false,
+}: Props) {
     const navigate = useNavigate();
-    const [post, setPost]                   = useState(initialPost);
-    const [menuOpen, setMenuOpen]           = useState(false);
-    const [editing, setEditing]             = useState(false);
+    const [post, setPost] = useState(initialPost);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [editing, setEditing] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-   const safeTags = post.tags ?? [];
+    const safeTags = post.tags ?? [];
     const safeMediaList = post.mediaList ?? [];
     const authorId = post.author?.id ?? post.authorId;
     const authorName = post.author?.fullName ?? 'Người dùng';
@@ -493,8 +493,8 @@ export default function PostCard({
     const popoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const currentUserId = getCurrentUserId();
-    const isOwner       = currentUserId !== null && authorId === currentUserId;
-    const commentOpen   = openCommentPostId === post.id;
+    const isOwner = currentUserId !== null && authorId === currentUserId;
+    const commentOpen = openCommentPostId === post.id;
 
     useEffect(() => {
         let isMounted = true;
@@ -539,7 +539,7 @@ export default function PostCard({
     const handleReactClick = async () => {
         const typeToReact = currentUserReaction ? currentUserReaction : 'LIKE';
         const isRemoving = !!currentUserReaction;
-        
+
         // Optimistic UI updates
         const nextReaction = isRemoving ? null : 'LIKE';
         const nextCounts = { ...reactionCounts };
@@ -649,7 +649,7 @@ export default function PostCard({
     }, []);
 
     const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi });
-    const vis     = visibilityLabel(post.visibility);
+    const vis = visibilityLabel(post.visibility);
 
 
     const handleDelete = useCallback(async () => {
@@ -693,7 +693,7 @@ export default function PostCard({
         onToggleComment(commentOpen ? null : post.id);
     }, [commentOpen, onToggleComment, post.id]);
 
-     const handleOpenAuthorProfile = useCallback(() => {
+    const handleOpenAuthorProfile = useCallback(() => {
         if (!authorId) return;
 
         if (currentUserId !== null && authorId === currentUserId) {
@@ -903,33 +903,87 @@ export default function PostCard({
                         )}
 
                         {safeMediaList.length > 0 && (
-                            <div>
-                                {safeMediaList.map(m => (
-                                    <div key={m.id}>
-                                        {m.mediaType === 'IMAGE' && (
-                                            <img src={m.url} alt={m.originalName}
-                                                 style={{ width: '100%', maxHeight: 500, objectFit: 'cover' }} />
+                            (() => {
+                                const visualMedia = safeMediaList.filter(m => m.mediaType === 'IMAGE' || m.mediaType === 'VIDEO');
+                                const fileMedia = safeMediaList.filter(m => m.mediaType === 'FILE');
+                                const displayMedia = visualMedia.slice(0, 4);
+                                const extraCount = visualMedia.length - 4;
+
+                                return (
+                                    <>
+                                        {visualMedia.length > 0 && (
+                                            <div style={{
+                                                display: 'grid',
+                                                gap: 2,
+                                                gridTemplateColumns: displayMedia.length === 1 ? '1fr' : '1fr 1fr',
+                                                borderRadius: fileMedia.length > 0 ? '0' : '0 0 8px 8px',
+                                                overflow: 'hidden'
+                                            }}>
+                                                {displayMedia.map((m, idx) => {
+                                                    let isSpan2 = false;
+                                                    if (displayMedia.length === 3 && idx === 0) isSpan2 = true;
+
+                                                    const height = displayMedia.length === 1 ? 'auto'
+                                                        : displayMedia.length === 2 ? 400
+                                                            : displayMedia.length === 3 ? (idx === 0 ? 350 : 200)
+                                                                : 250;
+
+                                                    const style: React.CSSProperties = {
+                                                        width: '100%',
+                                                        height: height,
+                                                        maxHeight: 600,
+                                                        objectFit: displayMedia.length === 1 ? 'contain' : 'cover',
+                                                        background: '#000',
+                                                        gridColumn: isSpan2 ? 'span 2' : 'auto'
+                                                    };
+                                                    
+                                                    const isLastAndExtra = idx === 3 && extraCount > 0;
+
+                                                    return (
+                                                        <div key={m.id} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+                                                            {m.mediaType === 'IMAGE' ? (
+                                                                <img src={m.url} alt={m.originalName} style={style} />
+                                                            ) : (
+                                                                <video controls={!isLastAndExtra} style={style}>
+                                                                    <source src={m.url} />
+                                                                </video>
+                                                            )}
+                                                            {isLastAndExtra && (
+                                                                <div style={{
+                                                                    position: 'absolute', inset: 0,
+                                                                    background: 'rgba(0,0,0,0.5)',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    color: '#fff', fontSize: 32, fontWeight: 600,
+                                                                    cursor: 'pointer'
+                                                                }}>
+                                                                    +{extraCount}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
-                                        {m.mediaType === 'VIDEO' && (
-                                            <video controls style={{ width: '100%', maxHeight: 500, background: '#000' }}>
-                                                <source src={m.url} />
-                                            </video>
+
+                                        {fileMedia.length > 0 && (
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                {fileMedia.map(m => (
+                                                    <a key={m.id} href={m.url} target="_blank" rel="noreferrer"
+                                                        style={{
+                                                            display: 'flex', alignItems: 'center', gap: 8,
+                                                            padding: '10px 16px', background: '#F9FAFB',
+                                                            color: '#3B82F6', fontSize: 13, textDecoration: 'none',
+                                                            borderTop: '1px solid #E5E7EB',
+                                                        }}>
+                                                        <FileText size={16} />
+                                                        {m.originalName}
+                                                    </a>
+                                                ))}
+                                            </div>
                                         )}
-                                        {m.mediaType === 'FILE' && (
-                                            <a href={m.url} target="_blank" rel="noreferrer"
-                                               style={{
-                                                   display: 'flex', alignItems: 'center', gap: 8,
-                                                   padding: '10px 16px', background: '#F9FAFB',
-                                                   color: '#3B82F6', fontSize: 13, textDecoration: 'none',
-                                                   borderTop: '1px solid #E5E7EB',
-                                               }}>
-                                                <FileText size={16} />
-                                                {m.originalName}
-                                            </a>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                    </>
+                                );
+                            })()
                         )}
                     </>
                 )}
@@ -975,7 +1029,7 @@ export default function PostCard({
                     display: 'flex', gap: 4,
                 }}>
                     <FooterBtn icon={<Eye size={14} />} label={`${post.viewCount}`} />
-                    
+
                     <div
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}

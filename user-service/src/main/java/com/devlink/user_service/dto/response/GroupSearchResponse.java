@@ -1,10 +1,11 @@
 package com.devlink.user_service.dto.response;
 
+import com.devlink.user_service.entity.enums.GroupRole;
+import com.devlink.user_service.entity.enums.MemberStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.devlink.user_service.entity.enums.GroupRole;
 
 import java.util.List;
 
