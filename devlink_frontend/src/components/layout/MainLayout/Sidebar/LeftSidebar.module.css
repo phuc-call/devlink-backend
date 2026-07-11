@@ -35,6 +35,11 @@
     text-decoration: none;
     transition: background 0.12s, color 0.12s;
     cursor: pointer;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    font-family: 'Inter', sans-serif;
 }
 
 .navItem:hover {
@@ -223,4 +228,38 @@
 
 .viewMoreBtn:hover {
     background: #eff6ff;
+}
+
+/* ── SUB SIDEBAR ── */
+.subSidebarHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px 20px;
+}
+
+.backBtn {
+    background: #F3F4F6;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4B5563;
+    transition: background 0.2s, color 0.2s;
+}
+
+.backBtn:hover {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+.subSidebarTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
 }

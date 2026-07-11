@@ -25,10 +25,10 @@
     border: 2px solid #fff; line-height: 1;
 }
 
-/* ── Panel ── */
 .panel {
-    position: absolute; top: calc(100% + 8px); right: 0;
-    width: 370px; background: #fff;
+    position: absolute; top: calc(100% + 8px); right: -10px;
+    width: 370px; max-width: calc(100vw - 20px);
+    background: #fff;
     border-radius: 12px;
     border: 1px solid #F3F4F6;
     box-shadow: 0 8px 24px rgba(0,0,0,0.08);

@@ -45,6 +45,9 @@ public class Post {
     @Column(name = "shared_post_id")
     private Long sharedPostId;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     @Builder.Default
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;

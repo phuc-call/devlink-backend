@@ -16,6 +16,7 @@ import java.util.List;
 public class PostResponse {
     private Long id;
     private Long authorId;
+    private Long groupId;
     private String content;
     private PostStatus status;
     private Visibility visibility;

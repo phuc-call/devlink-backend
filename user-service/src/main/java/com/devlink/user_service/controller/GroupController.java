@@ -111,6 +111,14 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @PostMapping("/{groupId}/leave-admin")
+    public ResponseEntity<ApiResponse<Void>> leaveAdminGroup(
+            @PathVariable Long groupId,
+            @RequestParam(value = "newAdminId", required = false) Long newAdminId) {
+        groupService.leaveOrDeleteGroup(groupId, newAdminId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @DeleteMapping("/{groupId}/members/{memberId}")
     public ResponseEntity<ApiResponse<Void>> kickMember(@PathVariable Long groupId, @PathVariable Long memberId) {
         groupService.kickMember(groupId, memberId);

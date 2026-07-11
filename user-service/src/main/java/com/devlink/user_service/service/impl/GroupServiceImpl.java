@@ -478,4 +478,9 @@ public class GroupServiceImpl implements GroupService {
                 .role(role)
                 .build();
     }
+
+    @Override
+    public java.util.List<Long> getApprovedGroupIdsByUserId(Long userId) {
+        return groupMemberRepository.findApprovedGroupIdsByUserId(userId);
+    }
 }

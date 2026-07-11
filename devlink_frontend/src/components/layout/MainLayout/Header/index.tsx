@@ -3,8 +3,11 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import NotificationBell from '../NotificationBell/NotificationBell.tsx';
+import BottomNav from '../BottomNav/BottomNav.tsx';
 import styles from './Header.module.css';
 import { authApi } from "../../../../api/user-service/authApi.ts";
+import { UserPlus, Users } from 'lucide-react';
+import { JoinGroupModal } from '../../../../features/post/components/ExploreModals';
 
 const NAV_TABS = [
     { label: 'Phổ biến', path: '/' },
@@ -19,6 +22,7 @@ export default function Header() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [joinGroupModal, setJoinGroupModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -111,6 +115,15 @@ export default function Header() {
                             onChange={e => setSearchValue(e.target.value)}
                             onKeyDown={handleKeyDown}
                         />
+                    </div>
+                    {/* Add Group Icons */}
+                    <div style={{ display: 'flex', gap: 2, marginLeft: 16 }}>
+                        <button title="Tạo nhóm mới" onClick={() => navigate('/groups/create')} className={styles.groupIconBtn}>
+                            <UserPlus size={18} />
+                        </button>
+                        <button title="Tham gia nhóm" onClick={() => setJoinGroupModal(true)} className={styles.groupIconBtn}>
+                            <Users size={18} />
+                        </button>
                     </div>
                 </div>
 
@@ -208,6 +221,8 @@ export default function Header() {
                     </div>
                 </div>
             </header>
+            <BottomNav />
+            {joinGroupModal && <JoinGroupModal onClose={() => setJoinGroupModal(false)} onSuccess={() => setJoinGroupModal(false)} />}
         </>
     );
 }

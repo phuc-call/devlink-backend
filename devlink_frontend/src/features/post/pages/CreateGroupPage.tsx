@@ -32,7 +32,7 @@ export default function CreateGroupPage() {
                     name: '',
                     friendsOnly: true,
                     page: 0,
-                    size: 100
+                    size: 20
                 });
                 setFriends(res.data.data.users.content);
             } catch (error) {

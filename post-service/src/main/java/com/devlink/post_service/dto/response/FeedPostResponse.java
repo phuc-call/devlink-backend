@@ -19,6 +19,7 @@ import java.util.List;
 public class FeedPostResponse {
     private Long id;
     private Long authorId;
+    private Long groupId;
     private String content;
     private PostStatus status;
     private Visibility visibility;
@@ -39,7 +40,7 @@ public class FeedPostResponse {
 
     @Builder
     // Constructor cho JPQL — không có tags và mediaList
-    public FeedPostResponse(Long id, Long authorId, String content,
+    public FeedPostResponse(Long id, Long authorId, Long groupId, String content,
             PostStatus status, Visibility visibility, PostType postType,
             Long viewCount, Boolean isPinned,
             AiModerationStatus aiModerationStatus,
@@ -47,6 +48,7 @@ public class FeedPostResponse {
             Long commentCount, Long likeCount) {
         this.id = id;
         this.authorId = authorId;
+        this.groupId = groupId;
         this.content = content;
         this.status = status;
         this.visibility = visibility;

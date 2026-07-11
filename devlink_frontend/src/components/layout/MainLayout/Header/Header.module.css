@@ -133,6 +133,25 @@
     height: 20px;
 }
 
+.groupIconBtn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4B5563;
+    transition: background 0.15s, color 0.15s;
+}
+
+.groupIconBtn:hover {
+    background: #E5E7EB;
+    color: #111827;
+}
+
 /* ── AVATAR ── */
 .avatarWrap {
     position: relative;
@@ -288,9 +307,10 @@
         gap: 8px;
     }
 
-    /* Ẩn search box - trên mobile dùng /explore để tìm kiếm */
+    /* Show search box on mobile, adjust width */
     .searchWrap {
-        display: none;
+        display: block;
+        max-width: 140px; /* Thêm max-width nhỏ hơn cho mobile */
     }
 
     /* Ẩn nav tabs giữa - mobile dùng bottom nav */

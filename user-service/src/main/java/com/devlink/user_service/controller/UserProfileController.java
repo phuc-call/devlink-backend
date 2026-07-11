@@ -103,7 +103,7 @@ public class UserProfileController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<UserSearchPageResponse>> search(
-            @RequestParam @NotBlank String name,
+            @RequestParam(required = false, defaultValue = "") String name,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String address,
             @RequestParam(defaultValue = DEFAULT_BOOLEAN_FALSE) Boolean friendsOnly,

@@ -145,4 +145,9 @@ public interface GroupService {
      * Get group details by ID
      */
     GroupResponse getGroupById(Long groupId);
+
+    /**
+     * Get list of group IDs that the user has joined (APPROVED).
+     */
+    java.util.List<Long> getApprovedGroupIdsByUserId(Long userId);
 }

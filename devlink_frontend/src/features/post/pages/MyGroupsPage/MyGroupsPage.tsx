@@ -1,70 +1,56 @@
 // src/features/post/pages/MyGroupsPage/MyGroupsPage.tsx
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './MyGroupsPage.module.css';
 import { groupApi } from '../../../../api/user-service/groupApi';
-import type { GroupSearchResponse, GroupRole } from '../../../../types/group.types';
+import type { GroupSearchResponse } from '../../../../types/group.types';
 
 export default function MyGroupsPage() {
     const [groups, setGroups] = useState<GroupSearchResponse[]>([]);
-    const [roleFilter, setRoleFilter] = useState<GroupRole | ''>('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    const fetchGroups = async () => {
-        try {
-            setLoading(true);
-            const res = await groupApi.getMyGroups(roleFilter || undefined, 0, 100);
-            setGroups(res.data.data.content);
-        } catch (error) {
-            console.error('Failed to fetch groups', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Read role from URL search param (set by sidebar NavLinks)
+    const roleFilter = searchParams.get('role') ?? '';
 
     useEffect(() => {
-        fetchGroups();
+        const fetchGroups = async () => {
+            try {
+                setLoading(true);
+                const res = await groupApi.getMyGroups(roleFilter || undefined, 0, 20);
+                setGroups(res.data.data.content);
+            } catch (error) {
+                console.error('Failed to fetch groups', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        void fetchGroups();
     }, [roleFilter]);
 
-    const getGroupBorderStyle = (role?: string | null) => {
-        if (role === 'ADMIN') return { border: '3px solid red' };
-        if (role === 'MODERATOR') return { border: '3px solid blue' };
-        return {};
+    const getTitle = () => {
+        if (roleFilter === 'ADMIN') return 'Groups You Manage';
+        return 'Your Groups';
     };
 
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Nhóm của tôi</h1>
-                
-                <div className={styles.filters}>
-                    <span className={styles.filterLabel}>Lọc theo vai trò:</span>
-                    <select 
-                        className={styles.filterSelect}
-                        value={roleFilter} 
-                        onChange={(e) => setRoleFilter(e.target.value as GroupRole | '')}
-                    >
-                        <option value="">Tất cả</option>
-                        <option value="ADMIN">Quản trị viên (Admin)</option>
-                        <option value="MODERATOR">Người kiểm duyệt (Moderator)</option>
-                        <option value="MEMBER">Thành viên (Member)</option>
-                    </select>
-                </div>
+                <h1 className={styles.title}>{getTitle()}</h1>
             </div>
 
             {loading ? (
-                <div className={styles.loading}>Đang tải danh sách nhóm...</div>
+                <div className={styles.loading}>Loading groups...</div>
             ) : groups.length === 0 ? (
-                <div className={styles.empty}>Bạn chưa tham gia nhóm nào.</div>
+                <div className={styles.empty}>No groups found.</div>
             ) : (
                 <div className={styles.grid}>
                     {groups.map(group => (
-                        <div 
-                            key={group.id} 
+                        <div
+                            key={group.id}
                             className={styles.card}
-                            style={getGroupBorderStyle(group.role)}
-                            onClick={() => navigate(`/groups/${group.id}`)}
+                            onClick={() => navigate(`/groups/${group.id}`, { state: { group } })}
                         >
                             <div className={styles.cardCover}>
                                 {group.coverImage ? (
@@ -77,10 +63,10 @@ export default function MyGroupsPage() {
                                 <h3 className={styles.cardTitle}>{group.name}</h3>
                                 <p className={styles.cardDesc}>{group.description}</p>
                                 <div className={styles.cardFooter}>
-                                    <span className={styles.memberCount}>{group.memberCount} thành viên</span>
+                                    <span className={styles.memberCount}>{group.memberCount} members</span>
                                     <span className={styles.roleTag} data-role={group.role || 'MEMBER'}>
-                                        {group.role === 'ADMIN' ? 'Quản trị viên' : 
-                                         group.role === 'MODERATOR' ? 'Người kiểm duyệt' : 'Thành viên'}
+                                        {group.role === 'ADMIN' ? 'Admin' :
+                                         group.role === 'MODERATOR' ? 'Moderator' : 'Member'}
                                     </span>
                                 </div>
                             </div>
@@ -91,3 +77,4 @@ export default function MyGroupsPage() {
         </div>
     );
 }
+

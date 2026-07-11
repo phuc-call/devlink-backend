@@ -446,12 +446,14 @@ function FooterBtn({ icon, label }: FooterBtnProps) {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '6px 10px', borderRadius: 6, border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                padding: '6px 8px', borderRadius: 6, border: 'none',
                 background: hovered ? '#F3F4F6' : 'transparent',
                 cursor: 'pointer', fontSize: 13, color: '#6B7280',
                 fontFamily: 'Inter, sans-serif', fontWeight: 500,
                 transition: 'background 0.12s',
+                whiteSpace: 'nowrap',
+                flex: 1,
             }}
         >
             {icon}{label}
@@ -482,6 +484,10 @@ export default function PostCard({
     const [saved, setSaved] = useState(isSaved);
     const [saveLoading, setSaveLoading] = useState(false);
     const [showReport, setShowReport] = useState(false);
+    const [selectedMediaIdx, setSelectedMediaIdx] = useState<number | null>(null);
+
+    const visualMedia = safeMediaList.filter(m => m.mediaType === 'IMAGE' || m.mediaType === 'VIDEO');
+    const fileMedia = safeMediaList.filter(m => m.mediaType === 'FILE');
 
     // Reactions States
     const [currentUserReaction, setCurrentUserReaction] = useState<ReactionType | null>(null);
@@ -722,6 +728,229 @@ export default function PostCard({
                 onClose={() => setShowReport(false)}
             />
 
+            {selectedMediaIdx !== null && (
+                <div className="post-modal-overlay" style={{
+                    position: 'fixed', inset: 0, zIndex: 9999, background: '#000', fontFamily: 'Inter, sans-serif'
+                }}>
+                    <style>{`
+                        .post-modal-overlay {
+                            display: flex;
+                            flex-direction: row;
+                        }
+                        .post-modal-media {
+                            flex: 1;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #000;
+                            position: relative;
+                            height: 100vh;
+                        }
+                        .post-modal-sidebar {
+                            width: 360px;
+                            background: #fff;
+                            display: flex;
+                            flex-direction: column;
+                            height: 100vh;
+                            border-left: 1px solid #374151;
+                            box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+                            z-index: 10;
+                        }
+                        .post-modal-close {
+                            position: fixed; top: 16px; left: 16px; z-index: 10000;
+                            background: rgba(255,255,255,0.2); border: none; border-radius: 50%;
+                            width: 40px; height: 40px; color: #fff; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center;
+                        }
+                        
+                        @media (max-width: 768px) {
+                            .post-modal-overlay {
+                                flex-direction: column;
+                                overflow-y: auto;
+                                background: #fff !important;
+                            }
+                            .post-modal-sidebar, .post-modal-scrollable {
+                                display: contents;
+                            }
+                            
+                            .post-modal-close {
+                                top: 12px; right: 12px; left: auto;
+                                background: rgba(0,0,0,0.1); color: #374151;
+                            }
+
+                            .post-modal-header { order: 1; }
+                            .post-modal-content { order: 2; }
+                            .post-modal-media { 
+                                order: 3; 
+                                width: 100%; 
+                                height: auto; 
+                                min-height: 40vh; 
+                                max-height: 60vh; 
+                            }
+                            .post-modal-media img, .post-modal-media video {
+                                max-height: 60vh !important;
+                            }
+                            .post-modal-stats { order: 4; }
+                            .post-modal-actions { order: 5; }
+                            .post-modal-comments { order: 6; }
+                        }
+                    `}</style>
+
+                    <button 
+                        type="button"
+                        className="post-modal-close"
+                        onClick={() => setSelectedMediaIdx(null)}
+                    >
+                        <X size={24} />
+                    </button>
+
+                    {/* Left: Media Area */}
+                    <div className="post-modal-media">
+                        {(() => {
+                            const media = visualMedia[selectedMediaIdx];
+                            if (!media) return null;
+                            if (media.mediaType === 'IMAGE') {
+                                return <img src={media.url} alt={media.originalName} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain' }} />;
+                            } else {
+                                return <video controls autoPlay src={media.url} style={{ maxWidth: '100%', maxHeight: '100vh', outline: 'none' }} />;
+                            }
+                        })()}
+                    </div>
+
+                    {/* Right: Sidebar */}
+                    <div className="post-modal-sidebar">
+                        <div className="post-modal-header" style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <img src={authorAvatar} alt={authorName} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                            <div>
+                                <div style={{ fontWeight: 600, fontSize: 14 }}>{authorName}</div>
+                                <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    {timeAgo} · {vis.icon}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="post-modal-scrollable" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                            {post.content && (
+                                <div className="post-modal-content" style={{ padding: '16px', fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                                    {post.content}
+                                </div>
+                            )}
+                            
+                            {(totalReactions > 0 || (post.commentCount != null && post.commentCount > 0)) && (
+                                <div className="post-modal-stats" style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #F3F4F6', fontSize: 13, color: '#6B7280' }}>
+                                    {totalReactions > 0 ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <span style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                {getTopReactionIcons(reactionCounts).map((icon, idx) => (
+                                                    <span key={idx} style={{ display: 'flex' }}>{icon}</span>
+                                                ))}
+                                            </span>
+                                            <span style={{ fontWeight: 500 }}>{totalReactions}</span>
+                                        </div>
+                                    ) : <div />}
+                                    <div>{post.commentCount && post.commentCount > 0 ? `${post.commentCount} bình luận` : ''}</div>
+                                </div>
+                            )}
+
+                            <div className="post-modal-actions" style={{ padding: '8px 12px', borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: 4 }}>
+                                <div
+                                    onMouseEnter={handleMouseEnter}
+                                    onMouseLeave={handleMouseLeave}
+                                    style={{ position: 'relative', display: 'flex', flex: 1, justifyContent: 'center' }}
+                                >
+                                    {/* Popover */}
+                                    {showReactionsPopover && (
+                                        <div
+                                            className="reaction-popover-animate"
+                                            onMouseEnter={() => {
+                                                if (popoverTimeoutRef.current) clearTimeout(popoverTimeoutRef.current);
+                                            }}
+                                            onMouseLeave={handleMouseLeave}
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: '100%',
+                                                left: '50%',
+                                                transform: 'translateX(-50%)',
+                                                marginBottom: 8,
+                                                background: '#ffffff',
+                                                borderRadius: 30,
+                                                boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                                                border: '1px solid #E5E7EB',
+                                                display: 'flex',
+                                                gap: 6,
+                                                padding: '4px 6px',
+                                                zIndex: 100,
+                                            }}
+                                        >
+                                            {(['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'] as ReactionType[]).map((type) => {
+                                                const detail = REACTION_DETAILS[type];
+                                                return (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => { void handleSelectReaction(type); }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            fontSize: 20,
+                                                            cursor: 'pointer',
+                                                            transition: 'transform 0.1s ease',
+                                                            padding: '4px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.3)'; }}
+                                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                                                        title={detail.label}
+                                                    >
+                                                        {detail.icon}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={() => { void handleReactClick(); }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 6,
+                                            border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13,
+                                            color: currentUserReaction ? REACTION_DETAILS[currentUserReaction].color : '#6B7280',
+                                            fontFamily: 'Inter, sans-serif', fontWeight: 600, flex: 1, justifyContent: 'center'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                    >
+                                        {currentUserReaction ? (
+                                            <span style={{ fontSize: 14, display: 'flex', alignItems: 'center' }}>
+                                                {REACTION_DETAILS[currentUserReaction].icon}
+                                            </span>
+                                        ) : <Heart size={14} color="#6B7280" />}
+                                        {currentUserReaction ? REACTION_DETAILS[currentUserReaction].label : 'Thích'}
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', borderRadius: 6,
+                                        border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13,
+                                        color: '#6B7280', fontFamily: 'Inter, sans-serif', fontWeight: 500, flex: 1, justifyContent: 'center'
+                                    }}
+                                >
+                                    <MessageCircle size={14} /> Bình luận
+                                </button>
+                            </div>
+
+                            <div className="post-modal-comments" style={{ flex: 1, minHeight: 0 }}>
+                                <CommentSection postId={post.id} commentCount={post.commentCount} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div style={{
                 background: '#FFFFFF', borderRadius: 8,
                 boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
@@ -797,6 +1026,14 @@ export default function PostCard({
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     {vis.icon} {vis.text}
                                 </span>
+                                {post.viewCount != null && (
+                                    <>
+                                        <span>·</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }} title={`${post.viewCount} lượt xem`}>
+                                            <Eye size={12} /> {post.viewCount}
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -884,7 +1121,7 @@ export default function PostCard({
                 ) : (
                     <>
                         {post.content && (
-                            <div style={{ padding: '0 16px 12px', fontSize: 14, color: '#111827', lineHeight: 1.6 }}>
+                            <div style={{ padding: '0 16px 12px', fontSize: 14, color: '#111827', lineHeight: 1.6, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                                 {post.content}
                             </div>
                         )}
@@ -904,8 +1141,6 @@ export default function PostCard({
 
                         {safeMediaList.length > 0 && (
                             (() => {
-                                const visualMedia = safeMediaList.filter(m => m.mediaType === 'IMAGE' || m.mediaType === 'VIDEO');
-                                const fileMedia = safeMediaList.filter(m => m.mediaType === 'FILE');
                                 const displayMedia = visualMedia.slice(0, 4);
                                 const extraCount = visualMedia.length - 4;
 
@@ -916,7 +1151,7 @@ export default function PostCard({
                                                 display: 'grid',
                                                 gap: 2,
                                                 gridTemplateColumns: displayMedia.length === 1 ? '1fr' : '1fr 1fr',
-                                                borderRadius: fileMedia.length > 0 ? '0' : '0 0 8px 8px',
+                                                borderRadius: 0,
                                                 overflow: 'hidden'
                                             }}>
                                                 {displayMedia.map((m, idx) => {
@@ -936,15 +1171,19 @@ export default function PostCard({
                                                         background: '#000',
                                                         gridColumn: isSpan2 ? 'span 2' : 'auto'
                                                     };
-                                                    
+
                                                     const isLastAndExtra = idx === 3 && extraCount > 0;
 
                                                     return (
-                                                        <div key={m.id} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+                                                        <div 
+                                                            key={m.id} 
+                                                            onClick={() => setSelectedMediaIdx(idx)}
+                                                            style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', cursor: 'pointer' }}
+                                                        >
                                                             {m.mediaType === 'IMAGE' ? (
                                                                 <img src={m.url} alt={m.originalName} style={style} />
                                                             ) : (
-                                                                <video controls={!isLastAndExtra} style={style}>
+                                                                <video style={{...style, pointerEvents: 'none'}}>
                                                                     <source src={m.url} />
                                                                 </video>
                                                             )}
@@ -1024,16 +1263,16 @@ export default function PostCard({
 
                 {/* ── Footer ── */}
                 <div style={{
-                    padding: '10px 16px',
+                    padding: '8px 12px',
                     borderTop: '1px solid #E5E7EB',
-                    display: 'flex', gap: 4,
+                    display: 'flex', 
+                    gap: 4,
                 }}>
-                    <FooterBtn icon={<Eye size={14} />} label={`${post.viewCount}`} />
 
                     <div
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
-                        style={{ position: 'relative', display: 'inline-block' }}
+                        style={{ position: 'relative', display: 'flex', flex: 1, justifyContent: 'center' }}
                     >
                         {/* Popover */}
                         {showReactionsPopover && (
@@ -1046,7 +1285,8 @@ export default function PostCard({
                                 style={{
                                     position: 'absolute',
                                     bottom: '100%',
-                                    left: 0,
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
                                     marginBottom: 8,
                                     background: '#ffffff',
                                     borderRadius: 30,
@@ -1095,7 +1335,7 @@ export default function PostCard({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 6,
-                                padding: '6px 12px',
+                                padding: '6px 8px',
                                 borderRadius: 6,
                                 border: 'none',
                                 background: 'transparent',
@@ -1105,6 +1345,7 @@ export default function PostCard({
                                 fontFamily: 'Inter, sans-serif',
                                 fontWeight: 600,
                                 transition: 'background 0.12s, color 0.12s',
+                                whiteSpace: 'nowrap',
                             }}
                             onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
@@ -1126,26 +1367,18 @@ export default function PostCard({
                         onClick={handleToggleComment}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 5,
-                            padding: '6px 10px', borderRadius: 6, border: 'none',
+                            padding: '6px 8px', borderRadius: 6, border: 'none',
                             background: commentOpen ? '#EFF6FF' : 'transparent',
                             cursor: 'pointer', fontSize: 13,
                             color: commentOpen ? '#3B82F6' : '#6B7280',
                             fontFamily: 'Inter, sans-serif', fontWeight: commentOpen ? 600 : 500,
                             transition: 'background 0.12s',
+                            whiteSpace: 'nowrap',
+                            flex: 1, justifyContent: 'center'
                         }}
                     >
                         <MessageCircle size={14} />
                         Bình luận
-                        {post.commentCount != null && post.commentCount > 0 && (
-                            <span style={{
-                                background: commentOpen ? '#DBEAFE' : '#F3F4F6',
-                                color: commentOpen ? '#3B82F6' : '#6B7280',
-                                fontSize: 11, fontWeight: 600,
-                                padding: '1px 7px', borderRadius: 9999, marginLeft: 2,
-                            }}>
-                                {post.commentCount}
-                            </span>
-                        )}
                     </button>
 
                     <FooterBtn icon={<Share2 size={14} />} label="Chia sẻ" />

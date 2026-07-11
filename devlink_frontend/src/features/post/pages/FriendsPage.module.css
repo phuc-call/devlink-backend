@@ -1,0 +1,135 @@
+.page {
+    min-height: calc(100vh - 60px);
+    background: #F0F2F5;
+}
+
+.inner {
+    padding: 20px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ── Header ── */
+.header {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Search Bar ── */
+.searchWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 66.66%;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: #9CA3AF;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 10px 40px 10px 38px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.searchInput::placeholder {
+    color: #9CA3AF;
+}
+
+.searchInput:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.clearBtn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.1s, color 0.1s;
+}
+
+.clearBtn:hover {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+/* ── List ── */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Empty ── */
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 56px 0;
+    color: #9CA3AF;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Load more ── */
+.loadMore {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid #E5E7EB;
+    border-top-color: #3B82F6;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+    .inner {
+        padding: 12px 8px 40px;
+    }
+    .searchWrap {
+        width: 100%;
+    }
+}

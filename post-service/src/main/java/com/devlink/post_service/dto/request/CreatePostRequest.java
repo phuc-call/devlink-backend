@@ -19,6 +19,8 @@ public class CreatePostRequest {
 
     private PostType postType = PostType.TEXT;
 
+    private Long groupId;
+
     @Size(max = 20, message = "Tối đa 20 tags")
     private List<String> tags = new ArrayList<>();
 

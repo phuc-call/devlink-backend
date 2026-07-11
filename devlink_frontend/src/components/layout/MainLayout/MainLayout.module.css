@@ -6,10 +6,11 @@
 
 .body {
     display: flex;
-    max-width: 1400px; /* Tăng từ 1200 lên 1400 để đẩy 2 bên ra xa */
+    max-width: 1360px;
     margin: 0 auto;
-    padding-top: 60px; /* header height */
+    padding-top: 60px;
     gap: 0;
+    justify-content: center;
 }
 
 /* LEFT SIDEBAR */
@@ -28,9 +29,9 @@
 .feed {
     flex: 1;
     min-width: 0;
-    max-width: 800px; /* Tăng từ 680 lên 800 để cho main to ra */
-    margin: 0 auto;
-    padding: 20px 16px;
+    max-width: 700px;
+    margin: 0 32px;
+    padding: 24px 0;
 }
 
 /* RIGHT SIDEBAR */
@@ -53,6 +54,6 @@
 
 @media (max-width: 640px) {
     .left { display: none; }
-    .body { padding-top: 60px; padding-bottom: 56px; } /* 56px = bottom nav height */
-    .feed { padding: 8px 0; }
+    .body { padding-top: 116px; padding-bottom: 16px; } /* 60px header + 56px nav */
+    .feed { padding: 8px 0; margin: 0; }
 }

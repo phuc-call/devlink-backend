@@ -20,7 +20,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     String FEED_SELECT = """
             SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
-                   p.id, p.authorId, p.content, p.status, p.visibility,
+                   p.id, p.authorId, p.groupId, p.content, p.status, p.visibility,
                    p.postType, p.viewCount, p.isPinned, p.aiModerationStatus,
                    p.createdAt, p.updatedAt, p.commentCount, p.likeCount)
             """;
@@ -85,6 +85,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<FeedPostResponse> findPostsByAuthorIdAndVisibilityIn(
             @Param("authorId") Long authorId,
             @Param("visibilities") List<Visibility> visibilities,
+            Pageable pageable);
+
+    @Query(FEED_SELECT + """
+            FROM Post p
+            WHERE p.groupId = :groupId
+              AND p.status <> 'DELETED'
+              AND p.deletedAt IS NULL
+            ORDER BY p.createdAt DESC
+        """)
+    Page<FeedPostResponse> findPostsByGroupId(
+            @Param("groupId") Long groupId,
             Pageable pageable);
 
 

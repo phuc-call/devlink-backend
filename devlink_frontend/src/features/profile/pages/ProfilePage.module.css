@@ -59,13 +59,19 @@
 @media (max-width: 900px) {
     .body {
         flex-direction: column;
-        padding: 16px 16px 40px;
+        padding: 16px;
+        align-items: stretch;
+        width: 100%;
+        box-sizing: border-box;
     }
     .sidebar {
         width: 100%;
         position: static;
     }
+    .content {
+        width: 100%;
+    }
     .followWrap {
-        padding: 16px 16px 40px;
+        padding: 16px;
     }
 }

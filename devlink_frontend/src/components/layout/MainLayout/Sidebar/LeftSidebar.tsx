@@ -1,10 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import styles from './LeftSidebar.module.css';
-import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
-import { groupApi } from '../../../../api/user-service/groupApi.ts';
-import type { UserRecommendationResponse } from '../../../../types/profile.types.ts';
-import type { GroupSearchResponse } from '../../../../types/group.types.ts';
 
 /* ─── Nav chính ─── */
 const NAV_ITEMS = [
@@ -19,12 +14,25 @@ const NAV_ITEMS = [
         ),
     },
     {
-        label: 'Khám phá',
-        path: '/explore',
+        label: 'Friends',
+        path: '/friends',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        ),
+    },
+    {
+        label: 'Groups',
+        path: '/groups/my-groups',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
             </svg>
         ),
     },
@@ -82,26 +90,101 @@ const NAV_ITEMS = [
 ];
 
 export default function LeftSidebar() {
-    const [recommendations, setRecommendations] = useState<UserRecommendationResponse[]>([]);
-    const [myGroups, setMyGroups] = useState<GroupSearchResponse[]>([]);
     const navigate = useNavigate();
+    const location = useLocation();
 
-    useEffect(() => {
-        userProfileApi.getNormalRecommendations()
-            .then(res => setRecommendations(res.data.data))
-            .catch(() => setRecommendations([]));
-            
-        groupApi.getMyGroups(undefined, 0, 5)
-            .then(res => setMyGroups(res.data.data.content))
-            .catch(() => setMyGroups([]));
-    }, []);
+    const isFriendsRoute = location.pathname.startsWith('/friends');
+    const isGroupsRoute = location.pathname.startsWith('/groups');
 
-    const getGroupBorderStyle = (role?: string | null) => {
-        if (role === 'ADMIN') return { border: '3px solid red' };
-        if (role === 'MODERATOR') return { border: '3px solid blue' };
-        return {};
+    // For main nav items that use startsWith matching instead of exact
+    const isPathActive = (path: string) => {
+        if (path === '/') return location.pathname === '/';
+        return location.pathname.startsWith(path);
     };
 
+    if (isFriendsRoute) {
+        return (
+            <div className={styles.sidebar}>
+                <div className={styles.subSidebarHeader}>
+                    <button onClick={() => navigate('/')} className={styles.backBtn}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h2 className={styles.subSidebarTitle}>Bạn bè</h2>
+                </div>
+                <nav className={styles.nav}>
+                    <NavLink to="/friends" end className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        </span>
+                        <span className={styles.navLabel}>Gợi ý</span>
+                    </NavLink>
+                    <NavLink to="/friends/my-friends" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </span>
+                        <span className={styles.navLabel}>Bạn bè của tôi</span>
+                    </NavLink>
+                    <NavLink to="/friends/following" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                        </span>
+                        <span className={styles.navLabel}>Người tôi follow</span>
+                    </NavLink>
+                    <NavLink to="/friends/followers" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+                        </span>
+                        <span className={styles.navLabel}>Người follow tôi</span>
+                    </NavLink>
+                </nav>
+            </div>
+        );
+    }
+
+    if (isGroupsRoute) {
+        return (
+            <div className={styles.sidebar}>
+                <div className={styles.subSidebarHeader}>
+                    <button onClick={() => navigate('/')} className={styles.backBtn}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h2 className={styles.subSidebarTitle}>Nhóm</h2>
+                </div>
+                <nav className={styles.nav}>
+                    {/* Your Groups: active when /groups/my-groups without ?role */}
+                    <button
+                        onClick={() => navigate('/groups/my-groups')}
+                        className={`${styles.navItem} ${location.pathname === '/groups/my-groups' && !location.search ? styles.navActive : ''}`}
+                    >
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </span>
+                        <span className={styles.navLabel}>Your Groups</span>
+                    </button>
+                    {/* Groups You Manage: active when ?role=ADMIN */}
+                    <button
+                        onClick={() => navigate('/groups/my-groups?role=ADMIN')}
+                        className={`${styles.navItem} ${location.search === '?role=ADMIN' ? styles.navActive : ''}`}
+                    >
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </span>
+                        <span className={styles.navLabel}>Groups You Manage</span>
+                    </button>
+                    <NavLink to="/groups/create" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v8" /><path d="M8 12h8" /></svg>
+                        </span>
+                        <span className={styles.navLabel}>Create New Group</span>
+                    </NavLink>
+                </nav>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.sidebar}>
@@ -111,9 +194,9 @@ export default function LeftSidebar() {
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        end={item.path === '/'}
-                        className={({ isActive }) =>
-                            `${styles.navItem} ${isActive ? styles.navActive : ''}`
+                        end={item.path === '/' || item.path === '/groups/my-groups'}
+                        className={() =>
+                            `${styles.navItem} ${isPathActive(item.path) ? styles.navActive : ''}`
                         }
                     >
                         <span className={styles.navIcon}>{item.icon}</span>
@@ -122,76 +205,7 @@ export default function LeftSidebar() {
                 ))}
             </nav>
 
-            <div className={styles.divider} />
 
-
-            <div className={styles.indexSection}>
-                {/* Nhóm của tôi */}
-                <div className={styles.indexGroup}>
-                    <h4 className={styles.indexTitle}>Nhóm của tôi</h4>
-                    <ul className={styles.indexList}>
-                        {myGroups.length === 0 ? (
-                            <li className={styles.indexItem}>Chưa tham gia nhóm nào</li>
-                        ) : (
-                            myGroups.map(group => (
-                                <li key={group.id}>
-                                    <button 
-                                        className={`${styles.indexItem} ${styles.groupItem}`}
-                                        onClick={() => navigate(`/groups/${group.id}`)}
-                                        style={getGroupBorderStyle(group.role)}
-                                    >
-                                        <div className={styles.groupInfo}>
-                                            <span className={styles.groupName}>{group.name}</span>
-                                            <span className={styles.groupMemberCount}>{group.memberCount} thành viên</span>
-                                        </div>
-                                    </button>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                    {myGroups.length > 0 && (
-                        <button 
-                            className={styles.viewMoreBtn}
-                            onClick={() => navigate('/groups/my-groups')}
-                        >
-                            Xem thêm
-                        </button>
-                    )}
-                </div>
-
-                {/* Gợi ý theo dõi */}
-                <div className={styles.indexGroup}>
-                    <h4 className={styles.indexTitle}>Gợi ý theo dõi</h4>
-                    <ul className={styles.indexList}>
-                        {recommendations.length === 0 ? (
-                            <li className={styles.indexItem}>Không có gợi ý</li>
-                        ) : (
-                            recommendations.slice(0, 5).map(user => (
-                                <li key={user.id}>
-                                    <button
-                                        className={styles.recommendItem}
-                                        onClick={() => navigate(`/profile/${user.id}`)}
-                                    >
-                                        {user.avatar && (
-                                            <img
-                                                src={user.avatar}
-                                                alt={user.fullName}
-                                                className={styles.recommendAvatar}
-                                            />
-                                        )}
-                                        <div className={styles.recommendInfo}>
-                                            <span className={styles.recommendName}>{user.fullName}</span>
-                                            {user.school && (
-                                                <span className={styles.recommendSub}>{user.school}</span>
-                                            )}
-                                        </div>
-                                    </button>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                </div>
-            </div>
         </div>
     );
 }

@@ -52,6 +52,11 @@ export const groupApi = {
     leaveGroup: (groupId: number) =>
         axiosInstance.post<{ data: null }>(`/api/v1/groups/${groupId}/leave`),
 
+    leaveAdminGroup: (groupId: number, newAdminId?: number) =>
+        axiosInstance.post<{ data: null }>(`/api/v1/groups/${groupId}/leave-admin`, null, {
+            params: { newAdminId }
+        }),
+
     kickMember: (groupId: number, memberId: number) =>
         axiosInstance.delete<{ data: null }>(`/api/v1/groups/${groupId}/members/${memberId}`),
 

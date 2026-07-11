@@ -10,6 +10,7 @@ import OAuth2SuccessPage from '../features/auth/pages/OAuth2SuccessPage';
 import MainLayout from '../components/layout/MainLayout';
 import FeedPage from '../features/post/pages/FeedPage';
 import FollowingPage from '../features/post/pages/FollowingPage';
+import FriendsPage from '../features/post/pages/FriendsPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
 import CreateGroupPage from '../features/post/pages/CreateGroupPage';
 import GroupDetailPage from '../features/post/pages/GroupDetailPage';
@@ -56,8 +57,10 @@ const router = createBrowserRouter([
                 element: <MainLayout />,
                 children: [
                     { path: '/', element: <FeedPage /> },
-                    { path: '/following', element: <FollowingPage /> },
                     { path: '/explore', element: <ExplorePage /> },
+                    { path: '/following', element: <FollowingPage /> },
+                    { path: '/friends', element: <FriendsPage /> },
+                    { path: '/friends/:tab', element: <FriendsPage /> },
                     { path: '/groups/create', element: <CreateGroupPage /> },
                     { path: '/groups/my-groups', element: <MyGroupsPage /> },
                     { path: '/groups/:id', element: <GroupDetailPage /> },

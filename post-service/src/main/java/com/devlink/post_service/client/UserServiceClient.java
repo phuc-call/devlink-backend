@@ -78,4 +78,17 @@ public interface UserServiceClient {
 
     @GetMapping("/internal/users/badges/video-limits")
     ApiResponse<List<BadgeVideoLimitClient>> getAllBadgeVideoLimits();
+
+    @GetMapping("/internal/users/{userId}/groups/ids")
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "user-service", fallbackMethod = "getApprovedGroupIdsFallback")
+    ApiResponse<List<Long>> getApprovedGroupIds(@PathVariable("userId") Long userId);
+
+    default ApiResponse<List<Long>> getApprovedGroupIdsFallback(Long userId, Throwable t) {
+        // Fallback: log the error and return empty list to prevent posting to groups when service is down
+        return ApiResponse.<List<Long>>builder()
+                .success(false)
+                .data(java.util.Collections.emptyList())
+                .message("Fallback: user-service unavailable")
+                .build();
+    }
 }

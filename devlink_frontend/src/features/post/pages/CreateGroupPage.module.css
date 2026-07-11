@@ -38,7 +38,7 @@
 }
 
 .pageTitle {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     color: #111827;
     margin: 0;
@@ -92,7 +92,7 @@
     color: #3B82F6;
     padding: 4px 12px;
     border-radius: 100px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .uploadSubtext {
-    font-size: 13px;
+    font-size: 14px;
     margin: 0;
 }
 
@@ -193,7 +193,7 @@
 
 .label {
     display: block;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: #374151;
     margin-bottom: 10px;
@@ -211,7 +211,7 @@
     padding: 14px 16px;
     border: 1px solid #D1D5DB;
     border-radius: 10px;
-    font-size: 15px;
+    font-size: 16px;
     color: #1F2937;
     background: #F9FAFB;
     transition: all 0.2s;
@@ -289,7 +289,7 @@
 
 .privacyText p {
     margin: 0;
-    font-size: 13px;
+    font-size: 14px;
     color: #6B7280;
     line-height: 1.4;
 }
@@ -370,7 +370,7 @@
 }
 
 .friendName {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: #111827;
     flex: 1;
@@ -437,7 +437,7 @@
 
 .btnCancel {
     padding: 12px 24px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: #4B5563;
     background: #F3F4F6;
@@ -450,7 +450,7 @@
 
 .btnSubmit {
     padding: 12px 32px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: #ffffff;
     background: #3B82F6;

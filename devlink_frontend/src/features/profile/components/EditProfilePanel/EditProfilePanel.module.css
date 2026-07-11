@@ -147,6 +147,8 @@
 }
 
 .input, .textarea {
+    width: 100%;
+    box-sizing: border-box;
     padding: 8px 12px;
     border: 1px solid #D1D5DB;
     border-radius: 8px;
@@ -380,4 +382,24 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    .panel {
+        flex-direction: column;
+    }
+    .menu {
+        width: 100%;
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #E5E7EB;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .langGrid {
+        grid-template-columns: 1fr;
+    }
+    .content {
+        padding: 16px 12px;
+    }
 }

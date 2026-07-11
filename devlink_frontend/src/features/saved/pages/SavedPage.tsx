@@ -59,7 +59,7 @@ export default function SavedPage() {
     }, []);
 
     return (
-        <div style={{maxWidth: 680, margin: '0 auto', padding: '24px 0'}}>
+        <div style={{maxWidth: 680, margin: '0 auto', padding: '0 0 24px'}}>
             <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 marginBottom: 20,

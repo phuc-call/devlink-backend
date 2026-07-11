@@ -7,6 +7,7 @@
 
 .body {
     display: flex;
+    flex-direction: row;
     gap: 20px;
     padding: 24px 24px 48px;
     align-items: flex-start;
@@ -75,10 +76,19 @@
 @media (max-width: 900px) {
     .body {
         flex-direction: column;
-        padding: 16px 16px 40px;
+        padding: 12px;
+        gap: 12px;
+        width: 100%;
     }
+
     .sidebar {
         width: 100%;
         position: static;
+        flex-shrink: 0;
+    }
+
+    .content {
+        width: 100%;
+        flex: none;
     }
 }

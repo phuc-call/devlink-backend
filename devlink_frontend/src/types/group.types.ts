@@ -71,11 +71,9 @@ export interface GroupMemberResponse {
 }
 
 export interface GroupCandidateResponse {
-    userId: number;
-    fullName: string;
-    avatarUrl?: string;
-    similarityScore?: number;
-    mutualFriendsCount?: number;
+    id: number;
+    name: string;
+    avatar?: string;
 }
 
 export interface PageResponse<T> {

@@ -87,4 +87,15 @@ public class PostController {
         );
     }
 
+    @GetMapping("/groups/{groupId}")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getGroupPosts(
+            @PathVariable Long groupId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getGroupPosts(groupId, page, size), SUCCESS)
+        );
+    }
+
 }

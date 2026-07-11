@@ -82,4 +82,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
         ORDER BY gm.joinedAt ASC
     """)
     Page<GroupMemberResponse> findApprovedMembers(@Param("groupId") Long groupId, Pageable pageable);
+
+    @Query("""
+        SELECT gm.group.id FROM GroupMember gm
+        WHERE gm.userId = :userId AND gm.status = 'APPROVED'
+        """)
+    List<Long> findApprovedGroupIdsByUserId(@Param("userId") Long userId);
 }

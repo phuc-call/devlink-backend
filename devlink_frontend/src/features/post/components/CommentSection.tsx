@@ -956,7 +956,8 @@ function ReplyItem({
 
   return (
     <div
-      style={{ display: "flex", gap: 8, alignItems: "flex-start" }}
+      id={`reply-${reply.id}`}
+      style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "4px 0", borderRadius: 8 }}
       className="comment-row"
     >
       <img
@@ -1017,15 +1018,36 @@ function ReplyItem({
               >
                 {reply.mentionedName !== null &&
                   reply.mentionedName !== undefined && (
-                    <span
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (reply.parentReplyId) {
+                          const el = document.getElementById(`reply-${reply.parentReplyId}`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                            el.style.transition = "background-color 0.3s ease";
+                            el.style.backgroundColor = "#EEF2FF";
+                            setTimeout(() => {
+                              el.style.backgroundColor = "transparent";
+                            }, 2000);
+                          }
+                        }
+                      }}
                       style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
                         color: "#3B82F6",
                         fontWeight: 600,
                         marginRight: 4,
+                        cursor: reply.parentReplyId ? "pointer" : "default",
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 13,
                       }}
+                      title="Xem bình luận gốc"
                     >
                       @{reply.mentionedName}
-                    </span>
+                    </button>
                   )}
                 {content}
               </p>
@@ -1730,8 +1752,10 @@ function CommentItem({
         {showReplies && replies.length > 0 && (
           <div
             style={{
-              marginTop: 8,
-              marginLeft: 4,
+              marginTop: 12,
+              marginLeft: 18, // center of the 36px avatar
+              paddingLeft: 12,
+              borderLeft: "2px solid #F0F2F5",
               display: "flex",
               flexDirection: "column",
               gap: 12,

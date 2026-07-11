@@ -24,6 +24,7 @@ public class PostServiceController {
         private final FollowService followService;
         private final UserBlockService userBlockService;
         private final PostServiceClient postServiceClient;
+        private final com.devlink.user_service.service.GroupService groupService;
 
         @GetMapping("/me/friends/ids")
         public ResponseEntity<ApiResponse<List<Long>>> getFriendIds(
@@ -102,6 +103,17 @@ public class PostServiceController {
                                 .message("Success")
                                 .data(result)
                                 .build());
+        }
+
+        @GetMapping("/{userId}/groups/ids")
+        public ResponseEntity<ApiResponse<List<Long>>> getApprovedGroupIds(
+                        @PathVariable Long userId) {
+                return ResponseEntity.ok(
+                                ApiResponse.<List<Long>>builder()
+                                                .success(true)
+                                                .message("Success")
+                                                .data(groupService.getApprovedGroupIdsByUserId(userId))
+                                                .build());
         }
 
 }

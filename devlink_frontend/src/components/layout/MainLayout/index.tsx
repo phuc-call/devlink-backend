@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import LeftSidebar from './Sidebar/LeftSidebar';
 import RightSidebar from './Sidebar/RightSidebar';
-import BottomNav from './BottomNav/BottomNav';
+
 import ProfileSetupModal from '../../../features/profile/components/ProfileSetupModal';
 import { useProfileSetup } from '../../../hooks/useProfileSetup';
 import styles from './MainLayout.module.css';
@@ -25,7 +25,6 @@ export default function MainLayout() {
                     <RightSidebar />
                 </aside>
             </div>
-            <BottomNav />
         </div>
     );
 }

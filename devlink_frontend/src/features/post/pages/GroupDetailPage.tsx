@@ -5,7 +5,7 @@ import { GroupPrivacy, type GroupMemberResponse, type GroupCandidateResponse } f
 import type { UserSearchResponse } from '../../../types/profile.types';
 import styles from './GroupDetailPage.module.css';
 import { useToast } from '../../../context/Toastcontext';
-import { Settings, Users, LogOut, Shield, ShieldAlert, Check, X, Copy, RefreshCw } from 'lucide-react';
+import { Settings, Users, LogOut, Shield, ShieldAlert, Check, X, Copy, RefreshCw, MoreHorizontal, Flag, Lock } from 'lucide-react';
 
 export default function GroupDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -20,8 +20,9 @@ export default function GroupDetailPage() {
 
     const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'pending' | 'settings'>('feed');
     const [loading, setLoading] = useState(false);
+    const [initializing, setInitializing] = useState(!groupInfo);
 
-    const [joinStatus, setJoinStatus] = useState<string | null | undefined>(groupInfo?.joinStatus);
+    const [joinStatus, setJoinStatus] = useState<string | null | undefined>(groupInfo?.joinStatus || (groupInfo?.role ? 'APPROVED' : null));
     const [joining, setJoining] = useState(false);
 
     // State cho Members
@@ -30,7 +31,7 @@ export default function GroupDetailPage() {
     const [candidates, setCandidates] = useState<GroupCandidateResponse[]>([]);
 
     const [myUserId, setMyUserId] = useState<number | null>(null);
-    const [myRole, setMyRole] = useState<'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(null);
+    const [myRole, setMyRole] = useState<'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(groupInfo?.role || null);
 
     // State cho Settings
     const [editName, setEditName] = useState(groupInfo?.name || '');
@@ -40,9 +41,10 @@ export default function GroupDetailPage() {
     const [updatingGroup, setUpdatingGroup] = useState(false);
     const [generatingCode, setGeneratingCode] = useState(false);
     
-    // Modal Rời nhóm
+    // Modal Rời nhóm & Menu
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [selectedNewAdmin, setSelectedNewAdmin] = useState<number | null>(null);
+    const [showMoreMenu, setShowMoreMenu] = useState(false);
 
     useEffect(() => {
         const initData = async () => {
@@ -57,28 +59,24 @@ export default function GroupDetailPage() {
                 setEditPrivacy(groupData.privacy);
                 setInviteCode(groupData.inviteCode || '');
 
-                // 1. Lấy My Profile
+                // 1. Lấy My Profile (just to have it if needed)
                 const { userProfileApi } = await import('../../../api/user-service/userProfileApi');
                 const profileRes = await userProfileApi.getProfile();
-                const currentUserId = profileRes.data.data.userId;
-                setMyUserId(currentUserId);
+                setMyUserId(profileRes.data.data.userId);
 
-                // 2. Lấy Members để xem mình là ai
-                const memRes = await groupApi.getGroupMembers(groupId);
-                const mems = memRes.data.data.content;
-                setMembers(mems);
-                
-                const me = mems.find((m: any) => m.id === currentUserId);
-                if (me) {
-                    setMyRole(me.role);
-                    setJoinStatus('APPROVED');
-                } else if (!groupData.joinStatus) {
-                    // Try to see if pending by looking at pending members if admin? 
-                    // Actually if we just pass joinStatus from previous page it's better.
+                // Initialize role from backend response
+                if (groupData.role) {
+                    setMyRole(groupData.role);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error(err);
-                showToast("Không tìm thấy thông tin nhóm. Vui lòng thêm API getGroupById ở Backend!", "error");
+                if (err.response?.status === 403 || err.response?.data?.code === 'NO_PERMISSION') {
+                    // It's fine if they don't have permission to view members, but getGroupById shouldn't throw 403
+                } else {
+                    showToast("Không tìm thấy thông tin nhóm.", "error");
+                }
+            } finally {
+                setInitializing(false);
             }
         };
         initData();
@@ -169,9 +167,11 @@ export default function GroupDetailPage() {
 
     const executeLeaveGroup = async () => {
         try {
-            // Lưu ý: Nếu Admin chọn người thay thế thì BE hiện tại chưa hỗ trợ param newAdminId.
-            // Phải chờ BE update. Hiện tại cứ gọi leaveGroup(groupId)
-            await groupApi.leaveGroup(groupId);
+            if (myRole === 'ADMIN') {
+                await groupApi.leaveAdminGroup(groupId, selectedNewAdmin || undefined);
+            } else {
+                await groupApi.leaveGroup(groupId);
+            }
             showToast("Rời nhóm thành công", "success");
             navigate('/explore');
         } catch (err: any) {
@@ -181,6 +181,26 @@ export default function GroupDetailPage() {
 
     const handleConfirmLeaveModal = () => {
         executeLeaveGroup();
+    };
+
+    const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        try {
+            showToast("Đang tải ảnh lên...", "info");
+            const res = await groupApi.uploadCoverImage(file);
+            const coverUrl = res.data.data;
+            await groupApi.updateGroup(groupId, {
+                name: groupInfo?.name || '',
+                description: groupInfo?.description || '',
+                privacy: groupInfo?.privacy || GroupPrivacy.PUBLIC,
+                coverImage: coverUrl
+            });
+            setGroupInfo({ ...groupInfo, coverImage: coverUrl });
+            showToast("Cập nhật ảnh bìa thành công!", "success");
+        } catch (err: any) {
+            showToast(err.response?.data?.message || "Lỗi khi tải ảnh lên", "error");
+        }
     };
 
     const handleJoinGroup = async () => {
@@ -234,10 +254,18 @@ export default function GroupDetailPage() {
         }
     };
 
+    const isPrivateAndNotMember = groupInfo?.privacy === 'PRIVACY' && !myRole;
+
     return (
         <div className={styles.container}>
             <div className={styles.coverWrapper}>
                 <img src={groupInfo?.coverImage || 'https://via.placeholder.com/1200x400'} alt="Cover" className={styles.coverImage} />
+                {myRole === 'ADMIN' && (
+                    <label className={styles.coverUploadBtn}>
+                        Thay ảnh bìa
+                        <input type="file" accept="image/*" onChange={handleCoverImageChange} style={{ display: 'none' }} />
+                    </label>
+                )}
                 <div className={styles.groupHeaderInfo}>
                     <h1 className={styles.groupName}>{groupInfo?.name || 'Đang tải...'}</h1>
                     <p className={styles.groupDescription}>{groupInfo?.description}</p>
@@ -248,36 +276,98 @@ export default function GroupDetailPage() {
             </div>
 
             <div className={styles.navbar}>
-                <button className={`${styles.navBtn} ${activeTab === 'feed' ? styles.active : ''}`} onClick={() => setActiveTab('feed')}>Thảo luận</button>
-                <button className={`${styles.navBtn} ${activeTab === 'members' ? styles.active : ''}`} onClick={() => setActiveTab('members')}>Thành viên</button>
-                
-                {(myRole === 'ADMIN' || myRole === 'MODERATOR') && (
-                    <button className={`${styles.navBtn} ${activeTab === 'pending' ? styles.active : ''}`} onClick={() => setActiveTab('pending')}>Phê duyệt</button>
-                )}
-                
-                {myRole === 'ADMIN' && (
-                    <button className={`${styles.navBtn} ${activeTab === 'settings' ? styles.active : ''}`} onClick={() => setActiveTab('settings')}><Settings size={16} /> Cài đặt</button>
-                )}
-                
-                {myRole ? (
-                    <button className={styles.leaveBtn} onClick={handleLeaveGroupBtnClick}><LogOut size={16} /> Rời nhóm</button>
+                {isPrivateAndNotMember ? (
+                    <div className={styles.navTabs}>
+                        <div style={{ padding: '16px 24px', color: '#6B7280', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Lock size={18} />
+                            Nhóm riêng tư
+                        </div>
+                    </div>
                 ) : (
-                    joinStatus === 'PENDING' ? (
-                         <button className={styles.pendingBtn} disabled>Đã gửi yêu cầu</button>
-                    ) : (
-                         <button className={styles.joinBtn} onClick={handleJoinGroup} disabled={joining}>
-                            {joining ? 'Đang gửi...' : 'Tham gia nhóm'}
-                         </button>
-                    )
+                    <div className={styles.navTabs}>
+                        <button className={`${styles.navBtn} ${activeTab === 'feed' ? styles.active : ''}`} onClick={() => setActiveTab('feed')}>Thảo luận</button>
+                        <button className={`${styles.navBtn} ${activeTab === 'members' ? styles.active : ''}`} onClick={() => setActiveTab('members')}>Thành viên</button>
+                        
+                        {(myRole === 'ADMIN' || myRole === 'MODERATOR') && (
+                            <button className={`${styles.navBtn} ${activeTab === 'pending' ? styles.active : ''}`} onClick={() => setActiveTab('pending')}>Phê duyệt</button>
+                        )}
+                        
+                        {myRole === 'ADMIN' && (
+                            <button className={`${styles.navBtn} ${activeTab === 'settings' ? styles.active : ''}`} onClick={() => setActiveTab('settings')}><Settings size={16} /> Cài đặt</button>
+                        )}
+                    </div>
                 )}
+
+                <div className={styles.navActions}>
+                    {initializing ? (
+                        <button className={styles.pendingBtn} disabled>Đang tải...</button>
+                    ) : myRole ? (
+                        <>
+                            <div style={{ position: 'relative' }}>
+                                <button 
+                                    className={styles.moreBtn} 
+                                    onClick={() => setShowMoreMenu(!showMoreMenu)}
+                                >
+                                    <MoreHorizontal size={20} />
+                                </button>
+                                
+                                {showMoreMenu && (
+                                    <>
+                                        <div 
+                                            style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
+                                            onClick={() => setShowMoreMenu(false)} 
+                                        />
+                                        <div className={styles.dropdownMenu}>
+                                            <button 
+                                                className={styles.dropdownItem}
+                                                onClick={() => {
+                                                    setShowMoreMenu(false);
+                                                    showToast("Tính năng Tố cáo nhóm đang phát triển", "info");
+                                                }}
+                                            >
+                                                <Flag size={16} /> Tố cáo nhóm
+                                            </button>
+                                            <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #E5E7EB' }} />
+                                            <button 
+                                                className={`${styles.dropdownItem} ${styles.danger}`}
+                                                onClick={() => {
+                                                    setShowMoreMenu(false);
+                                                    handleLeaveGroupBtnClick();
+                                                }}
+                                            >
+                                                <LogOut size={16} /> Rời nhóm
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        joinStatus === 'PENDING' ? (
+                            <button className={styles.pendingBtn} disabled>Đã gửi yêu cầu</button>
+                        ) : (
+                            <button className={styles.joinBtn} onClick={handleJoinGroup} disabled={joining}>
+                                {joining ? 'Đang gửi...' : 'Tham gia nhóm'}
+                            </button>
+                        )
+                    )}
+                </div>
             </div>
 
             <div className={styles.content}>
-                {activeTab === 'feed' && (
-                    <div className={styles.tabContent}>
-                        <h3>Tính năng bảng tin đang phát triển</h3>
+                {isPrivateAndNotMember ? (
+                    <div className={styles.tabContent} style={{ textAlign: 'center', padding: '64px 24px', color: '#6B7280' }}>
+                        <Lock size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                        <h3 style={{ margin: '0 0 8px', color: '#111827' }}>Đây là nhóm riêng tư</h3>
+                        <p style={{ margin: 0 }}>Hãy tham gia nhóm để xem các bài viết và thành viên.</p>
                     </div>
-                )}
+                ) : (
+                    <>
+                        {activeTab === 'feed' && (
+                            <div className={styles.tabContent}>
+                                <h3>Tính năng bảng tin đang phát triển</h3>
+                            </div>
+                        )}
 
                 {activeTab === 'members' && (
                     <div className={styles.tabContent}>
@@ -297,7 +387,7 @@ export default function GroupDetailPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        {m.role !== 'ADMIN' && (
+                                        {myRole === 'ADMIN' && m.role !== 'ADMIN' && (
                                             <button className={styles.kickBtn} onClick={() => handleKickMember(m.id)}>Kích xuất</button>
                                         )}
                                     </div>
@@ -375,12 +465,11 @@ export default function GroupDetailPage() {
                             <p className={styles.helpText}>Danh sách những người có thể trở thành Admin tiếp theo nếu bạn rời nhóm.</p>
                             <div className={styles.memberList}>
                                 {candidates.length === 0 ? <p>Chưa có ứng viên nào.</p> : candidates.map(c => (
-                                    <div key={c.userId} className={styles.memberItem}>
+                                    <div key={c.id} className={styles.memberItem}>
                                         <div className={styles.memberInfo}>
-                                            <img src={c.avatarUrl || 'https://via.placeholder.com/40'} alt={c.fullName} className={styles.memberAvatar} />
+                                            <img src={c.avatar || 'https://via.placeholder.com/40'} alt={c.name} className={styles.memberAvatar} />
                                             <div>
-                                                <h4>{c.fullName}</h4>
-                                                {c.similarityScore && <span className={styles.scoreText}>Điểm tương đồng: {c.similarityScore}</span>}
+                                                <h4>{c.name}</h4>
                                             </div>
                                         </div>
                                     </div>
@@ -389,9 +478,11 @@ export default function GroupDetailPage() {
                         </div>
                     </div>
                 )}
-            </div>
+            </>
+        )}
+    </div>
 
-            {/* Leave Group Modal for Admin */}
+    {/* Leave Group Modal for Admin */}
             {showLeaveModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.leaveModal}>
@@ -406,7 +497,7 @@ export default function GroupDetailPage() {
                                 >
                                     <option value="">-- Chọn người thay thế (hoặc để trống) --</option>
                                     {candidates.map(c => (
-                                        <option key={c.userId} value={c.userId}>{c.fullName} - Điểm: {c.similarityScore}</option>
+                                        <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
                                 </select>
                             )}

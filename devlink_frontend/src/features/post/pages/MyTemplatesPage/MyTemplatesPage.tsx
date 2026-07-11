@@ -1,14 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
     Eye, GitFork, Download, MessageSquare,
     Sparkles, RefreshCw, BookOpen,
-    SlidersHorizontal, FileCode, FileText, Film,
-    Table, File,
+    FileCode, FileText, Film,
+    Table, File, MoreHorizontal, ChevronDown, Check,
+    FolderOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getMyTemplates, getTemplateMetaOptions, forkTemplate } from '../../../../api/post-service/learningTemplateApi';
 import type { MyTemplateResponse, TemplateMetaOptions } from '../../../../types/template.types';
-import styles from './MyTemplatesPage.module.css';
+import styles from './Mytemplatespage.module.css';
 import TemplateDetailModal from '../../../post/components/TemplateDetailModal.tsx';
 import { getMyForks } from '../../../../api/post-service/userTemplateForkApi.ts';
 import SuggestionModal from '../../components/Suggestionmodal.tsx';
@@ -33,13 +34,13 @@ function getDiffClass(difficulty: string): string {
 
 function getFileTypeIcon(fileType: string): React.ReactNode {
     const map: Record<string, React.ReactNode> = {
-        CODE:  <FileCode size={13} />,
-        PDF:   <FileText size={13} />,
-        DOCX:  <File     size={13} />,
-        XLSX:  <Table    size={13} />,
-        VIDEO: <Film     size={13} />,
+        CODE:  <FileCode size={18} />,
+        PDF:   <FileText size={18} />,
+        DOCX:  <File     size={18} />,
+        XLSX:  <Table    size={18} />,
+        VIDEO: <Film     size={18} />,
     };
-    return map[fileType] ?? <File size={13} />;
+    return map[fileType] ?? <File size={18} />;
 }
 
 function formatDate(iso: string): string {
@@ -54,19 +55,31 @@ function formatSize(bytes: number): string {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// ─── TemplateCard ─────────────────────────────────────────────────────────────
+
 
 interface TemplateCardProps {
     tpl: MyTemplateResponse;
     forkId: number | undefined;
     onDetail: (id: number) => void;
     onFork: (id: number) => Promise<void>;
-    onSuggest: (templateId: number, forkId: number) => void; // thêm
+    onSuggest: (templateId: number, forkId: number) => void;
 }
 
 function TemplateCard({ tpl, forkId, onDetail, onFork, onSuggest }: TemplateCardProps) {
     const [forking, setForking] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleFork = async () => {
         setForking(true);
@@ -77,115 +90,117 @@ function TemplateCard({ tpl, forkId, onDetail, onFork, onSuggest }: TemplateCard
         }
     };
 
-
     return (
         <div className={styles.card}>
-            <div className={styles.cardTop}>
-                <span className={`${styles.badge} ${styles.badgeLang}`}>
-                    {tpl.language}
-                </span>
+            <div className={styles.cardHeader}>
+                <div className={styles.cardTitleRow}>
+                    <h3 className={styles.cardTitle}>{tpl.title}</h3>
+                    {tpl.isFork && (
+                        <div className={styles.forkBadge} title="Đã fork">
+                            <GitFork size={14} />
+                        </div>
+                    )}
+                </div>
                 <div className={styles.badgeGroup}>
+                    <span className={`${styles.badge} ${styles.badgeLang}`}>
+                        {tpl.language}
+                    </span>
                     <span className={`${styles.badge} ${getDiffClass(tpl.difficulty)}`}>
                         {getDifficultyLabel(tpl.difficulty)}
                     </span>
-                    <span className={`${styles.badge} ${styles.badgeFileType}`}>
-                        {getFileTypeIcon(tpl.fileType)}
-                        {tpl.fileType}
-                    </span>
-                    {tpl.isFork && (
-                        <span className={`${styles.badge} ${styles.badgeFork}`}>
-                            <GitFork size={11} />
-                            Đã fork
-                        </span>
-                    )}
                 </div>
             </div>
-
-            <h3 className={styles.cardTitle}>{tpl.title}</h3>
 
             {(tpl.aiSummary ?? tpl.description) && (
                 <p className={styles.cardDesc}>{tpl.aiSummary ?? tpl.description}</p>
             )}
 
-            <p className={styles.cardFileName}>
-                {getFileTypeIcon(tpl.fileType)}
-                <span className={styles.fileNameText}>{tpl.fileName}</span>
-                {tpl.fileSize > 0 && (
-                    <span className={styles.fileSize}>{formatSize(tpl.fileSize)}</span>
-                )}
-            </p>
-
-            <div className={styles.cardMeta}>
-                <span><Eye size={12} />{tpl.viewCount}</span>
-                <span><GitFork size={12} />{tpl.forkCount}</span>
-                <span>{formatDate(tpl.createdAt)}</span>
+            <div className={styles.fileAttachment}>
+                <div className={styles.fileIconWrap}>
+                    {getFileTypeIcon(tpl.fileType)}
+                </div>
+                <div className={styles.fileInfo}>
+                    <span className={styles.fileName}>{tpl.fileName}</span>
+                    {tpl.fileSize > 0 && (
+                        <span className={styles.fileSize}>{formatSize(tpl.fileSize)}</span>
+                    )}
+                </div>
             </div>
 
-            <div className={styles.cardDivider} />
+            <div className={styles.cardFooter}>
+                <div className={styles.cardStats}>
+                    <span title="Lượt xem"><Eye size={14} /> {tpl.viewCount}</span>
+                    <span title="Lượt fork"><GitFork size={14} /> {tpl.forkCount}</span>
+                    <span className={styles.date}>{formatDate(tpl.createdAt)}</span>
+                </div>
 
-            <div className={styles.actions}>
-                <button
-                    className={`${styles.btn} ${styles.btnPrimary}`}
-                    onClick={() => onDetail(tpl.id)}
-                >
-                    <Eye size={13} /> Xem chi tiết
-                </button>
-
-                {tpl.isFork ? (
+                <div className={styles.cardActions}>
+                    {tpl.isFork ? (
+                        <button
+                            className={`${styles.actionBtn} ${styles.primaryBtn}`}
+                            onClick={() => navigate(`/forks/${forkId}/edit`)}
+                            disabled={!forkId}
+                        >
+                            Sửa
+                        </button>
+                    ) : (
+                        <button
+                            className={`${styles.actionBtn} ${styles.outlineBtn}`}
+                            onClick={handleFork}
+                            disabled={forking || tpl.fileType === 'VIDEO'}
+                        >
+                            {forking ? '...' : 'Fork'}
+                        </button>
+                    )}
+                    
                     <button
-                        className={`${styles.btn} ${styles.btnSuccess}`}
-                        onClick={() => navigate(`/forks/${forkId}/edit`)}
-                        disabled={!forkId}
+                        className={`${styles.actionBtn} ${styles.outlineBtn}`}
+                        onClick={() => onDetail(tpl.id)}
                     >
-                        <BookOpen size={13} /> Sửa fork
+                        Chi tiết
                     </button>
-                ) : (
-                    <button
-                        className={`${styles.btn} ${styles.btnOutline}`}
-                        onClick={handleFork}
-                        disabled={forking || tpl.fileType === 'VIDEO'}
-                    >
-                        <GitFork size={13} /> {forking ? 'Đang fork...' : 'Fork'}
-                    </button>
-                )}
 
-                <button className={`${styles.btn} ${styles.btnOutline}`}>
-                    <Download size={13} /> Tải xuống
-                </button>
-
-                {tpl.isFork && forkId && (
-                    <button
-                        className={`${styles.btn} ${styles.btnOutline}`}
-
-                        onClick={() => { if (forkId) onSuggest(tpl.id, forkId); }}
-                    >
-                        <MessageSquare size={13} /> Đề xuất sửa
-                    </button>
-                )}
-
-                <button className={`${styles.btn} ${styles.btnAI}`}>
-                    <Sparkles size={13} /> Hỏi Gemini AI
-                </button>
+                    <div ref={menuRef} style={{ position: 'relative' }}>
+                        <button 
+                            className={`${styles.actionBtn} ${styles.iconBtn}`}
+                            onClick={() => setShowMenu(!showMenu)}
+                        >
+                            <MoreHorizontal size={16} />
+                        </button>
+                        {showMenu && (
+                            <div className={`${styles.dropdownMenu} ${styles.dropdownMenuBottom}`}>
+                                <button className={styles.dropdownItem}>
+                                    <Download size={14} /> Tải xuống
+                                </button>
+                                {tpl.isFork && forkId && (
+                                    <button
+                                        className={styles.dropdownItem}
+                                        onClick={() => { setShowMenu(false); if (forkId) onSuggest(tpl.id, forkId); }}
+                                    >
+                                        <MessageSquare size={14} /> Đề xuất sửa
+                                    </button>
+                                )}
+                                <button className={`${styles.dropdownItem} ${styles.dropdownAI}`}>
+                                    <Sparkles size={14} /> Hỏi Gemini AI
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
 
 function SkeletonCard() {
     return (
-        <div className={styles.card}>
-            <div className={`${styles.skeleton} ${styles.skH5} ${styles.skW24}`} />
-            <div className={`${styles.skeleton} ${styles.skH5} ${styles.skW80}`} />
-            <div className={`${styles.skeleton} ${styles.skH4} ${styles.skWFull}`} />
-            <div className={`${styles.skeleton} ${styles.skH4} ${styles.skW60}`} />
-            <div className={`${styles.skeleton} ${styles.skH4} ${styles.skW40}`} />
-        </div>
+        <div className={`${styles.skeleton} ${styles.skCard}`} />
     );
 }
 
-// ─── MyTemplatesPage ──────────────────────────────────────────────────────────
+
 
 export default function MyTemplatesPage() {
     const [templates, setTemplates]     = useState<MyTemplateResponse[]>([]);
@@ -200,6 +215,11 @@ export default function MyTemplatesPage() {
     const [detailId, setDetailId]       = useState<number | null>(null);
     const [forkMap, setForkMap]         = useState<Record<number, number>>({});
 
+    const [suggestionTarget, setSuggestionTarget] = useState<{
+        templateId: number;
+        forkId: number;
+    } | null>(null);
+
     useEffect(() => {
         getTemplateMetaOptions().then(setMeta).catch(() => undefined);
     }, []);
@@ -211,14 +231,9 @@ export default function MyTemplatesPage() {
             forks.forEach(f => { map[f.templateId] = f.forkId; });
             setForkMap(map);
         } catch {
-            // bỏ qua lỗi forkMap
+            // bỏ qua
         }
     }, []);
-
-    const [suggestionTarget, setSuggestionTarget] = useState<{
-        templateId: number;
-        forkId: number;
-    } | null>(null);
 
     useEffect(() => {
         (async () => { await fetchForkMap(); })();
@@ -246,6 +261,7 @@ export default function MyTemplatesPage() {
     useEffect(() => {
         (async () => { await fetchTemplates(); })();
     }, [fetchTemplates]);
+
     const handleFork = async (templateId: number) => {
         try {
             await forkTemplate(templateId);
@@ -264,72 +280,79 @@ export default function MyTemplatesPage() {
 
     return (
         <div className={styles.page}>
-
-            {!loading && hint && (
-                <div className={styles.hintBar}>
-                    <BookOpen size={15} />
-                    <span>{hint}</span>
+            <div className={styles.topSection}>
+                <div className={styles.headerRow}>
+                    <div className={styles.headerLeft}>
+                        <div className={styles.titleBadge}>
+                            <FolderOpen size={24} />
+                        </div>
+                        <div className={styles.headerText}>
+                            <h2>Tài liệu của tôi</h2>
+                            <p>
+                                {loading ? 'Đang tải dữ liệu...' : (
+                                    <>
+                                        Tìm thấy <strong>{total}</strong> tài liệu phù hợp với bạn
+                                        {hint && ` • ${hint}`}
+                                    </>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        className={styles.refreshBtn}
+                        onClick={() => { void fetchTemplates(); }}
+                        title="Tải lại"
+                        disabled={loading}
+                    >
+                        <RefreshCw size={16} className={loading ? styles.spinning : ''} />
+                        Làm mới
+                    </button>
                 </div>
-            )}
 
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.pageTitle}>Tài liệu học tập của tôi</h1>
-                    {!loading && (
-                        <p className={styles.pageSub}>
-                            {total} template phù hợp với ngôn ngữ trong profile
-                        </p>
-                    )}
+                <div className={styles.filterRow}>
+                    <div className={styles.modernSelectWrap}>
+                        <select
+                            className={styles.modernSelect}
+                            value={difficulty}
+                            onChange={e => setDifficulty(e.target.value)}
+                            disabled={loading || !meta}
+                        >
+                            <option value="">Tất cả độ khó</option>
+                            {meta?.difficultly.map(d => (
+                                <option key={d} value={d}>{getDifficultyLabel(d)}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className={styles.selectIcon} size={16} />
+                    </div>
+
+                    <div className={styles.modernSelectWrap}>
+                        <select
+                            className={styles.modernSelect}
+                            value={fileTypeFilter}
+                            onChange={e => setFileType(e.target.value)}
+                            disabled={loading || !meta}
+                        >
+                            <option value="">Tất cả định dạng</option>
+                            {meta?.fileType.map(f => (
+                                <option key={f} value={f}>{f}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className={styles.selectIcon} size={16} />
+                    </div>
+
+                    <label className={styles.modernCheckbox}>
+                        <input 
+                            type="checkbox" 
+                            checked={forkOnly}
+                            onChange={() => setForkOnly(!forkOnly)}
+                            disabled={loading}
+                        />
+                        <div className={styles.checkboxBox}>
+                            {forkOnly && <Check size={14} color="#fff" strokeWidth={3} />}
+                        </div>
+                        Chỉ hiện tài liệu đã fork
+                    </label>
                 </div>
-                <button
-                    className={styles.refreshBtn}
-                    onClick={() => { void fetchTemplates(); }}
-                    title="Tải lại"
-                    disabled={loading}
-                >
-                    <RefreshCw size={15} className={loading ? styles.spinning : ''} />
-                </button>
-            </div>
-
-            <div className={styles.filterBar}>
-                <SlidersHorizontal size={15} color="#9CA3AF" />
-
-                <select
-                    className={styles.select}
-                    value={difficulty}
-                    onChange={e => setDifficulty(e.target.value)}
-                    disabled={loading || !meta}
-                >
-                    <option value="">Tất cả độ khó</option>
-                    {meta?.difficultly.map(d => (
-                        <option key={d} value={d}>{getDifficultyLabel(d)}</option>
-                    ))}
-                </select>
-
-                <select
-                    className={styles.select}
-                    value={fileTypeFilter}
-                    onChange={e => setFileType(e.target.value)}
-                    disabled={loading || !meta}
-                >
-                    <option value="">Tất cả loại file</option>
-                    {meta?.fileType.map(f => (
-                        <option key={f} value={f}>{f}</option>
-                    ))}
-                </select>
-
-                <button
-                    className={`${styles.toggleBtn} ${forkOnly ? styles.toggleActive : ''}`}
-                    onClick={() => setForkOnly(v => !v)}
-                    disabled={loading}
-                >
-                    <GitFork size={13} />
-                    Đã fork
-                </button>
-
-                {!loading && (
-                    <span className={styles.resultCount}>{displayed.length} kết quả</span>
-                )}
             </div>
 
             {!loading && error && (
@@ -349,7 +372,7 @@ export default function MyTemplatesPage() {
 
             {!loading && !error && displayed.length === 0 && (
                 <div className={styles.empty}>
-                    <BookOpen size={40} strokeWidth={1.5} color="#D1D5DB" />
+                    <BookOpen size={48} strokeWidth={1} color="#9CA3AF" />
                     <p className={styles.emptyTitle}>Không có template nào</p>
                     <p className={styles.emptySub}>
                         Thử thay đổi bộ lọc hoặc cập nhật ngôn ngữ lập trình trong profile
@@ -387,7 +410,6 @@ export default function MyTemplatesPage() {
                     onClose={() => setSuggestionTarget(null)}
                     onSuccess={() => {
                         setSuggestionTarget(null);
-                        // optional: hiện toast hoặc reload
                     }}
                 />
             )}

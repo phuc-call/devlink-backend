@@ -29,19 +29,11 @@ export const followApi = {
         axiosInstance.delete<{ data: null }>(`/api/users/${userId}/follow/cancel`),
 
 
-    getFollowers: (page = 0, size = 20) =>
-        axiosInstance.get<{ data: PageResponse<FollowResponse> }>('/api/users/me/followers', {
-            params: { page, size },
+    getFollowList: (type: 'FOLLOWING' | 'FOLLOWERS' | 'FRIENDS', page = 0, size = 20) =>
+        axiosInstance.get<{ data: PageResponse<FollowResponse> }>('/api/users/me/follows', {
+            params: { type, page, size },
         }),
 
-
-
-    // GET /api/users/me/following
-    getFollowing: (page = 0, size = 20) =>
-        axiosInstance.get<{ data: PageResponse<FollowResponse> }>('/api/users/me/following', {
-            params: { page, size },
-        }),
- // GET /api/users/me/following/cards
     getFollowingCards: (page = 0, size = 20) =>
         axiosInstance.get<{ data: PageResponse<UserFollowingCardResponse> }>('/api/users/me/following/cards', {
             params: { page, size },

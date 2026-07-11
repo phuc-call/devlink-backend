@@ -68,6 +68,7 @@ public class PostServiceImpl implements PostService {
     private final UserRelationCacheClient userRelationCacheClient;
 
     private final FeedPriorityHelper feedPriorityHelper;
+    private final com.devlink.post_service.client.UserServiceClient userServiceClient;
 
     @Override
     @Transactional
@@ -76,6 +77,13 @@ public class PostServiceImpl implements PostService {
         log.info("[PostService] createPost authorId={} postType={}", userId, request.getPostType());
 
         checkPostRestriction(userId);
+
+        if (request.getGroupId() != null) {
+            com.devlink.post_service.dto.response.ApiResponse<List<Long>> groupIdsResponse = userServiceClient.getApprovedGroupIds(userId);
+            if (!groupIdsResponse.isSuccess() || groupIdsResponse.getData() == null || !groupIdsResponse.getData().contains(request.getGroupId())) {
+                throw new AppException(ErrorCode.POST_FORBIDDEN);
+            }
+        }
 
         List<MultipartFile> validFiles = filterValidFiles(request.getMediaFiles());
 
@@ -151,6 +159,7 @@ public class PostServiceImpl implements PostService {
     private Post buildAndSavePost(CreatePostRequest request, Long userId) {
         Post post = Post.builder()
                 .authorId(userId)
+                .groupId(request.getGroupId())
                 .content(request.getContent())
                 .visibility(request.getVisibility())
                 .postType(request.getPostType())
@@ -210,6 +219,7 @@ public class PostServiceImpl implements PostService {
         return PostResponse.builder()
                 .id(post.getId())
                 .authorId(post.getAuthorId())
+                .groupId(post.getGroupId())
                 .content(post.getContent())
                 .status(post.getStatus())
                 .visibility(post.getVisibility())
@@ -286,7 +296,7 @@ public class PostServiceImpl implements PostService {
         List<FeedPostProcedureResult> rows = postRepository.callGetFeedPosts(idsJson);
 
         List<FeedPostResponse> posts = new ArrayList<>(rows.stream().map(r -> new FeedPostResponse(
-                r.getId(), r.getAuthorId(), r.getContent(),
+                r.getId(), r.getAuthorId(), null /* groupId from procedure */, r.getContent(),
                 PostStatus.valueOf(r.getStatus()),
                 Visibility.valueOf(r.getVisibility()),
                 PostType.valueOf(r.getPostType()),
@@ -527,6 +537,25 @@ public class PostServiceImpl implements PostService {
         // Apply 80/20 priority-discovery ranking
         List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
         return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<FeedPostResponse> getGroupPosts(Long groupId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<FeedPostResponse> postPage = postRepository.findPostsByGroupId(groupId, pageable);
+
+        if (!postPage.hasContent()) {
+            return postPage;
+        }
+
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
+        List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
+        
+        // Enrich the posts (author info, media, tags, etc.)
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
     @Override
