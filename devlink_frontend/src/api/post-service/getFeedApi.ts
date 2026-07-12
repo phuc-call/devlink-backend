@@ -18,4 +18,11 @@ export const getFeedApi = {
             { params: { page, size } }
         );
     },
+
+    getGroupPosts: (groupId: number, page: number = 0, size: number = 10) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            `/api/posts/groups/${groupId}`,
+            { params: { page, size } }
+        );
+    },
 };

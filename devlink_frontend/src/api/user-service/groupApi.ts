@@ -83,4 +83,7 @@ export const groupApi = {
 
     getGroupById: (groupId: number) =>
         axiosInstance.get<{ data: GroupResponse }>(`/api/v1/groups/${groupId}`),
+
+    getGroupBasicInfo: (groupId: number) =>
+        axiosInstance.get<{ data: { id: number; name: string; coverImage: string; } }>(`/api/v1/groups/${groupId}/basic`),
 };

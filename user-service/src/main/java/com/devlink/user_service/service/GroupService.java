@@ -150,4 +150,9 @@ public interface GroupService {
      * Get list of group IDs that the user has joined (APPROVED).
      */
     java.util.List<Long> getApprovedGroupIdsByUserId(Long userId);
+
+    /**
+     * Get group basic info for post display.
+     */
+    com.devlink.user_service.dto.response.GroupBasicInfoResponse getGroupBasicInfo(Long groupId);
 }

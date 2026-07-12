@@ -296,7 +296,7 @@ public class PostServiceImpl implements PostService {
         List<FeedPostProcedureResult> rows = postRepository.callGetFeedPosts(idsJson);
 
         List<FeedPostResponse> posts = new ArrayList<>(rows.stream().map(r -> new FeedPostResponse(
-                r.getId(), r.getAuthorId(), null /* groupId from procedure */, r.getContent(),
+                r.getId(), r.getAuthorId(), r.getGroupId(), r.getContent(),
                 PostStatus.valueOf(r.getStatus()),
                 Visibility.valueOf(r.getVisibility()),
                 PostType.valueOf(r.getPostType()),

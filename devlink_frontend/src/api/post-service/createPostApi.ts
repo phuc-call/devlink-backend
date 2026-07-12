@@ -20,6 +20,10 @@ export const createPostApi = {
             formData.append('postType', request.postType);
         }
 
+        if (request.groupId !== undefined) {
+            formData.append('groupId', request.groupId.toString());
+        }
+
         // tags là List<String> trong backend — append từng phần tử riêng
         if (request.tags && request.tags.length > 0) {
             request.tags.forEach((tag) => {

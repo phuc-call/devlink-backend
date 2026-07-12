@@ -10,6 +10,7 @@ import {
 import type { FeedPostResponse, MediaResponse, Visibility } from '../../../types/post.types';
 import { getCurrentUserId } from '../../../utils/auth';
 import { postApi } from '../../../api/post-service/postApi';
+import { groupApi } from '../../../api/user-service/groupApi';
 import CommentSection from './CommentSection';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
 import ReportModal from '../../../components/common/ReportModal.tsx';
@@ -52,6 +53,7 @@ interface Props {
     openCommentPostId: number | null;
     onToggleComment: (id: number | null) => void;
     isSaved?: boolean;
+    hideGroupInfo?: boolean;
 }
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
@@ -464,7 +466,7 @@ function FooterBtn({ icon, label }: FooterBtnProps) {
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 export default function PostCard({
     post: initialPost, onDeleted, onUpdated,
-    openCommentPostId, onToggleComment, isSaved = false,
+    openCommentPostId, onToggleComment, isSaved = false, hideGroupInfo = false,
 }: Props) {
     const navigate = useNavigate();
     const [post, setPost] = useState(initialPost);
@@ -485,6 +487,8 @@ export default function PostCard({
     const [saveLoading, setSaveLoading] = useState(false);
     const [showReport, setShowReport] = useState(false);
     const [selectedMediaIdx, setSelectedMediaIdx] = useState<number | null>(null);
+
+    const [groupInfo, setGroupInfo] = useState<{ id: number; name: string; coverImage: string; } | null>(null);
 
     const visualMedia = safeMediaList.filter(m => m.mediaType === 'IMAGE' || m.mediaType === 'VIDEO');
     const fileMedia = safeMediaList.filter(m => m.mediaType === 'FILE');
@@ -517,10 +521,21 @@ export default function PostCard({
             .catch(err => {
                 console.error("Failed to load post reaction summary", err);
             });
+            
+        if (post.groupId && !hideGroupInfo) {
+            groupApi.getGroupBasicInfo(post.groupId)
+                .then(res => {
+                    if (isMounted && res.data.success) {
+                        setGroupInfo(res.data.data);
+                    }
+                })
+                .catch(err => console.error("Failed to load group info", err));
+        }
+            
         return () => {
             isMounted = false;
         };
-    }, [post.id]);
+    }, [post.id, post.groupId, hideGroupInfo]);
 
     useEffect(() => {
         return () => {
@@ -1007,6 +1022,43 @@ export default function PostCard({
                                 >
                                     {authorName}
                                 </button>
+                                {groupInfo && (
+                                    <>
+                                        <span style={{ fontSize: 13, color: '#6B7280', margin: '0 4px' }}>▶</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(`/group/${groupInfo.id}`)}
+                                            style={{
+                                                border: 'none',
+                                                background: 'transparent',
+                                                padding: 0,
+                                                cursor: 'pointer',
+                                                fontWeight: 600,
+                                                fontSize: 14,
+                                                color: '#111827',
+                                                fontFamily: 'Inter, sans-serif',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 6
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.textDecoration = 'underline';
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.textDecoration = 'none';
+                                            }}
+                                        >
+                                            {groupInfo.coverImage && (
+                                                <img 
+                                                    src={groupInfo.coverImage} 
+                                                    alt="group" 
+                                                    style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} 
+                                                />
+                                            )}
+                                            {groupInfo.name}
+                                        </button>
+                                    </>
+                                )}
                                 {post.author?.badge != null && post.author.badge !== 'NONE' && (
                                     <span style={{
                                         background: '#DBEAFE', color: '#2563EB',

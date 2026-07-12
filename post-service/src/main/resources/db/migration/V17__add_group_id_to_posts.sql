@@ -1,0 +1,1 @@
+Alter table posts add column group_id bigint;

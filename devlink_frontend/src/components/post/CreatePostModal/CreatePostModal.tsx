@@ -11,6 +11,7 @@ interface CreatePostModalProps {
     onSuccess?: () => void;
     avatarUrl?: string;
     displayName?: string;
+    groupId?: number;
 }
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string; icon: React.ReactNode }[] = [
@@ -62,7 +63,7 @@ function formatFileSize(bytes: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CreatePostModal({
-                                            onClose, onSuccess, avatarUrl, displayName,
+                                            onClose, onSuccess, avatarUrl, displayName, groupId
                                         }: CreatePostModalProps) {
     const [content, setContent]             = useState('');
     const [visibility, setVisibility]       = useState<Visibility>('PUBLIC');
@@ -154,6 +155,7 @@ export default function CreatePostModal({
             visibility,
             tags:       tags.length > 0 ? tags : undefined,
             mediaFiles: allFiles.length > 0 ? allFiles : undefined,
+            groupId:    groupId,
         };
 
         try {

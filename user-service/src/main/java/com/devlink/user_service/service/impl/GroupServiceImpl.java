@@ -483,4 +483,11 @@ public class GroupServiceImpl implements GroupService {
     public java.util.List<Long> getApprovedGroupIdsByUserId(Long userId) {
         return groupMemberRepository.findApprovedGroupIdsByUserId(userId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GroupBasicInfoResponse getGroupBasicInfo(Long groupId) {
+        return groupRepository.findGroupBasicInfoById(groupId)
+                .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
+    }
 }

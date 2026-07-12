@@ -16,4 +16,5 @@ public interface FeedPostProcedureResult {
     Instant getUpdatedAt();
     Long getCommentCount();
     Long getLikeCount();
+    Long getGroupId();
 }

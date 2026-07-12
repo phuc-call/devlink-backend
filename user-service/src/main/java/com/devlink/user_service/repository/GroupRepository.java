@@ -57,4 +57,7 @@ public interface GroupRepository extends JpaRepository<Group,Long> {
         g.memberCount DESC
     """)
     Page<Group> findMyGroups(@Param("userId") Long userId, @Param("role") com.devlink.user_service.entity.enums.GroupRole role, Pageable pageable);
+
+    @Query("SELECT new com.devlink.user_service.dto.response.GroupBasicInfoResponse(g.id, g.name, g.coverImage) FROM Group g WHERE g.id = :groupId")
+    java.util.Optional<com.devlink.user_service.dto.response.GroupBasicInfoResponse> findGroupBasicInfoById(@Param("groupId") Long groupId);
 }

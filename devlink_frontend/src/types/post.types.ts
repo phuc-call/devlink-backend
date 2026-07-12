@@ -13,6 +13,7 @@ export interface CreatePostRequest {
     postType?: PostType;             // default TEXT
     tags?: string[];                 // @Size(max = 20)
     mediaFiles?: File[];             // @Size(max = 10)
+    groupId?: number;
 }
 
 // Khớp với PostResponse trả về từ backend
@@ -80,6 +81,7 @@ export interface FeedPostResponse {
     author: AuthorInfo;
     commentCount?: number;
     likeCount?: number;
+    groupId?: number;
 }
 
 export interface PageResponse<T> {

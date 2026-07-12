@@ -175,4 +175,9 @@ public class GroupController {
         GroupResponse group = groupService.getGroupById(groupId);
         return ResponseEntity.ok(ApiResponse.ok(group));
     }
+
+    @GetMapping("/{groupId}/basic")
+    public ResponseEntity<ApiResponse<com.devlink.user_service.dto.response.GroupBasicInfoResponse>> getGroupBasicInfo(@PathVariable Long groupId) {
+        return ResponseEntity.ok(ApiResponse.ok(groupService.getGroupBasicInfo(groupId)));
+    }
 }
