@@ -36,6 +36,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 OR (p.visibility = 'FOLLOWERS_ONLY' AND p.authorId IN :friendIds)
                 OR p.authorId = :currentUserId
             )
+            AND (
+                p.groupId IS NULL
+                OR p.groupId IN :approvedGroupIds
+            )
             AND (:postType IS NULL OR p.postType = :postType)
             ORDER BY p.createdAt DESC
         """)
@@ -43,6 +47,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("currentUserId") Long currentUserId,
             @Param("friendIds") List<Long> friendIds,
             @Param("blockedIds") List<Long> blockedIds,
+            @Param("approvedGroupIds") List<Long> approvedGroupIds,
             @Param("postType") PostType postType,
             Pageable pageable);
 

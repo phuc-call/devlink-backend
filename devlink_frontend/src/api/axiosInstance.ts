@@ -6,7 +6,62 @@ const axiosInstance = axios.create({
 });
 
 // Không cần gán Authorization header bằng tay nữa vì trình duyệt tự gửi cookie!
-axiosInstance.interceptors.request.use(config => {
+axiosInstance.interceptors.request.use(async config => {
+    // Không check token cho request refresh hoặc logout
+    if (config.url?.includes('/auth/refresh') || config.url?.includes('/auth/logout')) {
+        return config;
+    }
+
+    const expStr = localStorage.getItem('accessTokenExp');
+    if (expStr && localStorage.getItem('isLoggedIn') === 'true') {
+        const exp = parseInt(expStr, 10);
+        const currentTime = Date.now();
+        // Cập nhật token nếu còn dưới 1 phút (60000ms) là hết hạn
+        if (currentTime >= exp - 60000) {
+            if (!isRefreshing) {
+                isRefreshing = true;
+                try {
+                    const res = await axios.post(
+                        '/auth/refresh',
+                        {},
+                        { 
+                            baseURL: import.meta.env.VITE_API_GATEWAY_URL,
+                            withCredentials: true 
+                        }
+                    );
+                    
+                    const newAccessToken = res.data?.data?.accessToken;
+                    if (newAccessToken) {
+                        const newExp = getJwtExp(newAccessToken);
+                        if (newExp) {
+                            localStorage.setItem('accessTokenExp', newExp.toString());
+                        }
+                    } else {
+                        localStorage.setItem('accessTokenExp', (Date.now() + 15 * 60 * 1000).toString());
+                    }
+                    
+                    processQueue(null, null);
+                } catch (err) {
+                    processQueue(err, null);
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('accessTokenExp');
+                    window.location.href = '/login';
+                    return Promise.reject(err);
+                } finally {
+                    isRefreshing = false;
+                }
+            } else {
+                // Đang refresh thì đợi
+                await new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                });
+            }
+        }
+    }
+
     return config;
 });
 
@@ -15,6 +70,15 @@ let failedQueue: Array<{
     resolve: (value?: unknown) => void;
     reject: (reason?: any) => void;
 }> = [];
+
+const getJwtExp = (token: string): number | null => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp ? payload.exp * 1000 : null;
+    } catch (e) {
+        return null;
+    }
+};
 
 const processQueue = (error: any, token: string | null = null) => {
     failedQueue.forEach(prom => {
@@ -50,12 +114,24 @@ axiosInstance.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                // Trình duyệt sẽ tự đính kèm cookie refreshToken vào request này
                 const res = await axios.post(
                     '/auth/refresh',
                     {}, // Body trống
-                    { withCredentials: true } // Bắt buộc để gửi cookie
+                    { 
+                        baseURL: import.meta.env.VITE_API_GATEWAY_URL,
+                        withCredentials: true 
+                    } // Bắt buộc để gửi cookie
                 );
+
+                const newAccessToken = res.data?.data?.accessToken;
+                if (newAccessToken) {
+                    const newExp = getJwtExp(newAccessToken);
+                    if (newExp) {
+                        localStorage.setItem('accessTokenExp', newExp.toString());
+                    }
+                } else {
+                    localStorage.setItem('accessTokenExp', (Date.now() + 15 * 60 * 1000).toString());
+                }
 
                 // Backend đã tự set lại cookie mới, ta không cần làm gì với localStorage
                 processQueue(null, null);
@@ -65,8 +141,10 @@ axiosInstance.interceptors.response.use(
                     processQueue(err, null);
                     // Xóa flag auth để tránh redirect loop
                     localStorage.removeItem('isLoggedIn');
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('accessTokenExp');
                     window.location.href = '/login';
                 } finally {
                     isRefreshing = false;

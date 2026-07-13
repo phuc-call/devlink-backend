@@ -471,6 +471,7 @@ export default function PostCard({
     const navigate = useNavigate();
     const [post, setPost] = useState(initialPost);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<'down' | 'up'>('down');
     const [editing, setEditing] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
@@ -969,7 +970,7 @@ export default function PostCard({
             <div style={{
                 background: '#FFFFFF', borderRadius: 8,
                 boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
-                marginBottom: 12, overflow: 'hidden',
+                marginBottom: 12,
                 fontFamily: 'Inter, sans-serif',
             }}>
                 {/* ── Header ── */}
@@ -978,7 +979,7 @@ export default function PostCard({
                     display: 'flex', alignItems: 'flex-start',
                     justifyContent: 'space-between',
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                         <button
                             type="button"
                             onClick={handleOpenAuthorProfile}
@@ -998,8 +999,8 @@ export default function PostCard({
                                 style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
                             />
                         </button>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', overflow: 'hidden' }}>
                                 <button
                                     type="button"
                                     onClick={handleOpenAuthorProfile}
@@ -1012,22 +1013,24 @@ export default function PostCard({
                                         fontSize: 14,
                                         color: '#111827',
                                         fontFamily: 'Inter, sans-serif',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        flexShrink: 1,
+                                        display: 'block'
                                     }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.textDecoration = 'underline';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.textDecoration = 'none';
-                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}
+                                    title={authorName}
                                 >
                                     {authorName}
                                 </button>
                                 {groupInfo && (
                                     <>
-                                        <span style={{ fontSize: 13, color: '#6B7280', margin: '0 4px' }}>▶</span>
+                                        <span style={{ fontSize: 10, color: '#9CA3AF', flexShrink: 0 }}>▶</span>
                                         <button
                                             type="button"
-                                            onClick={() => navigate(`/group/${groupInfo.id}`)}
+                                            onClick={() => navigate(`/groups/${groupInfo.id}`)}
                                             style={{
                                                 border: 'none',
                                                 background: 'transparent',
@@ -1039,31 +1042,33 @@ export default function PostCard({
                                                 fontFamily: 'Inter, sans-serif',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: 6
+                                                gap: 5,
+                                                flexShrink: 1,
+                                                overflow: 'hidden'
                                             }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.textDecoration = 'underline';
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.textDecoration = 'none';
-                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}
+                                            title={groupInfo.name}
                                         >
                                             {groupInfo.coverImage && (
                                                 <img 
                                                     src={groupInfo.coverImage} 
                                                     alt="group" 
-                                                    style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} 
+                                                    style={{ width: 16, height: 16, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} 
                                                 />
                                             )}
-                                            {groupInfo.name}
+                                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                                {groupInfo.name}
+                                            </span>
                                         </button>
                                     </>
                                 )}
                                 {post.author?.badge != null && post.author.badge !== 'NONE' && (
                                     <span style={{
                                         background: '#DBEAFE', color: '#2563EB',
-                                        fontSize: 11, padding: '1px 6px',
-                                        borderRadius: 9999, fontWeight: 500,
+                                        fontSize: 11, padding: '2px 6px',
+                                        borderRadius: 9999, fontWeight: 500, flexShrink: 0,
+                                        display: 'flex', alignItems: 'center'
                                     }}>
                                         {post.author.badge === 'POPULAR' ? '⭐ Nổi bật' : '✓ Verified'}
                                     </span>
@@ -1071,7 +1076,7 @@ export default function PostCard({
                             </div>
                             <div style={{
                                 fontSize: 12, color: '#6B7280',
-                                display: 'flex', alignItems: 'center', gap: 4,
+                                display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap'
                             }}>
                                 <span>{timeAgo}</span>
                                 <span>·</span>
@@ -1091,10 +1096,21 @@ export default function PostCard({
                     </div>
 
                     {/* ⋯ Menu */}
-                    <div ref={menuRef} style={{ position: 'relative' }}>
+                    <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
                         <button
                             type="button"
-                            onClick={() => setMenuOpen(v => !v)}
+                            onClick={() => {
+                                if (!menuOpen && menuRef.current) {
+                                    const rect = menuRef.current.getBoundingClientRect();
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    if (spaceBelow < 200 && rect.top > 200) {
+                                        setMenuPosition('up');
+                                    } else {
+                                        setMenuPosition('down');
+                                    }
+                                }
+                                setMenuOpen(v => !v);
+                            }}
                             style={{
                                 width: 32, height: 32, borderRadius: '50%',
                                 border: 'none',
@@ -1111,7 +1127,8 @@ export default function PostCard({
 
                         {menuOpen && (
                             <div style={{
-                                position: 'absolute', right: 0, top: 36,
+                                position: 'absolute', right: 0, 
+                                ...(menuPosition === 'up' ? { bottom: 36 } : { top: 36 }),
                                 background: '#fff', borderRadius: 8,
                                 boxShadow: '0 10px 15px rgba(0,0,0,0.10)',
                                 border: '1px solid #E5E7EB',

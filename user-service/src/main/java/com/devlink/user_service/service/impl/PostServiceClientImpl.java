@@ -104,8 +104,8 @@ public class PostServiceClientImpl implements PostServiceClient {
 
     @Override
     public Map<Long, BadgeType> getUserBadge(Long userId) {
-        User user = userRepository.findById(userId)
+        BadgeType badge = userRepository.findBadgeByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return Map.of(user.getId(), user.getBadge());
+        return Map.of(userId, badge);
     }
 }

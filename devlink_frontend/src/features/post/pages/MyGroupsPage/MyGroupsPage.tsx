@@ -36,9 +36,7 @@ export default function MyGroupsPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>{getTitle()}</h1>
-            </div>
+
 
             {loading ? (
                 <div className={styles.loading}>Loading groups...</div>

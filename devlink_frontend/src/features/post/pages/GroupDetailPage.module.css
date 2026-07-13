@@ -171,3 +171,61 @@
     border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;
 }
 .confirmLeaveBtn:hover { background: #DC2626; }
+
+@media (max-width: 640px) {
+    .container { 
+        padding-bottom: 20px; 
+        background: #fff;
+    }
+    .coverWrapper {
+        height: 200px;
+        margin: 0;
+        border-radius: 0;
+    }
+    .groupHeaderInfo {
+        padding: 40px 16px 16px;
+    }
+    .groupName {
+        font-size: 24px;
+    }
+    .navbar {
+        margin: 0;
+        padding: 8px 12px;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        border-radius: 0;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    .navTabs {
+        flex: 1;
+        overflow-x: auto;
+        padding-bottom: 0;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .navTabs::-webkit-scrollbar {
+        display: none;
+    }
+    .navBtn {
+        white-space: nowrap;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+    .navActions {
+        flex-shrink: 0;
+        width: auto;
+    }
+    .content {
+        padding: 0;
+        margin-top: 0;
+    }
+    .tabContent {
+        padding: 16px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .leaveModal {
+        width: 90%;
+    }
+}

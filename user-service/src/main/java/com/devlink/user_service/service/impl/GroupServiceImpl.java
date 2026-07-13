@@ -480,7 +480,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public java.util.List<Long> getApprovedGroupIdsByUserId(Long userId) {
+    public List<Long> getApprovedGroupIdsByUserId(Long userId) {
         return groupMemberRepository.findApprovedGroupIdsByUserId(userId);
     }
 

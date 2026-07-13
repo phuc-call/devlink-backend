@@ -75,7 +75,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.id, u.badge FROM User u WHERE u.id IN :ids")
     List<Object[]> findBadgesByUserIds(@Param("ids") List<Long> ids);
 
-
+    @Query("SELECT u.badge FROM User u WHERE u.id = :userId")
+    Optional<BadgeType> findBadgeByUserId(@Param("userId") Long userId);
 
     @Query("""
     SELECT new com.devlink.user_service.dto.response.UserSummaryResponse(

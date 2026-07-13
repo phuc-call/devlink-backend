@@ -15,6 +15,8 @@ export default function OAuth2SuccessPage() {
             localStorage.setItem('userId', userId);
             localStorage.setItem('role', role);
             localStorage.setItem('username', username);
+            // Default exp: now + 15 mins (match backend token expiry config)
+            localStorage.setItem('accessTokenExp', (Date.now() + 15 * 60 * 1000).toString());
             // Tokens are managed by HttpOnly cookies
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');

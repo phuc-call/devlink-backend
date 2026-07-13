@@ -173,26 +173,14 @@ export default function ExplorePage() {
     const displayGroups = groups;
     
     const isEmpty = users.length === 0 && groups.length === 0 && specialUsers.length === 0;
-    const isLoadingInitial = usersInitialLoad && groupsInitialLoad;
+    const isLoadingInitial = usersInitialLoad || groupsInitialLoad;
 
     return (
         <div className={styles.page}>
             {/* Header Section */}
             <div className={styles.exploreHeader}>
                 <div className={styles.exploreHeaderContent}>
-                    <div className={styles.headerTitleRow}>
-                        <div className={styles.headerIcon}>
-                            <Search size={24} />
-                        </div>
-                        <div>
-                            <h1 className={styles.pageTitle}>
-                                {name.trim() ? `Kết quả tìm kiếm` : `Khám phá`}
-                            </h1>
-                            <p className={styles.pageSubtitle}>
-                                {name.trim() ? `Hiển thị kết quả cho "${name}"` : `Khám phá những người bạn và cộng đồng mới`}
-                            </p>
-                        </div>
-                    </div>
+
 
                     {/* Tabs */}
                     <div className={styles.tabContainer}>

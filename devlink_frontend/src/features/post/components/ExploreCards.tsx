@@ -26,6 +26,7 @@ export function UserCard({
     
     // Menu state
     const [showMenu, setShowMenu] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<'down' | 'up'>('down');
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -106,7 +107,7 @@ export function UserCard({
                 }
             </div>
             <div className={styles.cardInfo}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
                     <p className={styles.cardName}>{user.fullName}</p>
                     {verified && <CheckCircle size={14} color="#3B82F6" style={{ flexShrink: 0 }} />}
                 </div>
@@ -141,7 +142,18 @@ export function UserCard({
                 onClick={e => e.stopPropagation()}
             >
                 <button
-                    onClick={() => setShowMenu(p => !p)}
+                    onClick={() => {
+                        if (!showMenu && menuRef.current) {
+                            const rect = menuRef.current.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            if (spaceBelow < 150 && rect.top > 150) {
+                                setMenuPosition('up');
+                            } else {
+                                setMenuPosition('down');
+                            }
+                        }
+                        setShowMenu(p => !p);
+                    }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     style={{
@@ -157,7 +169,8 @@ export function UserCard({
                 </button>
                 {showMenu && (
                     <div style={{
-                        position: 'absolute', right: 0, top: '100%', marginTop: '4px',
+                        position: 'absolute', right: 0, 
+                        ...(menuPosition === 'up' ? { bottom: '100%', marginBottom: '4px' } : { top: '100%', marginTop: '4px' }),
                         background: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
                         width: '180px', zIndex: 10, padding: '4px 0',

@@ -1,26 +1,12 @@
 /* MyGroupsPage.module.css */
 .container {
-    padding: 24px;
+    padding: 0;
     max-width: 1200px;
     margin: 0 auto;
     font-family: 'Inter', sans-serif;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-}
 
-.title {
-    font-size: 28px;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
-}
 
 .filters {
     display: flex;
@@ -158,4 +144,15 @@
     padding: 64px 0;
     color: #6B7280;
     font-size: 16px;
+}
+
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

@@ -54,9 +54,23 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             const res = await authApi.registerComplete({email, password, username});
-            const {accessToken, refreshToken} = res.data.data;
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
+            const data = res.data?.data;
+            if (data) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userId', String(data.userId));
+                localStorage.setItem('role', data.role ?? '');
+                localStorage.setItem('username', data.username ?? '');
+                if (data.accessToken) {
+                    try {
+                        const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
+                        if (payload.exp) {
+                            localStorage.setItem('accessTokenExp', (payload.exp * 1000).toString());
+                        }
+                    } catch (e) {}
+                }
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+            }
             navigate('/');
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };

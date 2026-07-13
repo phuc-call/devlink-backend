@@ -255,6 +255,8 @@
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     border: 1px solid #E5E7EB;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .card:hover {
@@ -433,10 +435,12 @@
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
+    .page {
+        margin-top: 0;
+    }
+    
     .exploreHeader {
-        margin-left: -16px;
-        margin-right: -16px;
-        padding-top: 16px;
+        padding-top: 0;
     }
     
     .exploreHeaderContent {
@@ -473,6 +477,6 @@
     }
     
     .gridContainer {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }

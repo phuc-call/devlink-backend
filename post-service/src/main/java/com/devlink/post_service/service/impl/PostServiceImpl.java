@@ -6,6 +6,7 @@ import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
+import com.devlink.post_service.dto.response.ApiResponse;
 import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.MediaResponse;
 import com.devlink.post_service.dto.response.PostResponse;
@@ -79,8 +80,10 @@ public class PostServiceImpl implements PostService {
         checkPostRestriction(userId);
 
         if (request.getGroupId() != null) {
-            com.devlink.post_service.dto.response.ApiResponse<List<Long>> groupIdsResponse = userServiceClient.getApprovedGroupIds(userId);
-            if (!groupIdsResponse.isSuccess() || groupIdsResponse.getData() == null || !groupIdsResponse.getData().contains(request.getGroupId())) {
+            com.devlink.post_service.dto.response.ApiResponse<List<Long>> groupIdsResponse = userServiceClient
+                    .getApprovedGroupIds(userId);
+            if (!groupIdsResponse.isSuccess() || groupIdsResponse.getData() == null
+                    || !groupIdsResponse.getData().contains(request.getGroupId())) {
                 throw new AppException(ErrorCode.POST_FORBIDDEN);
             }
         }
@@ -279,9 +282,22 @@ public class PostServiceImpl implements PostService {
             }
         }
 
+        List<Long> approvedGroupIds = null;
+        try {
+            ApiResponse<List<Long>> groupIdsResponse = userServiceClient.getApprovedGroupIds(currentUserId);
+            if (groupIdsResponse != null && groupIdsResponse.isSuccess() && groupIdsResponse.getData() != null) {
+                approvedGroupIds = groupIdsResponse.getData();
+            }
+        } catch (Exception e) {
+            log.error("Error fetching group ids for user {}", currentUserId, e);
+        }
+        if (approvedGroupIds == null || approvedGroupIds.isEmpty()) {
+            approvedGroupIds = List.of(-1L);
+        }
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Long> idPage = postRepository.findFeedPostIds(
-                currentUserId, friendIds, blockedIds, postTypeEnum, pageable);
+                currentUserId, friendIds, blockedIds, approvedGroupIds, postTypeEnum, pageable);
 
         if (idPage.isEmpty())
             return Page.empty(pageable);
@@ -304,8 +320,7 @@ public class PostServiceImpl implements PostService {
                 AiModerationStatus.valueOf(r.getAiModerationStatus()),
                 r.getCreatedAt(), r.getUpdatedAt(),
                 r.getCommentCount() != null ? r.getCommentCount() : 0L,
-                r.getLikeCount() != null ? r.getLikeCount() : 0L
-        )).toList());
+                r.getLikeCount() != null ? r.getLikeCount() : 0L)).toList());
 
         // Apply 80/20 priority-discovery ranking (enrich + re-order)
         List<FeedPostResponse> enrichedOrdered = feedPriorityHelper.enrichAndRank(posts, ids);
@@ -552,7 +567,7 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        
+
         // Enrich the posts (author info, media, tags, etc.)
         List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
         return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());

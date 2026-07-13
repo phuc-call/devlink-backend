@@ -91,17 +91,7 @@ export default function CreateGroupPage() {
 
     return (
         <div className={styles.wrapper}>
-            <div className={styles.header}>
-                <div className={styles.headerInner}>
-                    <button className={styles.backBtn} onClick={() => navigate(-1)}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                    </button>
-                    <h1 className={styles.pageTitle}>Tạo nhóm mới</h1>
-                </div>
-            </div>
+
 
             <div className={styles.container}>
                 <div className={styles.mainCol}>

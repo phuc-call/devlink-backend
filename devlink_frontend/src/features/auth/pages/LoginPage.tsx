@@ -23,6 +23,14 @@ export default function LoginPage() {
                 localStorage.setItem('userId', String(data.userId));
                 localStorage.setItem('role', data.role ?? '');
                 localStorage.setItem('username', data.username ?? '');
+                if (data.accessToken) {
+                    try {
+                        const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
+                        if (payload.exp) {
+                            localStorage.setItem('accessTokenExp', (payload.exp * 1000).toString());
+                        }
+                    } catch (e) {}
+                }
                 // Xóa token cũ nếu còn
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');

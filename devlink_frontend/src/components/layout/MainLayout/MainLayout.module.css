@@ -34,6 +34,36 @@
     padding: 24px 0;
 }
 
+.feedWide {
+    flex: 1;
+    min-width: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px;
+}
+
+.bodyWide {
+    display: flex;
+    max-width: 100%;
+    margin: 0;
+    padding-top: 60px;
+    gap: 0;
+    justify-content: flex-start;
+}
+
+.leftFixed {
+    width: 320px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    background: #ffffff; /* White background like FB */
+    border-right: 1px solid #E5E7EB;
+}
+.leftFixed::-webkit-scrollbar { display: none; }
+
 /* RIGHT SIDEBAR */
 .right {
     width: 320px;
@@ -50,10 +80,14 @@
 @media (max-width: 1024px) {
     .right { display: none; }
     .feed { max-width: 100%; }
+    .feedWide { padding: 24px 16px; }
 }
 
 @media (max-width: 640px) {
     .left { display: none; }
+    .leftFixed { display: none; }
     .body { padding-top: 116px; padding-bottom: 16px; } /* 60px header + 56px nav */
-    .feed { padding: 8px 0; margin: 0; }
+    .bodyWide { padding-top: 116px; padding-bottom: 16px; flex-direction: column; }
+    .feed { padding: 0; margin: 0; width: 100%; box-sizing: border-box; overflow-x: hidden; }
+    .feedWide { padding: 0; margin: 0; width: 100%; box-sizing: border-box; }
 }

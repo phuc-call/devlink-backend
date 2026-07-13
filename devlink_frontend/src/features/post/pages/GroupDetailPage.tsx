@@ -339,7 +339,7 @@ export default function GroupDetailPage() {
     return (
         <div className={styles.container}>
             <div className={styles.coverWrapper}>
-                <img src={groupInfo?.coverImage || 'https://via.placeholder.com/1200x400'} alt="Cover" className={styles.coverImage} />
+                <img src={groupInfo?.coverImage || 'https://placehold.co/1200x400/png'} alt="Cover" className={styles.coverImage} />
                 {myRole === 'ADMIN' && (
                     <label className={styles.coverUploadBtn}>
                         Thay ảnh bìa
@@ -547,11 +547,7 @@ export default function GroupDetailPage() {
                                             </div>
                                         )}
                         
-                                        {!hasMore && (
-                                            <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
-                                                Đã xem hết bài viết
-                                            </div>
-                                        )}
+
                                     </div>
                                 )}
                             </div>
@@ -565,7 +561,7 @@ export default function GroupDetailPage() {
                                 {members.map(m => (
                                     <div key={m.id} className={styles.memberItem}>
                                         <div className={styles.memberInfo}>
-                                            <img src={m.avatar || 'https://via.placeholder.com/40'} alt={m.name} className={styles.memberAvatar} />
+                                            <img src={m.avatar || 'https://placehold.co/40x40/png'} alt={m.name} className={styles.memberAvatar} />
                                             <div>
                                                 <h4>{m.name}</h4>
                                                 <span className={styles.roleBadge}>
@@ -593,7 +589,7 @@ export default function GroupDetailPage() {
                                 {pendingMembers.map(m => (
                                     <div key={m.userId} className={styles.memberItem}>
                                         <div className={styles.memberInfo}>
-                                            <img src={m.avatarUrl || 'https://via.placeholder.com/40'} alt={m.fullName} className={styles.memberAvatar} />
+                                            <img src={m.avatarUrl || 'https://placehold.co/40x40/png'} alt={m.fullName} className={styles.memberAvatar} />
                                             <h4>{m.fullName}</h4>
                                         </div>
                                         <div className={styles.actionBtns}>
@@ -655,7 +651,7 @@ export default function GroupDetailPage() {
                                 {candidates.length === 0 ? <p>Chưa có ứng viên nào.</p> : candidates.map(c => (
                                     <div key={c.id} className={styles.memberItem}>
                                         <div className={styles.memberInfo}>
-                                            <img src={c.avatar || 'https://via.placeholder.com/40'} alt={c.name} className={styles.memberAvatar} />
+                                            <img src={c.avatar || 'https://placehold.co/40x40/png'} alt={c.name} className={styles.memberAvatar} />
                                             <div>
                                                 <h4>{c.name}</h4>
                                             </div>
