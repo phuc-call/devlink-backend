@@ -1,6 +1,4 @@
-package com.devlink.user_service.dto.response;
-
-import com.devlink.user_service.entity.enums.GroupPrivacy;
+package com.devlink.post_service.dto.client;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupBasicInfoResponse {
+public class GroupBasicInfoClient {
     private Long id;
     private String name;
     private String coverImage;
-    private GroupPrivacy privacy;
+    private String privacy;
 }

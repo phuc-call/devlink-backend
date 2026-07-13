@@ -73,7 +73,13 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     @Query("""
         SELECT new com.devlink.user_service.dto.response.GroupMemberResponse(
-            gm.userId, p.fullName, p.avatarUrl, gm.role, gm.joinedAt
+            gm.userId, p.fullName, p.avatarUrl, gm.role, gm.joinedAt,
+            CASE WHEN (
+                SELECT COUNT(f) FROM Follow f 
+                WHERE f.status = 'ACCEPTED' 
+                  AND ((f.follower.id = :currentUserId AND f.following.id = gm.userId) 
+                    OR (f.follower.id = gm.userId AND f.following.id = :currentUserId))
+            ) > 0 THEN true ELSE false END
         )
         FROM GroupMember gm
         JOIN UserProfile p ON p.user.id = gm.userId
@@ -81,7 +87,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
         AND gm.status = 'APPROVED'
         ORDER BY gm.joinedAt ASC
     """)
-    Page<GroupMemberResponse> findApprovedMembers(@Param("groupId") Long groupId, Pageable pageable);
+    Page<GroupMemberResponse> findApprovedMembersWithFriendStatus(
+            @Param("groupId") Long groupId, 
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable);
 
     @Query("""
         SELECT gm.group.id FROM GroupMember gm

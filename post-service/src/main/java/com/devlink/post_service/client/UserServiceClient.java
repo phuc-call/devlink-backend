@@ -83,6 +83,23 @@ public interface UserServiceClient {
     @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "user-service", fallbackMethod = "getApprovedGroupIdsFallback")
     ApiResponse<List<Long>> getApprovedGroupIds(@PathVariable("userId") Long userId);
 
+    @GetMapping("/api/v1/groups/{groupId}/basic")
+    ApiResponse<GroupBasicInfoClient> getGroupBasicInfo(@PathVariable("groupId") Long groupId);
+
+    /**
+     * Fetches up to 20 user IDs that have the highest follower count,
+     * serving as friend suggestions for the current user.
+     */
+    @GetMapping("/internal/users/suggested-friends/ids")
+    ApiResponse<List<Long>> getSuggestedFriendIds();
+
+    /**
+     * Fetches up to 20 group IDs of public groups that have the highest member count,
+     * serving as group recommendations.
+     */
+    @GetMapping("/internal/users/groups/top-public/ids")
+    ApiResponse<List<Long>> getTopPublicGroupIds();
+
     default ApiResponse<List<Long>> getApprovedGroupIdsFallback(Long userId, Throwable t) {
         // Fallback: log the error and return empty list to prevent posting to groups when service is down
         return ApiResponse.<List<Long>>builder()

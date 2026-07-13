@@ -376,18 +376,18 @@ public class GroupServiceImpl implements GroupService {
     @Override
     @Transactional(readOnly = true)
     public Page<GroupMemberResponse> getGroupMembers(Long groupId, Pageable pageable) {
+        Long currentUserId = userHelper.getCurrentUser().getId();
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new AppException(ErrorCode.GROUP_NOT_FOUND));
 
         if (group.getPrivacy() == GroupPrivacy.PRIVACY) {
-            Long currentUserId = userHelper.getCurrentUser().getId();
-            boolean isMember = groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUserId);
-            if (!isMember) {
+            GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId).orElse(null);
+            if (member == null || member.getStatus() != MemberStatus.APPROVED) {
                 throw new AppException(ErrorCode.NO_PERMISSION);
             }
         }
 
-        return groupMemberRepository.findApprovedMembers(groupId, pageable);
+        return groupMemberRepository.findApprovedMembersWithFriendStatus(groupId, currentUserId, pageable);
     }
 
     private Group validateGroupAndPermission(Long currentUserId, Long groupId, boolean requireAdminOnly) {

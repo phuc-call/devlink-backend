@@ -260,16 +260,16 @@ export function GroupCard({ group }: { group: GroupSearchResponse }) {
                     : <span>{group.name?.charAt(0).toUpperCase()}</span>
                 }
             </div>
-            <div className={styles.cardInfo} style={{ flex: 1 }}>
-                <p className={styles.cardName}>{group.name}</p>
+            <div className={styles.cardInfo} style={{ flex: 1, minWidth: 0 }}>
+                <p className={styles.cardName} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{group.name}</p>
                 <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>{group.memberCount} thành viên</p>
                 {group.description && (
-                    <p style={{ fontSize: 13, color: '#6B7280', margin: '4px 0 0 0', lineHeight: 1.4 }}>
-                        {group.description.length > 50 ? group.description.substring(0, 50) + '...' : group.description}
+                    <p style={{ fontSize: 13, color: '#6B7280', margin: '4px 0 0 0', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {group.description}
                     </p>
                 )}
             </div>
-            <div className={styles.cardAction} style={{ paddingLeft: 12 }}>
+            <div className={styles.cardAction} style={{ paddingLeft: 12, flexShrink: 0 }}>
                 {joinStatus === 'APPROVED' ? null : (
                     <button
                         onClick={handleJoin}

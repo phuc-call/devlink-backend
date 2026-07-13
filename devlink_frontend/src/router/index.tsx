@@ -11,6 +11,7 @@ import MainLayout from '../components/layout/MainLayout';
 import FeedPage from '../features/post/pages/FeedPage';
 import FollowingPage from '../features/post/pages/FollowingPage';
 import FriendsPage from '../features/post/pages/FriendsPage';
+import FriendsFeedPage from '../features/post/pages/FriendsFeedPage';
 import ExplorePage from '../features/post/pages/ExplorePage';
 import CreateGroupPage from '../features/post/pages/CreateGroupPage';
 import GroupDetailPage from '../features/post/pages/GroupDetailPage';
@@ -22,6 +23,7 @@ import ProfilePage from '../features/profile/pages/ProfilePage';
 import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
 import MyTemplatesPage from '../features/post/pages/MyTemplatesPage/MyTemplatesPage';
 import MyGroupsPage from '../features/post/pages/MyGroupsPage/MyGroupsPage';
+import GroupsFeedPage from '../features/post/pages/GroupsFeedPage';
 
 import AdminLayout from '../components/layout/AdminLayout/AdminLayout';
 import DashboardPage from '../features/admin/pages/DashboardPage';
@@ -59,8 +61,11 @@ const router = createBrowserRouter([
                     { path: '/', element: <FeedPage /> },
                     { path: '/explore', element: <ExplorePage /> },
                     { path: '/following', element: <FollowingPage /> },
-                    { path: '/friends', element: <FriendsPage /> },
+                    { path: '/friends', element: <Navigate to="/friends/feed" replace /> },
+                    { path: '/friends/feed', element: <FriendsFeedPage /> },
                     { path: '/friends/:tab', element: <FriendsPage /> },
+                    { path: '/groups', element: <Navigate to="/groups/feed" replace /> },
+                    { path: '/groups/feed', element: <GroupsFeedPage /> },
                     { path: '/groups/create', element: <CreateGroupPage /> },
                     { path: '/groups/my-groups', element: <MyGroupsPage /> },
                     { path: '/groups/:id', element: <GroupDetailPage /> },

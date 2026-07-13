@@ -8,10 +8,8 @@
 
 /* ── HEADER SECTION ── */
 .exploreHeader {
-    background: #FFFFFF;
-    border-bottom: 1px solid #E5E7EB;
-    padding: 32px 0 0 0;
-    margin-bottom: 24px;
+    padding: 0;
+    margin-bottom: 16px;
 }
 
 .exploreHeaderContent {
@@ -244,6 +242,18 @@
     gap: 16px;
 }
 
+.groupGridContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.groupGridContainer > div {
+    margin-bottom: 20px;
+}
+.groupGridContainer > div:last-child {
+    margin-bottom: 0;
+}
+
 /* ── EXPLORE CARDS (For ExploreCards.tsx) ── */
 .card {
     background: #FFFFFF;
@@ -252,17 +262,14 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
     border: 1px solid #E5E7EB;
     width: 100%;
     box-sizing: border-box;
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-    border-color: #D1D5DB;
+    transform: none;
+    box-shadow: none;
 }
 
 .cardAvatar {

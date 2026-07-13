@@ -164,6 +164,11 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
 }) => {
     // Danh sách video đang hiển thị trong detail scroll
     const detailList = [initialVideo, ...siblingVideos];
+    const [openCommentId, setOpenCommentId] = useState<number | null>(null);
+
+    const handleToggleComment = (id: number) => {
+        setOpenCommentId(prev => prev === id ? null : id);
+    };
 
     return (
         <div className={styles.detailPage}>
@@ -181,6 +186,8 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
                     <VideoDetailItem
                         key={v.id}
                         video={v}
+                        isCommentOpen={openCommentId === v.id}
+                        onToggleComment={() => handleToggleComment(v.id)}
                     />
                 ))}
 
@@ -204,8 +211,10 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
 // Mỗi card trong trang detail: player (16:9) + info + comment
 interface DetailItemProps {
     video: VideoFeedResponse;
+    isCommentOpen: boolean;
+    onToggleComment: () => void;
 }
-const VideoDetailItem: React.FC<DetailItemProps> = ({ video }) => {
+const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isCommentOpen, onToggleComment }) => {
     const vRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [reaction, setReaction] = useState<ReactionResponse | null>(null);
@@ -234,8 +243,13 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video }) => {
         reactionApi.getSummary(video.id, 'POST')
             .then(r => setReaction(r.data.data))
             .catch(() => { });
-        loadComments(0);
     }, [video.id]);
+
+    useEffect(() => {
+        if (isCommentOpen && comments.length === 0 && cHasMore) {
+            loadComments(0);
+        }
+    }, [isCommentOpen, video.id]);
 
     // IntersectionObserver: autoplay khi vào view
     useEffect(() => {
@@ -471,9 +485,9 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video }) => {
                         <span>{isLiked ? 'Đã thích' : 'Thích'}</span>
                     </button>
 
-                    <button className={styles.actionBtn}>
-                        <MessageCircle size={18} color="#65676b" />
-                        <span>Bình luận</span>
+                    <button className={styles.actionBtn} onClick={onToggleComment}>
+                        <MessageCircle size={18} color={isCommentOpen ? "#1877f2" : "#65676b"} />
+                        <span style={{ color: isCommentOpen ? "#1877f2" : "inherit" }}>Bình luận</span>
                     </button>
 
                     <button className={styles.actionBtn}>
@@ -492,57 +506,61 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video }) => {
 
                 <div className={styles.actionDivider} />
 
-                {/* ── Comment input ── */}
-                <div className={styles.commentInputRow}>
-                    <div className={styles.commentInputWrap}>
-                        {replyTo && (
-                            <div className={styles.replyToChip}>
-                                Đang phản hồi <strong>{replyTo.name}</strong>
-                                <button className={styles.replyCancel} onClick={() => setReplyTo(null)}>×</button>
+                {isCommentOpen && (
+                    <>
+                        {/* ── Comment input ── */}
+                        <div className={styles.commentInputRow}>
+                            <div className={styles.commentInputWrap}>
+                                {replyTo && (
+                                    <div className={styles.replyToChip}>
+                                        Đang phản hồi <strong>{replyTo.name}</strong>
+                                        <button className={styles.replyCancel} onClick={() => setReplyTo(null)}>×</button>
+                                    </div>
+                                )}
+                                <div className={styles.commentInputInner}>
+                                    <input
+                                        className={styles.commentInput}
+                                        placeholder={replyTo ? `Phản hồi ${replyTo.name}…` : 'Viết bình luận…'}
+                                        value={commentText}
+                                        onChange={e => setCommentText(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                                    />
+                                    <button
+                                        className={styles.sendBtn}
+                                        onClick={handleSend}
+                                        disabled={!commentText.trim() || sending}
+                                    >
+                                        <Send size={16} color="#fff" />
+                                    </button>
+                                </div>
                             </div>
-                        )}
-                        <div className={styles.commentInputInner}>
-                            <input
-                                className={styles.commentInput}
-                                placeholder={replyTo ? `Phản hồi ${replyTo.name}…` : 'Viết bình luận…'}
-                                value={commentText}
-                                onChange={e => setCommentText(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                            />
-                            <button
-                                className={styles.sendBtn}
-                                onClick={handleSend}
-                                disabled={!commentText.trim() || sending}
-                            >
-                                <Send size={16} color="#fff" />
-                            </button>
                         </div>
-                    </div>
-                </div>
 
-                {/* ── Comment list ── */}
-                <div className={styles.commentList}>
-                    {cLoading && comments.length === 0 && <div className={styles.spinnerSm} style={{ margin: '16px auto' }} />}
-                    {comments.length === 0 && !cLoading && (
-                        <p className={styles.noComments}>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
-                    )}
-                    {comments.map(c => (
-                        <CommentItem
-                            key={c.id}
-                            comment={c}
-                            onReply={(id, name) => setReplyTo({ id, name })}
-                        />
-                    ))}
-                    {cHasMore && (
-                        <button
-                            className={styles.loadMoreBtn}
-                            onClick={() => loadComments(cPage + 1)}
-                            disabled={cLoading}
-                        >
-                            {cLoading ? <div className={styles.spinnerSm} /> : 'Xem thêm bình luận'}
-                        </button>
-                    )}
-                </div>
+                        {/* ── Comment list ── */}
+                        <div className={styles.commentList}>
+                            {cLoading && comments.length === 0 && <div className={styles.spinnerSm} style={{ margin: '16px auto' }} />}
+                            {comments.length === 0 && !cLoading && (
+                                <p className={styles.noComments}>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                            )}
+                            {comments.map(c => (
+                                <CommentItem
+                                    key={c.id}
+                                    comment={c}
+                                    onReply={(id, name) => setReplyTo({ id, name })}
+                                />
+                            ))}
+                            {cHasMore && (
+                                <button
+                                    className={styles.loadMoreBtn}
+                                    onClick={() => loadComments(cPage + 1)}
+                                    disabled={cLoading}
+                                >
+                                    {cLoading ? <div className={styles.spinnerSm} /> : 'Xem thêm bình luận'}
+                                </button>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

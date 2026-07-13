@@ -18,4 +18,5 @@ public class GroupMemberResponse {
     private String avatar;
     private GroupRole role;
     private LocalDateTime joinedAt;
+    private Boolean isFriend;
 }

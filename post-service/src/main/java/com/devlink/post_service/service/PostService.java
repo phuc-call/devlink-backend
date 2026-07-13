@@ -12,6 +12,18 @@ public interface PostService {
     Page<FeedPostResponse> getFeed(int page, int size, String postType);
 
     Page<FeedPostResponse> getFollowingFeed(int page, int size);
+    
+    /**
+     * Retrieves a paginated feed containing posts from the user's friends 
+     * and system-suggested users.
+     */
+    Page<FeedPostResponse> getFriendsFeed(int page, int size);
+    
+    /**
+     * Retrieves a paginated feed containing posts from the user's joined groups 
+     * and top public groups recommended by the system.
+     */
+    Page<FeedPostResponse> getGroupsFeed(int page, int size);
 
     PostResponse updatePost(Long postId, UpdatePostRequest request);
 

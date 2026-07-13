@@ -5,7 +5,7 @@ import { vi } from 'date-fns/locale';
 import {
     MoreHorizontal, Pencil, Trash2, Flag, Bookmark, Bell,
     Eye, Heart, MessageCircle, Share2, Check, X,
-    ImagePlus, Globe, Users, Lock, FileText,
+    ImagePlus, Globe, Users, Lock, FileText, Play,
 } from 'lucide-react';
 import type { FeedPostResponse, MediaResponse, Visibility } from '../../../types/post.types';
 import { getCurrentUserId } from '../../../utils/auth';
@@ -1247,14 +1247,64 @@ export default function PostCard({
                                                         <div 
                                                             key={m.id} 
                                                             onClick={() => setSelectedMediaIdx(idx)}
+                                                            onMouseEnter={(e) => {
+                                                                if (m.mediaType === 'VIDEO') {
+                                                                    const target = e.currentTarget;
+                                                                    const timerId = setTimeout(() => {
+                                                                        const video = target.querySelector('video');
+                                                                        if (video) {
+                                                                            video.muted = true;
+                                                                            video.play().catch(() => {});
+                                                                        }
+                                                                        const overlay = target.querySelector('.play-overlay') as HTMLElement;
+                                                                        if (overlay) overlay.style.opacity = '0';
+                                                                    }, 2000);
+                                                                    (target as any)._playTimer = timerId;
+                                                                }
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                if (m.mediaType === 'VIDEO') {
+                                                                    const target = e.currentTarget;
+                                                                    if ((target as any)._playTimer) {
+                                                                        clearTimeout((target as any)._playTimer);
+                                                                    }
+                                                                    const video = target.querySelector('video');
+                                                                    if (video) {
+                                                                        video.pause();
+                                                                    }
+                                                                    const overlay = target.querySelector('.play-overlay') as HTMLElement;
+                                                                    if (overlay) overlay.style.opacity = '1';
+                                                                }
+                                                            }}
                                                             style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', cursor: 'pointer' }}
                                                         >
                                                             {m.mediaType === 'IMAGE' ? (
                                                                 <img src={m.url} alt={m.originalName} style={style} />
                                                             ) : (
-                                                                <video style={{...style, pointerEvents: 'none'}}>
-                                                                    <source src={m.url} />
-                                                                </video>
+                                                                <>
+                                                                    <video style={{...style, pointerEvents: 'none'}} loop muted playsInline>
+                                                                        <source src={m.url} />
+                                                                    </video>
+                                                                    <div 
+                                                                        className="play-overlay"
+                                                                        style={{
+                                                                            position: 'absolute', inset: 0,
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            background: 'rgba(0,0,0,0.15)',
+                                                                            pointerEvents: 'none',
+                                                                            transition: 'opacity 0.2s ease-in-out'
+                                                                        }}
+                                                                    >
+                                                                        <div style={{
+                                                                            width: 48, height: 48, borderRadius: '50%',
+                                                                            background: 'rgba(0,0,0,0.6)',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            backdropFilter: 'blur(4px)'
+                                                                        }}>
+                                                                            <Play size={24} color="#fff" fill="#fff" style={{ marginLeft: 4 }} />
+                                                                        </div>
+                                                                    </div>
+                                                                </>
                                                             )}
                                                             {isLastAndExtra && (
                                                                 <div style={{

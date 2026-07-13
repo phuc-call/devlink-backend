@@ -13,7 +13,8 @@ export default function MainLayout() {
     const location = useLocation();
     const isFriends = location.pathname.startsWith('/friends');
     const isGroups = location.pathname.startsWith('/groups');
-    const isWideLayout = isFriends || isGroups;
+    const isFeedPage = location.pathname === '/friends/feed' || location.pathname === '/groups/feed';
+    const isWideLayout = (isFriends || isGroups) && !isFeedPage;
 
     return (
         <div className={styles.root}>

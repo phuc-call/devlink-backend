@@ -6,6 +6,8 @@ import com.devlink.user_service.dto.internal.UserNameInternal;
 import com.devlink.user_service.dto.response.ApiResponse;
 import com.devlink.user_service.dto.response.UserFeedInfoResponse;
 import com.devlink.user_service.entity.enums.BadgeType;
+import com.devlink.user_service.repository.GroupRepository;
+import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.service.FollowService;
 import com.devlink.user_service.service.PostServiceClient;
 import com.devlink.user_service.service.UserBlockService;
@@ -25,6 +27,8 @@ public class PostServiceController {
         private final UserBlockService userBlockService;
         private final PostServiceClient postServiceClient;
         private final com.devlink.user_service.service.GroupService groupService;
+        private final UserProfileRepository userProfileRepository;
+        private final GroupRepository groupRepository;
 
         @GetMapping("/me/friends/ids")
         public ResponseEntity<ApiResponse<List<Long>>> getFriendIds(
@@ -113,6 +117,29 @@ public class PostServiceController {
                                                 .success(true)
                                                 .message("Success")
                                                 .data(groupService.getApprovedGroupIdsByUserId(userId))
+                                                .build());
+        }
+
+        @GetMapping("/suggested-friends/ids")
+        public ResponseEntity<ApiResponse<List<Long>>> getSuggestedFriendIds(
+                        @RequestHeader("X-User-Id") Long userId) {
+                return ResponseEntity.ok(
+                                ApiResponse.<List<Long>>builder()
+                                                .success(true)
+                                                .message("Success")
+                                                .data(userProfileRepository.findTopFollowedCandidateIds(userId,
+                                                                org.springframework.data.domain.PageRequest.of(0, 20)))
+                                                .build());
+        }
+
+        @GetMapping("/groups/top-public/ids")
+        public ResponseEntity<ApiResponse<List<Long>>> getTopPublicGroupIds() {
+                return ResponseEntity.ok(
+                                ApiResponse.<List<Long>>builder()
+                                                .success(true)
+                                                .message("Success")
+                                                .data(groupRepository.findTopPublicGroupIds(
+                                                                org.springframework.data.domain.PageRequest.of(0, 20)))
                                                 .build());
         }
 

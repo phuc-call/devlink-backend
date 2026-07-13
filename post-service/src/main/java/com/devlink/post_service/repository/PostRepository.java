@@ -103,6 +103,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("groupId") Long groupId,
             Pageable pageable);
 
+    @Query(FEED_SELECT + """
+            FROM Post p
+            WHERE p.authorId IN :authorIds
+              AND p.status <> 'DELETED'
+              AND p.deletedAt IS NULL
+              AND p.visibility IN ('PUBLIC', 'FOLLOWERS_ONLY')
+            ORDER BY p.createdAt DESC
+        """)
+    Page<FeedPostResponse> findFriendsFeedPosts(
+            @Param("authorIds") List<Long> authorIds,
+            Pageable pageable);
+
+    @Query(FEED_SELECT + """
+            FROM Post p
+            WHERE p.groupId IN :groupIds
+              AND p.status <> 'DELETED'
+              AND p.deletedAt IS NULL
+            ORDER BY p.createdAt DESC
+        """)
+    Page<FeedPostResponse> findGroupsFeedPosts(
+            @Param("groupIds") List<Long> groupIds,
+            Pageable pageable);
+
 
     /**
      * Fetches active VIDEO posts filtered by file size (bytes) of their video attachment.

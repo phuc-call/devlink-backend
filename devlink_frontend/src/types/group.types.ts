@@ -68,6 +68,7 @@ export interface GroupMemberResponse {
     avatar?: string;
     role: GroupRole;
     joinedAt: string;
+    isFriend?: boolean;
 }
 
 export interface GroupCandidateResponse {

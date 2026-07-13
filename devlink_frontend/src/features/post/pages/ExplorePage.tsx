@@ -254,7 +254,7 @@ export default function ExplorePage() {
                             {/* GROUPS */}
                             {(activeTab === 'all' || activeTab === 'groups') && displayGroups.length > 0 && (
                                 <section className={styles.resultSection}>
-                                    <div className={styles.gridContainer}>
+                                    <div className={styles.groupGridContainer}>
                                         {displayGroups.slice(0, activeTab === 'all' ? 6 : undefined).map(group => 
                                             <GroupCard key={`group-${group.id}`} group={group} />
                                         )}

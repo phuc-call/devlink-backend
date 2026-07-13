@@ -15,7 +15,7 @@ const NAV_ITEMS = [
     },
     {
         label: 'Friends',
-        path: '/friends',
+        path: '/friends/feed',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
     },
     {
         label: 'Groups',
-        path: '/groups/my-groups',
+        path: '/groups/feed',
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -114,7 +114,13 @@ export default function LeftSidebar() {
                     <h2 className={styles.subSidebarTitle}>Bạn bè</h2>
                 </div>
                 <nav className={styles.nav}>
-                    <NavLink to="/friends" end className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                    <NavLink to="/friends/feed" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line></svg>
+                        </span>
+                        <span className={styles.navLabel}>Bảng tin</span>
+                    </NavLink>
+                    <NavLink to="/friends/suggestions" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
                         <span className={styles.navIcon}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                         </span>
@@ -134,7 +140,7 @@ export default function LeftSidebar() {
                     </NavLink>
                     <NavLink to="/friends/followers" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
                         <span className={styles.navIcon}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6" /><path d="M23 11h-6" /></svg>
                         </span>
                         <span className={styles.navLabel}>Người follow tôi</span>
                     </NavLink>
@@ -155,26 +161,32 @@ export default function LeftSidebar() {
                     <h2 className={styles.subSidebarTitle}>Nhóm</h2>
                 </div>
                 <nav className={styles.nav}>
+                    <NavLink to="/groups/feed" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                        <span className={styles.navIcon}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line></svg>
+                        </span>
+                        <span className={styles.navLabel}>Bảng tin</span>
+                    </NavLink>
                     {/* Your Groups: active when /groups/my-groups without ?role */}
-                    <button
-                        onClick={() => navigate('/groups/my-groups')}
-                        className={`${styles.navItem} ${location.pathname === '/groups/my-groups' && !location.search ? styles.navActive : ''}`}
+                    <NavLink
+                        to="/groups/my-groups"
+                        className={() => `${styles.navItem} ${location.pathname === '/groups/my-groups' && !location.search ? styles.navActive : ''}`}
                     >
                         <span className={styles.navIcon}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         </span>
                         <span className={styles.navLabel}>Your Groups</span>
-                    </button>
+                    </NavLink>
                     {/* Groups You Manage: active when ?role=ADMIN */}
-                    <button
-                        onClick={() => navigate('/groups/my-groups?role=ADMIN')}
-                        className={`${styles.navItem} ${location.search === '?role=ADMIN' ? styles.navActive : ''}`}
+                    <NavLink
+                        to="/groups/my-groups?role=ADMIN"
+                        className={() => `${styles.navItem} ${location.search === '?role=ADMIN' ? styles.navActive : ''}`}
                     >
                         <span className={styles.navIcon}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                         </span>
                         <span className={styles.navLabel}>Groups You Manage</span>
-                    </button>
+                    </NavLink>
                     <NavLink to="/groups/create" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
                         <span className={styles.navIcon}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v8" /><path d="M8 12h8" /></svg>

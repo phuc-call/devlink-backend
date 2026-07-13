@@ -58,6 +58,13 @@ public interface GroupRepository extends JpaRepository<Group,Long> {
     """)
     Page<Group> findMyGroups(@Param("userId") Long userId, @Param("role") com.devlink.user_service.entity.enums.GroupRole role, Pageable pageable);
 
-    @Query("SELECT new com.devlink.user_service.dto.response.GroupBasicInfoResponse(g.id, g.name, g.coverImage) FROM Group g WHERE g.id = :groupId")
+    @Query("SELECT new com.devlink.user_service.dto.response.GroupBasicInfoResponse(g.id, g.name, g.coverImage, g.privacy) FROM Group g WHERE g.id = :groupId")
     java.util.Optional<com.devlink.user_service.dto.response.GroupBasicInfoResponse> findGroupBasicInfoById(@Param("groupId") Long groupId);
+
+    @Query("""
+        SELECT g.id FROM Group g 
+        WHERE g.privacy = com.devlink.user_service.entity.enums.GroupPrivacy.PUBLIC
+        ORDER BY g.memberCount DESC
+    """)
+    java.util.List<Long> findTopPublicGroupIds(Pageable pageable);
 }

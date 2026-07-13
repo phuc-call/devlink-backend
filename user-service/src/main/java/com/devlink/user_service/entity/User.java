@@ -14,9 +14,13 @@ import java.util.Set;
 
 @Entity
 @Table(name = "user", indexes = {
-            @Index(name = "idx_user_email", columnList = "email"),
-        @Index(name = "idx_user_username", columnList = "username")})
-@Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
+        @Index(name = "idx_user_email", columnList = "email"),
+        @Index(name = "idx_user_username", columnList = "username") })
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +34,7 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "status",nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
@@ -38,22 +42,24 @@ public class User {
     private LocalDateTime birthDay;
 
     @Column(name = "email_verified", nullable = false)
+    @Builder.Default
     private Boolean emailVerified = false;
 
-    @Column(name = "profile_visibility",length = 20)
+    @Column(name = "profile_visibility", length = 20)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private ProfileVisibility profileVisibility= ProfileVisibility.PUBLIC;
+    private ProfileVisibility profileVisibility = ProfileVisibility.PUBLIC;
 
     private String passwordNotification;
 
-
     // if false auto PENDING → ACCEPTED
     @Column(name = "follow_request_mode", nullable = false)
+    @Builder.Default
     private Boolean followRequestMode = false;
 
     // Đếm số lần đăng nhập sai liên tiếp (F008)
     @Column(name = "failed_login_count", nullable = false)
+    @Builder.Default
     private Integer failedLoginCount = 0;
 
     // Thời điểm khóa tài khoản (null = không bị khóa)
@@ -62,6 +68,7 @@ public class User {
 
     @Column(name = "badge", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private BadgeType badge = BadgeType.NONE;
 
     // Streak is active.(F031)
@@ -71,14 +78,17 @@ public class User {
     private UserProfile profile;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL)
-    private Set<UserRole>roles=new HashSet<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<UserRole> roles = new HashSet<>();
     @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
+    @Builder.Default
     private Set<Follow> following = new HashSet<>();
     @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL)
+    @Builder.Default
     private Set<Follow> followers = new HashSet<>();
     // Block relationships
     @OneToMany(mappedBy = "blocker", cascade = CascadeType.ALL)
+    @Builder.Default
     private Set<UserBlock> blocking = new HashSet<>();
 
     @CreationTimestamp

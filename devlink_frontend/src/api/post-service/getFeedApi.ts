@@ -25,4 +25,18 @@ export const getFeedApi = {
             { params: { page, size } }
         );
     },
+
+    getFriendsFeed: (page: number = 0, size: number = 4) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            '/api/posts/feed/friends',
+            { params: { page, size } }
+        );
+    },
+
+    getGroupsFeed: (page: number = 0, size: number = 4) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            '/api/posts/feed/groups',
+            { params: { page, size } }
+        );
+    },
 };

@@ -60,7 +60,9 @@ export default function GroupDetailPage() {
     const [candidates, setCandidates] = useState<GroupCandidateResponse[]>([]);
 
     const [myUserId, setMyUserId] = useState<number | null>(null);
-    const [myRole, setMyRole] = useState<'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(groupInfo?.role || null);
+    const [myRole, setMyRole] = useState<'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(
+        groupInfo?.joinStatus === 'APPROVED' ? (groupInfo?.role || null) : null
+    );
 
     // State cho Settings
     const [editName, setEditName] = useState(groupInfo?.name || '');
@@ -94,8 +96,10 @@ export default function GroupDetailPage() {
                 setMyUserId(profileRes.data.data.userId);
 
                 // Initialize role from backend response
-                if (groupData.role) {
+                if (groupData.joinStatus === 'APPROVED' && groupData.role) {
                     setMyRole(groupData.role);
+                } else {
+                    setMyRole(null);
                 }
             } catch (err: any) {
                 console.error(err);
@@ -116,9 +120,11 @@ export default function GroupDetailPage() {
         try {
             const res = await groupApi.getGroupMembers(groupId);
             setMembers(res.data.data.content);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            showToast("Lỗi khi tải thành viên", "error");
+            if (err.response?.status !== 403 && err.response?.data?.code !== 'NO_PERMISSION') {
+                showToast("Lỗi khi tải thành viên", "error");
+            }
         } finally {
             setLoading(false);
         }
@@ -334,7 +340,7 @@ export default function GroupDetailPage() {
         }
     };
 
-    const isPrivateAndNotMember = groupInfo?.privacy === 'PRIVACY' && !myRole;
+    const isPrivateAndNotMember = groupInfo?.privacy === 'PRIVACY' && joinStatus !== 'APPROVED';
 
     return (
         <div className={styles.container}>
@@ -381,7 +387,7 @@ export default function GroupDetailPage() {
                 <div className={styles.navActions}>
                     {initializing ? (
                         <button className={styles.pendingBtn} disabled>Đang tải...</button>
-                    ) : myRole ? (
+                    ) : (myRole && joinStatus === 'APPROVED') ? (
                         <>
                             <div style={{ position: 'relative' }}>
                                 <button 
@@ -445,53 +451,57 @@ export default function GroupDetailPage() {
                     <>
                         {activeTab === 'feed' && (
                             <div className={styles.tabContent}>
-                                {showCreatePost && (
-                                    <CreatePostModal
-                                        onClose={() => setShowCreatePost(false)}
-                                        onSuccess={() => {
-                                            setShowCreatePost(false);
-                                            handlePostCreated();
-                                        }}
-                                        avatarUrl={avatarUrl ?? undefined}
-                                        displayName={displayName}
-                                        groupId={groupId}
-                                    />
+                                {myRole && (
+                                    <>
+                                        {showCreatePost && (
+                                            <CreatePostModal
+                                                onClose={() => setShowCreatePost(false)}
+                                                onSuccess={() => {
+                                                    setShowCreatePost(false);
+                                                    handlePostCreated();
+                                                }}
+                                                avatarUrl={avatarUrl ?? undefined}
+                                                displayName={displayName}
+                                                groupId={groupId}
+                                            />
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCreatePost(true)}
+                                            style={{
+                                                background: '#fff', borderRadius: 10,
+                                                padding: '10px 16px', marginBottom: 16,
+                                                border: '1px solid #E4E6EB',
+                                                display: 'flex', alignItems: 'center', gap: 10,
+                                                cursor: 'pointer', width: '100%', textAlign: 'left',
+                                            }}
+                                        >
+                                            {avatarUrl ? (
+                                                <img
+                                                    src={avatarUrl}
+                                                    alt="avatar"
+                                                    style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: 38, height: 38, borderRadius: '50%',
+                                                    background: '#E4E6EB', flexShrink: 0,
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: 16, fontWeight: 600, color: '#6B7280',
+                                                }}>
+                                                    {displayName ? displayName.charAt(0).toUpperCase() : ''}
+                                                </div>
+                                            )}
+                                            <span style={{
+                                                flex: 1, color: '#BEC3C9', fontSize: 15,
+                                                background: '#F0F2F5', borderRadius: 20,
+                                                padding: '8px 14px', userSelect: 'none',
+                                            }}>
+                                                Bạn đang nghĩ gì?
+                                            </span>
+                                        </button>
+                                    </>
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreatePost(true)}
-                                    style={{
-                                        background: '#fff', borderRadius: 10,
-                                        padding: '10px 16px', marginBottom: 16,
-                                        border: '1px solid #E4E6EB',
-                                        display: 'flex', alignItems: 'center', gap: 10,
-                                        cursor: 'pointer', width: '100%', textAlign: 'left',
-                                    }}
-                                >
-                                    {avatarUrl ? (
-                                        <img
-                                            src={avatarUrl}
-                                            alt="avatar"
-                                            style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                                        />
-                                    ) : (
-                                        <div style={{
-                                            width: 38, height: 38, borderRadius: '50%',
-                                            background: '#E4E6EB', flexShrink: 0,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: 16, fontWeight: 600, color: '#6B7280',
-                                        }}>
-                                            {displayName ? displayName.charAt(0).toUpperCase() : ''}
-                                        </div>
-                                    )}
-                                    <span style={{
-                                        flex: 1, color: '#BEC3C9', fontSize: 15,
-                                        background: '#F0F2F5', borderRadius: 20,
-                                        padding: '8px 14px', userSelect: 'none',
-                                    }}>
-                                        Bạn đang nghĩ gì?
-                                    </span>
-                                </button>
                                 
                                 {loadingPosts && posts.length === 0 ? (
                                     <div style={{
@@ -513,7 +523,7 @@ export default function GroupDetailPage() {
                                             Chưa có bài viết nào
                                         </p>
                                         <p style={{ margin: 0, fontSize: 13 }}>
-                                            Hãy là người đầu tiên đăng bài trong nhóm này!
+                                            {myRole ? 'Hãy là người đầu tiên đăng bài trong nhóm này!' : 'Hiện chưa có bài viết nào trong nhóm này.'}
                                         </p>
                                     </div>
                                 ) : (
@@ -571,9 +581,20 @@ export default function GroupDetailPage() {
                                                 </span>
                                             </div>
                                         </div>
-                                        {myRole === 'ADMIN' && m.role !== 'ADMIN' && (
-                                            <button className={styles.kickBtn} onClick={() => handleKickMember(m.id)}>Kích xuất</button>
-                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            {m.isFriend && (
+                                                <span style={{
+                                                    fontSize: 12, fontWeight: 500, color: '#3B82F6', 
+                                                    background: '#EFF6FF', padding: '4px 8px', 
+                                                    borderRadius: 12, border: '1px solid #BFDBFE'
+                                                }}>
+                                                    Bạn bè
+                                                </span>
+                                            )}
+                                            {myRole === 'ADMIN' && m.role !== 'ADMIN' && (
+                                                <button className={styles.kickBtn} onClick={() => handleKickMember(m.id)}>Kích xuất</button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

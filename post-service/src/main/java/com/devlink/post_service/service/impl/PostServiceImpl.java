@@ -3,6 +3,7 @@ package com.devlink.post_service.service.impl;
 import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
+import com.devlink.post_service.dto.client.GroupBasicInfoClient;
 import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
@@ -354,6 +355,84 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<FeedPostResponse> getFriendsFeed(int page, int size) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        int safeSize = Math.min(size, 20);
+        Pageable pageable = PageRequest.of(page, safeSize);
+
+        List<Long> friendIds = userRelationCacheClient.getFriendIds(currentUserId);
+        
+        List<Long> authorIds = new ArrayList<>();
+        if (friendIds != null) authorIds.addAll(friendIds);
+        
+        try {
+            ApiResponse<List<Long>> suggestedRes = userServiceClient.getSuggestedFriendIds();
+            if (suggestedRes != null && suggestedRes.isSuccess() && suggestedRes.getData() != null) {
+                for (Long id : suggestedRes.getData()) {
+                    if (!authorIds.contains(id) && !id.equals(currentUserId)) {
+                        authorIds.add(id);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to get suggested friend ids", e);
+        }
+
+        if (authorIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        Page<FeedPostResponse> postPage = postRepository.findFriendsFeedPosts(authorIds, pageable);
+        if (postPage.isEmpty()) return postPage;
+
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
+        List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
+        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<FeedPostResponse> getGroupsFeed(int page, int size) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        int safeSize = Math.min(size, 20);
+        Pageable pageable = PageRequest.of(page, safeSize);
+
+        List<Long> groupIds = new ArrayList<>();
+        
+        try {
+            ApiResponse<List<Long>> approvedRes = userServiceClient.getApprovedGroupIds(currentUserId);
+            if (approvedRes != null && approvedRes.isSuccess() && approvedRes.getData() != null) {
+                groupIds.addAll(approvedRes.getData());
+            }
+            
+            ApiResponse<List<Long>> publicRes = userServiceClient.getTopPublicGroupIds();
+            if (publicRes != null && publicRes.isSuccess() && publicRes.getData() != null) {
+                for (Long id : publicRes.getData()) {
+                    if (!groupIds.contains(id)) {
+                        groupIds.add(id);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to get group ids for Groups Feed", e);
+        }
+
+        if (groupIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        Page<FeedPostResponse> postPage = postRepository.findGroupsFeedPosts(groupIds, pageable);
+        if (postPage.isEmpty()) return postPage;
+
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
+        List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
+    }
+
+    @Override
     public PostResponse updatePost(Long postId, UpdatePostRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
@@ -557,6 +636,25 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public Page<FeedPostResponse> getGroupPosts(Long groupId, int page, int size) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        try {
+            ApiResponse<GroupBasicInfoClient> groupInfoRes = userServiceClient.getGroupBasicInfo(groupId);
+            if (groupInfoRes != null && groupInfoRes.isSuccess() && groupInfoRes.getData() != null) {
+                if ("PRIVACY".equalsIgnoreCase(groupInfoRes.getData().getPrivacy())) {
+                    ApiResponse<List<Long>> approvedGroupsRes = userServiceClient.getApprovedGroupIds(currentUserId);
+                    if (approvedGroupsRes == null || !approvedGroupsRes.isSuccess() ||
+                            approvedGroupsRes.getData() == null || !approvedGroupsRes.getData().contains(groupId)) {
+                        throw new AppException(ErrorCode.POST_FORBIDDEN);
+                    }
+                }
+            }
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error checking group privacy for groupId {}", groupId, e);
+        }
+
         Pageable pageable = PageRequest.of(page, size);
 
         Page<FeedPostResponse> postPage = postRepository.findPostsByGroupId(groupId, pageable);

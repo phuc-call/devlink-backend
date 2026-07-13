@@ -8,6 +8,7 @@ import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.PostResponse;
 import com.devlink.post_service.service.PostService;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -64,6 +65,26 @@ public class PostController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.getFollowingFeed(page, size), SUCCESS)
+        );
+    }
+
+    @GetMapping("/feed/friends")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFriendsFeed(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "3") @Min(1) @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getFriendsFeed(page, size), SUCCESS)
+        );
+    }
+
+    @GetMapping("/feed/groups")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getGroupsFeed(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "3") @Min(1) @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getGroupsFeed(page, size), SUCCESS)
         );
     }
 
