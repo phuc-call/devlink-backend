@@ -90,7 +90,16 @@ export function JoinGroupModal({ onClose, onSuccess }: { onClose: () => void, on
             onClose();
         } catch (e: any) {
             console.error(e);
-            showToast(e.response?.data?.message || "Mã mời không hợp lệ", "error");
+            let errMsg = e.response?.data?.message || "Mã mời không hợp lệ";
+            
+            // Dịch các lỗi từ backend sang tiếng Việt
+            if (errMsg === "Invalid invite code") {
+                errMsg = "Mã mời không tồn tại hoặc đã hết hạn";
+            } else if (errMsg === "User is already a member of this group") {
+                errMsg = "Bạn đã là thành viên của nhóm này rồi";
+            }
+            
+            showToast(errMsg, "error");
         } finally {
             setLoading(false);
         }

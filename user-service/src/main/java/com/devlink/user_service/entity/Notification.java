@@ -46,4 +46,10 @@ public class Notification {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "reference_id")
+    private Long referenceId;
+
+    @Column(name = "reference_type", length = 50)
+    private String referenceType;
 }

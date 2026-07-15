@@ -1,5 +1,6 @@
 // src/features/notification/components/HiddenNotificationSection.tsx
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     EyeOff, ChevronDown, ChevronUp, Lock, ShieldCheck,
     AlertCircle, KeyRound, Eye, Trash2, MoreVertical,
@@ -29,7 +30,7 @@ function parseErrorCode(e: unknown): string {
 }
 
 // ── PIN Input ─────────────────────────────────────────────────────────
-function PinInput({ error, onChange }: { error: string; onChange: (v: string) => void }) {
+export function PinInput({ error, onChange }: { error: string; onChange: (v: string) => void }) {
     const [digits, setDigits] = useState(['', '', '', '']);
     const refs = [
         useRef<HTMLInputElement>(null),
@@ -322,14 +323,28 @@ function ShowActionModal({ notification, onDone, onCancel }: ShowActionModalProp
 }
 
 // ── Hidden Notification Item ──────────────────────────────────────────
-interface HiddenItemProps {
+export interface HiddenItemProps {
     readonly n: NotificationResponse;
     readonly onRefresh: () => void;
 }
 
-function HiddenNotificationItem({ n, onRefresh }: HiddenItemProps) {
+export function HiddenNotificationItem({ n, onRefresh }: HiddenItemProps) {
+    const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
+
+    const handleClick = () => {
+        if (n.type === 'REPORT_REVIEWED' || n.type === 'REPORT_VIOLATION') {
+            return; // Can't easily handle these here without more complex prop passing, and they are usually not hidden anyway
+        }
+
+        if (n.type === 'REACTION' && n.referenceId) {
+            void navigate(`/profile/me?postId=${n.referenceId}`);
+            return;
+        }
+
+        void navigate(`/profile/${n.actorId}`);
+    };
 
     const handleDelete = async () => {
         try {
@@ -341,7 +356,7 @@ function HiddenNotificationItem({ n, onRefresh }: HiddenItemProps) {
     return (
         <>
             <div className={styles.item}>
-                <div className={styles.itemMain}>
+                <button type="button" className={styles.itemMain} onClick={handleClick} style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                     <div className={styles.avatarWrap}>
                         {n.actorAvatar
                             ? <img src={n.actorAvatar} alt={n.actorName} className={styles.avatar} />
@@ -362,7 +377,7 @@ function HiddenNotificationItem({ n, onRefresh }: HiddenItemProps) {
                             </span>
                         </div>
                     </div>
-                </div>
+                </button>
 
                 <div className={styles.itemActions}>
                     <div className={styles.moreWrap}>
@@ -441,9 +456,11 @@ export default function HiddenNotificationSection() {
         finally { setLoadingList(false); }
     };
 
+    const navigate = useNavigate();
+
     const handleUnlocked = () => {
-        setStep('unlocked');
-        void fetchHiddenList();
+        sessionStorage.setItem('hidden_unlocked', 'true');
+        navigate('/hidden');
     };
 
     return (
@@ -459,9 +476,9 @@ export default function HiddenNotificationSection() {
                         <EyeOff size={16} strokeWidth={2} />
                     </div>
                     <div>
-                        <p className={styles.sectionTitle}>Thông báo đã ẩn</p>
+                        <p className={styles.sectionTitle}>Khu vực bảo mật</p>
                         <p className={styles.sectionSub}>
-                            {hiddenCount > 0 ? `${hiddenCount} thông báo` : 'Không có thông báo ẩn'}
+                            {hiddenCount > 0 ? `${hiddenCount} thông báo ẩn` : 'Không có nội dung ẩn'}
                         </p>
                     </div>
                 </div>
@@ -491,26 +508,9 @@ export default function HiddenNotificationSection() {
                     )}
 
                     {step === 'unlocked' && (
-                        <>
-                            {loadingList && (
-                                <div className={styles.loadingWrap}>
-                                    <div className={styles.spinner} />
-                                </div>
-                            )}
-                            {!loadingList && notifications.length === 0 && (
-                                <div className={styles.empty}>
-                                    <EyeOff size={28} strokeWidth={1.4} color="#D1D5DB" />
-                                    <p>Không có thông báo đã ẩn</p>
-                                </div>
-                            )}
-                            {!loadingList && notifications.map(n => (
-                                <HiddenNotificationItem
-                                    key={n.id}
-                                    n={n}
-                                    onRefresh={() => { void fetchHiddenList(); }}
-                                />
-                            ))}
-                        </>
+                        <div className={styles.loadingWrap}>
+                            <div className={styles.spinner} />
+                        </div>
                     )}
                 </div>
             )}

@@ -1,6 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.config.WsEventConstants;
 import com.devlink.user_service.dto.response.BlockStatusResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserBlock;
@@ -12,6 +13,7 @@ import com.devlink.user_service.repository.UserBlockRepository;
 import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.UserBlockService;
+import com.devlink.user_service.service.WebSocketEventPublisher;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,23 @@ public class UserBlockServiceImpl implements UserBlockService {
     private final UserHelper userHelper;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
     private final UserProfileRepository userProfileRepository;
     public boolean checkIfUserIsBlocked(Long a, Long b) {
         return userBlockRepository.isBlocked(a, b)
                 || userBlockRepository.isBlocked(b, a);
+    }
+
+    @Override
+    public boolean hasBlocked(Long blockerId, Long blockedId) {
+        return userBlockRepository.isBlocked(blockerId, blockedId);
+    }
+
+    @Override
+    public BlockStatusResponse getBlockStatus(Long userId) {
+        User user = userHelper.getCurrentUser();
+        boolean isBlocked = hasBlocked(user.getId(), userId);
+        return BlockStatusResponse.builder().blocked(isBlocked).build();
     }
 
     @Override
@@ -51,24 +66,28 @@ public class UserBlockServiceImpl implements UserBlockService {
 
         if (isBlocked) {
             userBlockRepository.deleteByBlockerIdAndBlockedId(currentUserId, userId);
+            webSocketEventPublisher.publishUserEvent(currentUserId, WsEventConstants.BLOCK_UPDATED, userId);
+            webSocketEventPublisher.publishUserEvent(userId, WsEventConstants.BLOCK_UPDATED, currentUserId);
             return BlockStatusResponse.builder()
                     .blocked(false)
                     .message("Unblocked the user")
                     .build();
         } else {
-    removeFollowRelationships(currentUserId, userId);
-    User target = userRepository.findById(userId)
-            .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-    UserBlock block = UserBlock.builder()
-            .blocker(user)
-            .blockedId(target.getId())
-            .build();
-    userBlockRepository.save(block);
-    return BlockStatusResponse.builder()
-            .blocked(true)
-            .message("Blocked the user")
-            .build();
-}
+            removeFollowRelationships(currentUserId, userId);
+            User target = userRepository.findById(userId)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            UserBlock block = UserBlock.builder()
+                    .blocker(user)
+                    .blockedId(target.getId())
+                    .build();
+            userBlockRepository.save(block);
+            webSocketEventPublisher.publishUserEvent(currentUserId, WsEventConstants.BLOCK_UPDATED, userId);
+            webSocketEventPublisher.publishUserEvent(userId, WsEventConstants.BLOCK_UPDATED, currentUserId);
+            return BlockStatusResponse.builder()
+                    .blocked(true)
+                    .message("Blocked the user")
+                    .build();
+        }
     }
 
     private void removeFollowRelationships(Long currentUserId, Long userId) {

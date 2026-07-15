@@ -3,12 +3,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Bell, Users, UserPlus, Cake, EyeOff, Eye, Trash2, MoreVertical,
-    ShieldCheck, ShieldAlert,  // ← thêm 2 icon mới
+    ShieldCheck, ShieldAlert, MessageCircle, Heart, // ← thêm 2 icon mới
 } from 'lucide-react';
 import { notificationApi } from '../../../../api/user-service/notificationApi';
 import { followApi } from '../../../../api/user-service/followApi';
 import ReportDetailModal from '../../../../features/notification/components/ReportDetailModal/ReportDetailModal';
 import type { NotificationResponse } from '../../../../types/notification.types';
+import { WS_EVENTS } from '../../../../constants/wsEvents';
 import styles from './NotificationBell.module.css';
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -28,6 +29,8 @@ function getTypeIconColor(type: string): string {
     if (type === 'FOLLOW_BACK') return styles.iconFriend;
     if (type === 'REPORT_REVIEWED') return styles.iconReportReviewed;
     if (type === 'REPORT_VIOLATION') return styles.iconReportViolation;
+    if (type === 'COMMENT') return styles.iconComment;
+    if (type === 'REACTION') return styles.iconReaction;
     return styles.iconFollow;
 }
 
@@ -36,6 +39,8 @@ function NotificationTypeIcon({ type }: { readonly type: string }) {
     if (type === 'FOLLOW_BACK') return <Users size={11} strokeWidth={2} />;
     if (type === 'REPORT_REVIEWED') return <ShieldCheck size={11} strokeWidth={2} />;
     if (type === 'REPORT_VIOLATION') return <ShieldAlert size={11} strokeWidth={2} />;
+    if (type === 'COMMENT') return <MessageCircle size={11} strokeWidth={2} />;
+    if (type === 'REACTION') return <Heart size={11} strokeWidth={2} />;
     return <UserPlus size={11} strokeWidth={2} />;
 }
 
@@ -307,6 +312,12 @@ function NotificationItem({
             return;
         }
 
+        // ── Reaction & Comment → navigate to specific post in profile ───────────
+        if ((notification.type === 'REACTION' || notification.type === 'COMMENT') && notification.referenceId) {
+            void navigate(`/profile/me?postId=${notification.referenceId}`);
+            return;
+        }
+
         // ── Các loại thông thường → navigate profile ─────────────────
         void navigate(`/profile/${notification.actorId}`);
     };
@@ -437,8 +448,20 @@ export default function NotificationBell() {
         };
         fetchCount();
         const interval = setInterval(fetchCount, 30000);
-        return () => clearInterval(interval);
-    }, []);
+
+        const handleNewNotification = () => {
+            fetchCount();
+            if (open) {
+                void fetchNotifications();
+            }
+        };
+        window.addEventListener(WS_EVENTS.WINDOW_NEW_NOTIFICATION, handleNewNotification);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener(WS_EVENTS.WINDOW_NEW_NOTIFICATION, handleNewNotification);
+        };
+    }, [open]); // Added 'open' dependency to trigger refetch if panel is open
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {

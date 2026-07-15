@@ -36,7 +36,7 @@ spring:
             - id: user-service-auth-public
               uri: lb://user-service
               predicates:
-                - Path=/auth/register/**,/auth/login,/auth/refresh
+                - Path=/auth/register/**,/auth/login,/auth/refresh,/auth/forgot-password/**
               filters:
                 - name: LoggingFilter
                 - name: RequestRateLimiter
@@ -55,10 +55,17 @@ spring:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
 
+            - id: user-service-ws
+              uri: lb://user-service
+              predicates:
+                - Path=/ws-user/**
+              filters:
+                - name: LoggingFilter
+
             - id: user-service
               uri: lb://user-service
               predicates:
-                - Path=/api/users/**,/auth/logout,/auth/me/sessions/**,/api/v1/groups/**
+                - Path=/api/users/**,/auth/logout,/auth/me/sessions/**,/api/v1/groups/**,/auth/change-password
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
@@ -88,6 +95,13 @@ spring:
                     redis-rate-limiter.burstCapacity: 5
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@userKeyResolver}"
+
+            - id: post-service-ws
+              uri: lb://post-service
+              predicates:
+                - Path=/ws-post/**
+              filters:
+                - name: LoggingFilter
 
             # post-service
             - id: post-service

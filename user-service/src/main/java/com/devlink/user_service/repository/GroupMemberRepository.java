@@ -21,7 +21,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     @Query("""
         SELECT new com.devlink.user_service.dto.response.UserSearchResponse(
-            p.user.id, p.fullName, p.avatarUrl
+            p.user.id, p.fullName, p.avatarUrl,
+            (CASE WHEN (SELECT COUNT(b) FROM UserBlock b WHERE b.blocker.id = :currentUserId AND b.blockedId = p.user.id) > 0 THEN true ELSE false END)
         )
         FROM GroupMember gm
         JOIN UserProfile p ON p.user.id = gm.userId
@@ -30,7 +31,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     """)
     List<UserSearchResponse> findMutualFriendsInGroup(
             @Param("groupId") Long groupId, 
-            @Param("friendIds") List<Long> friendIds);
+            @Param("friendIds") List<Long> friendIds,
+            @Param("currentUserId") Long currentUserId);
 
     boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 
@@ -62,20 +64,24 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     @Query("""
         SELECT new com.devlink.user_service.dto.response.UserSearchResponse(
-            gm.userId, p.fullName, p.avatarUrl
+            gm.userId, p.fullName, p.avatarUrl,
+            (CASE WHEN (SELECT COUNT(b) FROM UserBlock b WHERE b.blocker.id = :currentUserId AND b.blockedId = gm.userId) > 0 THEN true ELSE false END)
         )
         FROM GroupMember gm
         JOIN UserProfile p ON p.user.id = gm.userId
         WHERE gm.group.id = :groupId
         AND gm.status = 'PENDING'
     """)
-    Page<UserSearchResponse> findPendingMembers(@Param("groupId") Long groupId, Pageable pageable);
+    Page<UserSearchResponse> findPendingMembers(
+            @Param("groupId") Long groupId, 
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable);
 
     @Query("""
         SELECT new com.devlink.user_service.dto.response.GroupMemberResponse(
             gm.userId, p.fullName, p.avatarUrl, gm.role, gm.joinedAt,
             CASE WHEN (
-                SELECT COUNT(f) FROM Follow f 
+                SELECT COUNT(f) FROM Follow f
                 WHERE f.status = 'ACCEPTED' 
                   AND ((f.follower.id = :currentUserId AND f.following.id = gm.userId) 
                     OR (f.follower.id = gm.userId AND f.following.id = :currentUserId))

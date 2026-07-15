@@ -31,7 +31,9 @@ export interface NotificationResponse {
     type: NotificationType;
     content: string;
     isRead: boolean;
-    isHidden: boolean;   // thêm mới
+    isHidden: boolean;
+    referenceId?: number;
+    referenceType?: string;
     createdAt: string;
 }
 

@@ -1,0 +1,16 @@
+.postCard {
+    background: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    margin-bottom: 12px;
+    font-family: 'Inter', sans-serif;
+}
+
+@media (max-width: 640px) {
+    .postCard {
+        border-radius: 0;
+        box-shadow: none;
+        border-bottom: 1px solid #E5E7EB;
+        border-top: 1px solid #E5E7EB;
+    }
+}

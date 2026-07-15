@@ -1,6 +1,7 @@
 package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.dto.event.ReactionCreatedEvent;
+import com.devlink.post_service.config.WsEventConstants;
 import com.devlink.post_service.dto.procedure.ReactionCountProjection;
 import com.devlink.post_service.dto.request.ReactionRequest;
 import com.devlink.post_service.dto.response.ReactionResponse;
@@ -15,6 +16,7 @@ import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.ReactionRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReactionService;
+import com.devlink.post_service.service.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -38,6 +40,7 @@ public class ReactionServiceImpl implements ReactionService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final CommentReplyRepository commentReplyRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Override
     public ReactionResponse react(ReactionRequest request) {
@@ -75,6 +78,8 @@ public class ReactionServiceImpl implements ReactionService {
         if(shouldNotify){
             publishReactionCreatedEvent(request,currentUser);
         }
+
+        webSocketEventPublisher.publishPostEvent(request.getTargetId(), WsEventConstants.NEW_REACTION, null);
 
         return buildResponse(request.getTargetId(), request.getTargetType(), currentUserReaction);
     }

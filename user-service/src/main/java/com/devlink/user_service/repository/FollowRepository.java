@@ -128,7 +128,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
         @Query("""
                         SELECT new com.devlink.user_service.dto.response.UserSearchResponse(
-                            p.user.id, p.fullName, p.avatarUrl
+                            p.user.id, p.fullName, p.avatarUrl,
+                            (CASE WHEN (SELECT COUNT(b) FROM UserBlock b WHERE b.blocker.id = :currentUserId AND b.blockedId = p.user.id) > 0 THEN true ELSE false END)
                         )
                         FROM UserProfile p
                         WHERE LOWER(p.fullName) LIKE LOWER(CONCAT('%', :name, '%'))

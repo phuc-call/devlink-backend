@@ -23,7 +23,8 @@ export function UserCard({
     const { showToast } = useToast();
     const [followStatus, setFollowStatus] = useState<string>(initialFollowStatus ?? 'NOT_FOLLOWING');
     const [following, setFollowing] = useState(false);
-    
+    const [isBlocked, setIsBlocked] = useState<boolean>((user as any).isBlocked ?? (user as any).blocked ?? false);
+
     // Menu state
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState<'down' | 'up'>('down');
@@ -78,6 +79,7 @@ export function UserCard({
         setShowMenu(false);
         try {
             const res = await followApi.blockUser(user.userId);
+            setIsBlocked(res.data.data.blocked);
             showToast(res.data.data?.message || 'Đã cập nhật trạng thái chặn', 'success');
         } catch {
             showToast('Có lỗi xảy ra khi chặn người dùng', 'error');
@@ -135,10 +137,10 @@ export function UserCard({
                     </button>
                 </div>
             )}
-            
-            <div 
-                ref={menuRef} 
-                style={{ position: 'relative', marginLeft: 'auto', paddingLeft: showFollow ? 4 : 0 }} 
+
+            <div
+                ref={menuRef}
+                style={{ position: 'relative', marginLeft: 'auto', paddingLeft: showFollow ? 4 : 0 }}
                 onClick={e => e.stopPropagation()}
             >
                 <button
@@ -157,25 +159,25 @@ export function UserCard({
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     style={{
-                        background: 'transparent', border: 'none', padding: '6px', 
+                        background: 'transparent', border: 'none', padding: '6px',
                         cursor: 'pointer', color: '#6B7280', borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'background-color 0.2s',
                     }}
                 >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                        <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
                     </svg>
                 </button>
                 {showMenu && (
                     <div style={{
-                        position: 'absolute', right: 0, 
+                        position: 'absolute', right: 0,
                         ...(menuPosition === 'up' ? { bottom: '100%', marginBottom: '4px' } : { top: '100%', marginTop: '4px' }),
                         background: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
                         width: '180px', zIndex: 10, padding: '4px 0',
                     }}>
-                        <button onClick={handleMessage} 
+                        {/* <button onClick={handleMessage} 
                             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                         style={{
@@ -185,27 +187,27 @@ export function UserCard({
                         }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                             Nhắn tin
-                        </button>
-                        <button onClick={handleBlock} 
+                        </button> */}
+                        <button onClick={handleBlock}
                             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{
-                            width: '100%', textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', 
-                            fontSize: '13px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                            transition: 'background-color 0.1s'
-                        }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                            Chặn / Bỏ chặn
+                            style={{
+                                width: '100%', textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none',
+                                fontSize: '13px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                                transition: 'background-color 0.1s'
+                            }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
+                            {isBlocked ? 'Bỏ chặn người dùng' : 'Chặn người dùng'}
                         </button>
-                        <button onClick={handleReport} 
+                        <button onClick={handleReport}
                             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3F4F6'}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                        style={{
-                            width: '100%', textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', 
-                            fontSize: '13px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                            transition: 'background-color 0.1s'
-                        }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                            style={{
+                                width: '100%', textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none',
+                                fontSize: '13px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                                transition: 'background-color 0.1s'
+                            }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
                             Tố cáo
                         </button>
                     </div>

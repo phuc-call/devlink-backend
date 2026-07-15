@@ -89,6 +89,8 @@ export interface UserSearchResponse {
     userId: number;
     fullName: string;
     avatarUrl?: string;
+    isBlocked?: boolean;
+    blocked?: boolean;
 }
 
 export interface UserSearchPageResponse {

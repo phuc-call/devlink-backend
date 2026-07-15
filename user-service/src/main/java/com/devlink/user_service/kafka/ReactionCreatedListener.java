@@ -1,9 +1,11 @@
 package com.devlink.user_service.kafka;
 
 import com.devlink.user_service.dto.event.ReactionCreatedEvent;
+import com.devlink.user_service.config.WsEventConstants;
 import com.devlink.user_service.entity.Notification;
 import com.devlink.user_service.entity.enums.NotificationType;
 import com.devlink.user_service.repository.NotificationRepository;
+import com.devlink.user_service.service.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 public class ReactionCreatedListener {
 
     private final NotificationRepository notificationRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @KafkaListener(topics = "reaction.created", groupId = "user-service-group")
     public void handle(ReactionCreatedEvent event) {
@@ -40,7 +43,11 @@ public class ReactionCreatedListener {
                 .isRead(false)
                 .isHidden(false)
                 .createdAt(LocalDateTime.now())
+                .referenceId(event.getTargetId())
+                .referenceType(event.getTargetType())
                 .build());
+
+        webSocketEventPublisher.publishUserEvent(event.getReceiverId(), WsEventConstants.NEW_NOTIFICATION, null);
 
         log.info("[Reaction] Saved notification id={} receiverId={} actorId={} targetType={} targetId={}",
                 saved.getId(),
@@ -52,10 +59,10 @@ public class ReactionCreatedListener {
 
     private String buildContent(ReactionCreatedEvent event) {
         return switch (event.getTargetType()) {
-            case "POST" -> "Someone reacted to your post.";
-            case "COMMENT" -> "Someone reacted to your comment.";
-            case "REPLY" -> "Someone reacted to your reply.";
-            default -> "Someone reacted to your content.";
+            case "POST" -> "đã bày tỏ cảm xúc về bài viết của bạn.";
+            case "COMMENT" -> "đã bày tỏ cảm xúc về bình luận của bạn.";
+            case "REPLY" -> "đã bày tỏ cảm xúc về phản hồi của bạn.";
+            default -> "đã bày tỏ cảm xúc về nội dung của bạn.";
         };
     }
 }

@@ -210,7 +210,8 @@
             <artifactId>minio</artifactId>
             <version>8.5.7</version>
         </dependency>
-    </dependencies>
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-websocket</artifactId></dependency>
+  </dependencies>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -250,7 +251,8 @@
                 <artifactId>logback-core</artifactId>
                 <version>1.5.18</version>
             </dependency>
-        </dependencies>
+            <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-websocket</artifactId></dependency>
+  </dependencies>
     </dependencyManagement>
 
     <build>

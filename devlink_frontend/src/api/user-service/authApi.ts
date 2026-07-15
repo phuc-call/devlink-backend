@@ -43,4 +43,13 @@ export const authApi = {
 
     deleteAllOtherSessions: (password: string) =>
         api.delete<{ data: null }>('/auth/me/sessions/others', { data: { password } }),
+
+    forgotPasswordInit: (email: string) =>
+        api.post('/auth/forgot-password/init', { email }),
+
+    forgotPasswordReset: (data: { email: string; otp: string; newPassword: string }) =>
+        api.post('/auth/forgot-password/reset', data),
+
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+        api.post('/auth/change-password', data),
 };

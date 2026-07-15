@@ -360,18 +360,7 @@ export default function FollowingPage() {
                         </div>
                     )}
 
-                    {!loadingPosts && !hasMorePosts && (
-                        <div
-                            style={{
-                                textAlign: 'center',
-                                padding: 16,
-                                color: '#9CA3AF',
-                                fontSize: 13,
-                            }}
-                        >
-                            Đã xem hết bài viết từ following
-                        </div>
-                    )}
+
                 </>
             )}
 

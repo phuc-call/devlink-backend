@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import { followApi } from '../../../../api/user-service/followApi';
 import type { FollowActionResult } from '../../../../api/user-service/followApi';
+import { WS_EVENTS } from '../../../../constants/wsEvents';
 import styles from './Userprofilesidebar.module.css';
 
 const LANG_LABELS: Record<string, string> = {
@@ -47,10 +48,20 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
 
     // ── Side-effects ─────────────────────────────────────────────
     useEffect(() => {
-        if (!profile?.userId) return;
-        followApi.getBlockStatus(profile.userId)
-            .then(res => { setIsBlocked(res.data.data.blocked); setLoadingBlock(false); })
-            .catch(() => { setIsBlocked(false); setLoadingBlock(false); });
+        const fetchBlockStatus = () => {
+            if (!profile?.userId) return;
+            followApi.getBlockStatus(profile.userId)
+                .then(res => { setIsBlocked(res.data.data.blocked); setLoadingBlock(false); })
+                .catch(() => { setIsBlocked(false); setLoadingBlock(false); });
+        };
+        fetchBlockStatus();
+
+        const handleBlockUpdated = () => {
+            fetchBlockStatus();
+        };
+        window.addEventListener(WS_EVENTS.WINDOW_BLOCK_UPDATED, handleBlockUpdated);
+
+        return () => window.removeEventListener(WS_EVENTS.WINDOW_BLOCK_UPDATED, handleBlockUpdated);
     }, [profile?.userId]);
 
     useEffect(() => {

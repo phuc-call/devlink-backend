@@ -296,8 +296,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         return UserProfileResponse.builder()
                 .fullName(profile.getFullName())
                 .userId(owner.getId())
-                .avatarUrl(profile.getAvatarUrl())
-                .coverImageUrl(profile.getCoverImageUrl())
+                .avatarUrl(null)
+                .coverImageUrl(null)
                 .profileVisibility(owner.getProfileVisibility() != null ? owner.getProfileVisibility().name() : null)
                 .limited(true)
                 .build();

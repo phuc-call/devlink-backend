@@ -370,7 +370,7 @@ public class GroupServiceImpl implements GroupService {
 
         validateGroupAndPermission(currentUserId, groupId, false);
 
-        return groupMemberRepository.findPendingMembers(groupId, pageable);
+        return groupMemberRepository.findPendingMembers(groupId, currentUserId, pageable);
     }
 
     @Override
@@ -432,7 +432,7 @@ public class GroupServiceImpl implements GroupService {
 
         List<UserSearchResponse> mutualFriends = List.of();
         if (friendIds != null && !friendIds.isEmpty()) {
-            mutualFriends = groupMemberRepository.findMutualFriendsInGroup(group.getId(), friendIds);
+            mutualFriends = groupMemberRepository.findMutualFriendsInGroup(group.getId(), friendIds, currentUserId);
         }
 
         GroupMember currentUserMember = groupMemberRepository.findByGroupIdAndUserId(group.getId(), currentUserId).orElse(null);

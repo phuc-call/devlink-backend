@@ -152,6 +152,13 @@
     color: #111827;
 }
 
+.groupIconsWrap {
+    display: flex;
+    gap: 2px;
+    margin-left: 16px;
+    align-items: center;
+}
+
 /* ── AVATAR ── */
 .avatarWrap {
     position: relative;
@@ -311,7 +318,10 @@
     .searchWrap {
         display: block;
         max-width: 140px; /* Thêm max-width nhỏ hơn cho mobile */
+        transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
+    /* Giữ nguyên kích thước thanh tìm kiếm trên mobile */
 
     /* Ẩn nav tabs giữa - mobile dùng bottom nav */
     .center {

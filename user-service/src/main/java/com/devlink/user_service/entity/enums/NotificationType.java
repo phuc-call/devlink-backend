@@ -8,5 +8,6 @@ public enum NotificationType {
     REPORT,
     REPORT_REVIEWED,
     REPORT_VIOLATION,
-    REACTION
+    REACTION,
+    COMMENT
 }

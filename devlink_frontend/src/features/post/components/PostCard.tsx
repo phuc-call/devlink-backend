@@ -12,6 +12,9 @@ import { getCurrentUserId } from '../../../utils/auth';
 import { postApi } from '../../../api/post-service/postApi';
 import { groupApi } from '../../../api/user-service/groupApi';
 import CommentSection from './CommentSection';
+import { useWebSocket, WsEvent } from '../../../hooks/useWebSocket';
+import { WS_EVENTS } from '../../../constants/wsEvents';
+import styles from './PostCard.module.css';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
 import ReportModal from '../../../components/common/ReportModal.tsx';
 import { reactionApi } from '../../../api/post-service/reactionApi';
@@ -509,19 +512,22 @@ export default function PostCard({
 
     useEffect(() => {
         let isMounted = true;
-        reactionApi.getSummary(post.id, 'POST')
-            .then(res => {
-                if (isMounted && res.data.success && res.data.data) {
-                    setCurrentUserReaction(res.data.data.currentUserReaction);
-                    setReactionCounts(res.data.data.counts || {
-                        LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
-                    });
-                    setTotalReactions(res.data.data.totalCount);
-                }
-            })
-            .catch(err => {
-                console.error("Failed to load post reaction summary", err);
-            });
+        const fetchSummary = () => {
+            reactionApi.getSummary(post.id, 'POST')
+                .then(res => {
+                    if (isMounted && res.data.success && res.data.data) {
+                        setCurrentUserReaction(res.data.data.currentUserReaction);
+                        setReactionCounts(res.data.data.counts || {
+                            LIKE: 0, LOVE: 0, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0
+                        });
+                        setTotalReactions(res.data.data.totalCount);
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to load post reaction summary", err);
+                });
+        };
+        fetchSummary();
             
         if (post.groupId && !hideGroupInfo) {
             groupApi.getGroupBasicInfo(post.groupId)
@@ -532,11 +538,35 @@ export default function PostCard({
                 })
                 .catch(err => console.error("Failed to load group info", err));
         }
+
+        const handleNewCommentEvent = () => {
+            setPost(prev => ({
+                ...prev,
+                commentCount: (prev.commentCount || 0) + 1
+            }));
+        };
+
+        window.addEventListener(WS_EVENTS.getWindowNewCommentEvent(post.id), handleNewCommentEvent);
             
         return () => {
             isMounted = false;
+            window.removeEventListener(WS_EVENTS.getWindowNewCommentEvent(post.id), handleNewCommentEvent);
         };
     }, [post.id, post.groupId, hideGroupInfo]);
+
+    useWebSocket('post', `/topic/post/${post.id}`, (event: WsEvent) => {
+        if (event.eventType === WS_EVENTS.PAYLOAD_NEW_REACTION) {
+            reactionApi.getSummary(post.id, 'POST').then(res => {
+                if (res.data.success && res.data.data) {
+                    setCurrentUserReaction(res.data.data.currentUserReaction);
+                    setReactionCounts(res.data.data.counts);
+                    setTotalReactions(res.data.data.totalCount);
+                }
+            });
+        } else if (event.eventType === WS_EVENTS.PAYLOAD_NEW_COMMENT) {
+            window.dispatchEvent(new CustomEvent(WS_EVENTS.getWindowNewCommentEvent(post.id)));
+        }
+    });
 
     useEffect(() => {
         return () => {
@@ -779,36 +809,47 @@ export default function PostCard({
                             display: flex; align-items: center; justify-content: center;
                         }
                         
-                        @media (max-width: 768px) {
+                        .mobile-media { display: none; }
+                        
+                        @media (max-width: 1024px) {
                             .post-modal-overlay {
                                 flex-direction: column;
                                 overflow-y: auto;
                                 background: #fff !important;
+                                display: block;
                             }
-                            .post-modal-sidebar, .post-modal-scrollable {
-                                display: contents;
+                            .desktop-media {
+                                display: none !important;
                             }
-                            
+                            .mobile-media {
+                                display: flex !important;
+                                flex-direction: column;
+                                width: 100%;
+                                background: #000;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 10px 0;
+                            }
+                            .mobile-media img, .mobile-media video {
+                                max-width: 100%;
+                                max-height: 60vh;
+                                object-fit: contain;
+                            }
+                            .post-modal-sidebar {
+                                width: 100%;
+                                height: auto;
+                                border-left: none;
+                                box-shadow: none;
+                                display: flex;
+                                flex-direction: column;
+                            }
+                            .post-modal-scrollable {
+                                overflow-y: visible !important;
+                            }
                             .post-modal-close {
                                 top: 12px; right: 12px; left: auto;
-                                background: rgba(0,0,0,0.1); color: #374151;
+                                background: rgba(0,0,0,0.4); color: #fff;
                             }
-
-                            .post-modal-header { order: 1; }
-                            .post-modal-content { order: 2; }
-                            .post-modal-media { 
-                                order: 3; 
-                                width: 100%; 
-                                height: auto; 
-                                min-height: 40vh; 
-                                max-height: 60vh; 
-                            }
-                            .post-modal-media img, .post-modal-media video {
-                                max-height: 60vh !important;
-                            }
-                            .post-modal-stats { order: 4; }
-                            .post-modal-actions { order: 5; }
-                            .post-modal-comments { order: 6; }
                         }
                     `}</style>
 
@@ -820,8 +861,8 @@ export default function PostCard({
                         <X size={24} />
                     </button>
 
-                    {/* Left: Media Area */}
-                    <div className="post-modal-media">
+                    {/* Left: Media Area (Desktop) */}
+                    <div className="post-modal-media desktop-media">
                         {(() => {
                             const media = visualMedia[selectedMediaIdx];
                             if (!media) return null;
@@ -835,17 +876,30 @@ export default function PostCard({
 
                     {/* Right: Sidebar */}
                     <div className="post-modal-sidebar">
-                        <div className="post-modal-header" style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <img src={authorAvatar} alt={authorName} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                            <div>
-                                <div style={{ fontWeight: 600, fontSize: 14 }}>{authorName}</div>
-                                <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    {timeAgo} · {vis.icon}
-                                </div>
-                            </div>
+                        {/* Mobile Media (appears at the very top) */}
+                        <div className="mobile-media">
+                            {(() => {
+                                const media = visualMedia[selectedMediaIdx];
+                                if (!media) return null;
+                                if (media.mediaType === 'IMAGE') {
+                                    return <img src={media.url} alt={media.originalName} />;
+                                } else {
+                                    return <video controls autoPlay src={media.url} />;
+                                }
+                            })()}
                         </div>
 
                         <div className="post-modal-scrollable" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                            <div className="post-modal-header" style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <img src={authorAvatar} alt={authorName} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: 14 }}>{authorName}</div>
+                                    <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        {timeAgo} · {vis.icon}
+                                    </div>
+                                </div>
+                            </div>
+
                             {post.content && (
                                 <div className="post-modal-content" style={{ padding: '16px', fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                                     {post.content}
@@ -967,12 +1021,7 @@ export default function PostCard({
                 </div>
             )}
 
-            <div style={{
-                background: '#FFFFFF', borderRadius: 8,
-                boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
-                marginBottom: 12,
-                fontFamily: 'Inter, sans-serif',
-            }}>
+            <div id={`post-${post.id}`} className={styles.postCard}>
                 {/* ── Header ── */}
                 <div style={{
                     padding: '16px 16px 12px',

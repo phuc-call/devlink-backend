@@ -128,11 +128,7 @@ export default function FriendsFeedPage() {
                 </div>
             )}
 
-            {!hasMore && (
-                <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
-                    Đã xem hết bài viết
-                </div>
-            )}
+
         </div>
     );
 }

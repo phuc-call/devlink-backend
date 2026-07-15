@@ -2,6 +2,7 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.Constants;
+import com.devlink.user_service.config.WsEventConstants;
 import com.devlink.user_service.dto.response.NotificationBrithDay;
 import com.devlink.user_service.dto.response.NotificationResponse;
 import com.devlink.user_service.dto.request.NotificationActionRequest;
@@ -15,6 +16,7 @@ import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
 import com.devlink.user_service.service.EmailService;
 import com.devlink.user_service.service.NotificationService;
+import com.devlink.user_service.service.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -50,6 +52,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationRepository emailVerificationRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     // Constants
     private static final String QUEUE_PREFIX = "birthday:queue:";
@@ -187,8 +190,9 @@ public class NotificationServiceImpl implements NotificationService {
                         .content("Hôm nay là sinh nhật của " + fullName)
                         .isRead(false)
                         .isHidden(false)
-                        .build())
-        );
+                        .build());
+                webSocketEventPublisher.publishUserEvent(followerId, WsEventConstants.NEW_NOTIFICATION, null);
+        });
 
         log.info("[Birthday] Notification saved: birthdayUserId={} → followerId={}",
                 birthdayUserId, followerId);
@@ -214,6 +218,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .isRead(false)
                     .isHidden(false)
                     .build());
+            webSocketEventPublisher.publishUserEvent(receiverId, WsEventConstants.NEW_NOTIFICATION, null);
         });
         log.info("[Follow] type={}, actorId={} → receiverId={}", type, actorId, receiverId);
     }

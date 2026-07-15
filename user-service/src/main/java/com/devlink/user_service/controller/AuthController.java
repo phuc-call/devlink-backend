@@ -33,6 +33,27 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @PostMapping("/forgot-password/init")
+    public ResponseEntity<ApiResponse<Void>> forgotPasswordInit(
+            @RequestBody @Valid ForgotPasswordRequest request) {
+        authService.forgotPasswordInit(request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestBody @Valid ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PostMapping("/register/complete")
     public ResponseEntity<ApiResponse<AuthResponse>> registerComplete(
             @RequestBody @Valid RegisterCompleteRequest request,

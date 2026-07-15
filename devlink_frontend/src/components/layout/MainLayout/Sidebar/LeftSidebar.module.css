@@ -263,3 +263,51 @@
     color: #111827;
     margin: 0;
 }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 640px) {
+    .sidebar {
+        padding: 8px 12px;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+    
+    .subSidebarHeader { display: none; } /* Ẩn header to trên mobile */
+    
+    .nav {
+        flex-direction: row;
+        gap: 8px;
+        margin: 0;
+        width: max-content;
+    }
+    
+    .navItem {
+        width: auto;
+        padding: 6px 16px;
+        background: #F3F4F6;
+        border-radius: 9999px;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .navItem:hover {
+        background: #E5E7EB;
+    }
+    
+    .navActive {
+        background: #DBEAFE;
+        color: #1D4ED8;
+    }
+    
+    .divider, .indexSection, .recommendItem {
+        display: none;
+    }
+}

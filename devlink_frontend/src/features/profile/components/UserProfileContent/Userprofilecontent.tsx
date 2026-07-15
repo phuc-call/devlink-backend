@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { UserProfileResponse } from '../../../../types/profile.types';
 import type { FeedPostResponse } from '../../../../types/post.types';
 import { postApi } from '../../../../api/post-service/postApi';
@@ -22,6 +23,25 @@ export default function UserProfileContent({ profile }: Props) {
     // Dùng field `limited` do backend trả về — không đoán bằng heuristic
     const isLimited = profile?.limited === true;
     const isPrivate = profile?.profileVisibility === 'PRIVATE';
+    const location = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const postId = params.get('postId');
+        if (postId && posts.length > 0) {
+            setTimeout(() => {
+                const el = document.getElementById(`post-${postId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.transition = 'box-shadow 0.3s ease-in-out';
+                    el.style.boxShadow = '0 0 0 2px #3B82F6';
+                    setTimeout(() => {
+                        el.style.boxShadow = 'none';
+                    }, 3000);
+                }
+            }, 500); // Wait a bit for render
+        }
+    }, [location.search, posts.length]);
 
     const loadPosts = useCallback((pageNum: number, reset = false) => {
         if (loadingRef.current || !profile || isLimited) {

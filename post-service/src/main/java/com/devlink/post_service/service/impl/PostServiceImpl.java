@@ -1,5 +1,6 @@
 package com.devlink.post_service.service.impl;
 
+import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
@@ -70,7 +71,7 @@ public class PostServiceImpl implements PostService {
     private final UserRelationCacheClient userRelationCacheClient;
 
     private final FeedPriorityHelper feedPriorityHelper;
-    private final com.devlink.post_service.client.UserServiceClient userServiceClient;
+    private final UserServiceClient userServiceClient;
 
     @Override
     @Transactional

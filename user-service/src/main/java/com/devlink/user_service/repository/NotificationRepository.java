@@ -22,7 +22,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("""
             SELECT new com.devlink.user_service.dto.response.NotificationResponse(
                 n.id, n.actorId, p.fullName, p.avatarUrl,
-                n.type, n.content, n.isRead, n.createdAt
+                n.type, n.content, n.isRead, n.isHidden, n.referenceId, n.referenceType, n.createdAt
             )
             FROM Notification n
             LEFT JOIN UserProfile p ON p.user.id = n.actorId

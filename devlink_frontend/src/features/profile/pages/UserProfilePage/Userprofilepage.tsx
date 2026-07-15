@@ -6,9 +6,11 @@ import UserProfileBanner from '../../components/UserProfileBanner/Userprofileban
 import UserProfileSidebar from '../../components/UserProfileSidebar/Userprofilesidebar.tsx';
 import UserProfileContent from '../../components/UserProfileContent/Userprofilecontent.tsx';
 import styles from './UserProfilePage.module.css';
+import { useToast } from '../../../../context/Toastcontext';
 
 export default function UserProfilePage() {
     const { userId } = useParams<{ userId: string }>();
+    const { showToast } = useToast();
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -22,29 +24,16 @@ export default function UserProfilePage() {
 
         const id = Number(userId);
 
-        Promise.allSettled([
-            userProfileApi.getUserProfile(id),
-            userProfileApi.getAvatarUrl(id),
-            userProfileApi.getCoverImageUrl(id)
-        ]).then(([profileRes, avatarRes, coverRes]) => {
-            if (profileRes.status === 'rejected') {
+        userProfileApi.getUserProfile(id)
+            .then(profileRes => {
+                setProfile(profileRes.data.data);
+            })
+            .catch(() => {
                 setError(true);
-                return;
-            }
-
-            const profileData = profileRes.value.data.data;
-
-            if (avatarRes.status === 'fulfilled' && avatarRes.value.data.data) {
-                profileData.avatarUrl = avatarRes.value.data.data;
-            }
-            if (coverRes.status === 'fulfilled' && coverRes.value.data.data) {
-                profileData.coverImageUrl = coverRes.value.data.data;
-            }
-
-            setProfile(profileData);
-        }).finally(() => {
-            setLoading(false);
-        });
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, [userId]);
 
     if (loading) {
@@ -81,11 +70,11 @@ export default function UserProfilePage() {
                 setViewerMedia(res.data.data);
             } else {
                 setViewerMedia(null);
-                alert('Không thể tải ảnh đại diện (ảnh bị lỗi hoặc không có quyền xem).');
+                showToast('Người dùng chưa cập nhật ảnh đại diện', 'info');
             }
         } catch (err) {
             setViewerMedia(null);
-            alert('Bạn không có quyền xem ảnh đại diện của người này.');
+            showToast('Hồ sơ riêng tư: Không thể xem ảnh đại diện', 'info');
         } finally {
             setViewerLoading(false);
         }
@@ -101,11 +90,11 @@ export default function UserProfilePage() {
                 setViewerMedia(res.data.data);
             } else {
                 setViewerMedia(null);
-                alert('Không thể tải ảnh bìa (ảnh bị lỗi hoặc không có quyền xem).');
+                showToast('Người dùng chưa cập nhật ảnh bìa', 'info');
             }
         } catch (err) {
             setViewerMedia(null);
-            alert('Bạn không có quyền xem ảnh bìa của người này.');
+            showToast('Hồ sơ riêng tư: Không thể xem ảnh bìa', 'info');
         } finally {
             setViewerLoading(false);
         }

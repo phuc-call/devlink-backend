@@ -53,7 +53,8 @@ spring:
         spring.json.type.mapping: >-                                      
           report:com.devlink.user_service.dto.event.ReportCreatedEvent,
           reportReviewed:com.devlink.user_service.dto.event.ReportReviewedEvent,
-          reactions:com.devlink.user_service.dto.event.ReactionCreatedEvent
+          reactions:com.devlink.user_service.dto.event.ReactionCreatedEvent,
+          comment:com.devlink.user_service.dto.event.CommentCreatedEvent
         
 
   cache:

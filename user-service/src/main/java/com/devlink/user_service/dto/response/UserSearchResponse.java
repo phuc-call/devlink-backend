@@ -7,4 +7,5 @@ public class UserSearchResponse {
     Long userId;
     String fullName;
     String avatarUrl;
+    boolean isBlocked;
 }

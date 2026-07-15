@@ -199,9 +199,7 @@ const VideoDetailInline: React.FC<DetailInlineProps> = ({
                         </button>
                     </div>
                 )}
-                {!hasMore && detailList.length > 0 && (
-                    <p className={styles.endMsg}>Đã xem hết 🎬</p>
-                )}
+
             </div>
         </div>
     );

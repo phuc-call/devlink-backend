@@ -21,8 +21,10 @@ public enum ErrorCode {
     OTP_EXPIRED("OTP has expired, please request a new one", HttpStatus.BAD_REQUEST),
     OTP_RATE_LIMIT_EXCEEDED("Too many OTP requests, please try again later", HttpStatus.TOO_MANY_REQUESTS),
     INVALID_OAUTH2_TOKEN("Invalid OAuth2 token", HttpStatus.UNAUTHORIZED),
+    OTP_NOT_FOUND("OTP không tồn tại", HttpStatus.NOT_FOUND),
 
-    FORBIDDEN("Access denied", HttpStatus.FORBIDDEN), EMAIL_NOT_VERIFIED("Email has not been verified", HttpStatus.FORBIDDEN),
+    FORBIDDEN("Access denied", HttpStatus.FORBIDDEN),
+    EMAIL_NOT_VERIFIED("Email has not been verified", HttpStatus.FORBIDDEN),
     BADGE_ALREADY_GRANTED("Badge has already been granted", HttpStatus.CONFLICT),
     ALREADY_BLOCKED("User is already blocked", HttpStatus.CONFLICT),
     INVALID_CREDENTIALS("Invalid email or password", HttpStatus.UNAUTHORIZED),

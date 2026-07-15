@@ -9,6 +9,8 @@ import { authApi } from "../../../../api/user-service/authApi.ts";
 import { UserPlus, Users } from 'lucide-react';
 import { JoinGroupModal } from '../../../../features/post/components/ExploreModals';
 
+import { ChangePasswordModal } from '../../../../features/auth/components/ChangePasswordModal.tsx';
+
 const NAV_TABS = [
     { label: 'Phổ biến', path: '/' },
     { label: 'Following', path: '/following' },
@@ -23,6 +25,7 @@ export default function Header() {
     const [searchValue, setSearchValue] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [joinGroupModal, setJoinGroupModal] = useState(false);
+    const [showChangePassword, setShowChangePassword] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -117,7 +120,7 @@ export default function Header() {
                         />
                     </div>
                     {/* Add Group Icons */}
-                    <div style={{ display: 'flex', gap: 2, marginLeft: 16 }}>
+                    <div className={styles.groupIconsWrap}>
                         <button title="Tạo nhóm mới" onClick={() => navigate('/groups/create')} className={styles.groupIconBtn}>
                             <UserPlus size={18} />
                         </button>
@@ -172,6 +175,13 @@ export default function Header() {
                                 </div>
                                 <div className={styles.dropDivider} />
                                 <button type="button" className={styles.dropItem}
+                                    onClick={() => { setDropdownOpen(false); setShowChangePassword(true); }}>
+                                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+                                        <path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    Đổi mật khẩu
+                                </button>
+                                <button type="button" className={styles.dropItem}
                                     onClick={() => { navigate('/profile/me'); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                         <path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" strokeLinecap="round" />
@@ -179,19 +189,22 @@ export default function Header() {
                                     </svg>
                                     Trang cá nhân
                                 </button>
-                                <button type="button" className={styles.dropItem}>
+                                <button type="button" className={styles.dropItem}
+                                    onClick={() => { navigate('/feature-1'); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-                                        <path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2z" />
-                                        <path d="M10 6v4l3 2" strokeLinecap="round" />
+                                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                                        <rect x="10" y="3" width="7" height="7" rx="1" />
+                                        <rect x="3" y="10" width="7" height="7" rx="1" />
+                                        <rect x="10" y="10" width="7" height="7" rx="1" />
                                     </svg>
-                                    Tính năng 1
+                                    Dữ liệu của tôi
                                 </button>
-                                <button type="button" className={styles.dropItem}>
+                                <button type="button" className={styles.dropItem}
+                                    onClick={() => { navigate('/saved'); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-                                        <rect x="3" y="3" width="14" height="14" rx="2" />
-                                        <path d="M3 8h14" strokeLinecap="round" />
+                                        <path d="M16 18l-6-4.5L4 18V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14z" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
-                                    Tính năng 2
+                                    Thư viện của tôi
                                 </button>
                                 <div className={styles.dropDivider} />
                                 <button
@@ -223,6 +236,7 @@ export default function Header() {
             </header>
             <BottomNav />
             {joinGroupModal && <JoinGroupModal onClose={() => setJoinGroupModal(false)} onSuccess={() => setJoinGroupModal(false)} />}
+            {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
         </>
     );
 }

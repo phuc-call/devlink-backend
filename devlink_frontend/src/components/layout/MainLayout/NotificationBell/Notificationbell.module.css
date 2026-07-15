@@ -110,6 +110,8 @@
 .iconFollow  { color: #3B82F6; }
 .iconFriend  { color: #22C55E; }
 .iconBirthday { color: #F59E0B; }
+.iconComment { color: #8B5CF6; }
+.iconReaction { color: #EF4444; }
 
 /* ── Body ── */
 .body { flex: 1; min-width: 0; }

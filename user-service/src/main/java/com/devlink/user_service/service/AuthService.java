@@ -18,4 +18,8 @@ public interface AuthService {
     AuthTokenResponse getSessions(String refreshToken);
     void deleteSession(Long tokenId, PasswordRequest request);
     void deleteAllOtherSessions(PasswordRequest request, String refreshToken);
+
+    void forgotPasswordInit(ForgotPasswordRequest request);
+    void resetPassword(ResetPasswordRequest request);
+    void changePassword(ChangePasswordRequest request);
 }

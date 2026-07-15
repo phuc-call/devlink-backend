@@ -70,6 +70,7 @@ public final class Constants {
 
     public static final String REPORT_NOTIFICATION_KEY="report:notification:%d";
     public static final String REACTION_CREATED_TOPIC="reaction.created";
+    public static final String COMMENT_CREATED_TOPIC="comment.created";
     public static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100 MB
 
     //REST

@@ -55,7 +55,9 @@ spring:
         spring.json.type.mapping: >-
           report:com.devlink.post_service.dto.event.ReportCreatedEvent,
           reportReviewed:com.devlink.post_service.dto.event.ReportReviewedEvent,
-          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent
+          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent,
+          reactions:com.devlink.post_service.dto.event.ReactionCreatedEvent,
+          comment:com.devlink.post_service.dto.event.CommentCreatedEvent
     consumer:
       group-id: media-cleanup-group
       auto-offset-reset: earliest

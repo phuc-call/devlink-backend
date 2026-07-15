@@ -6,6 +6,7 @@ import { PublicGuard, PrivateGuard, AdminGuard } from '../features/auth/componen
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import OAuth2SuccessPage from '../features/auth/pages/OAuth2SuccessPage';
+import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 
 import MainLayout from '../components/layout/MainLayout';
 import FeedPage from '../features/post/pages/FeedPage';
@@ -16,6 +17,7 @@ import ExplorePage from '../features/post/pages/ExplorePage';
 import CreateGroupPage from '../features/post/pages/CreateGroupPage';
 import GroupDetailPage from '../features/post/pages/GroupDetailPage';
 import NotificationPage from '../features/notification/pages/NotificationPage';
+import HiddenContentPage from '../features/hidden/pages/HiddenContentPage';
 import ChatPage from '../features/chat/pages/ChatPage';
 import MyViolationsPage from '../features/notification/pages/MyViolationsPage/MyViolationsPage.tsx';
 import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
@@ -47,6 +49,7 @@ const router = createBrowserRouter([
         children: [
             { path: '/login', element: <LoginPage /> },
             { path: '/register', element: <RegisterPage /> },
+            { path: '/forgot-password', element: <ForgotPasswordPage /> },
         ],
     },
 
@@ -70,6 +73,7 @@ const router = createBrowserRouter([
                     { path: '/groups/my-groups', element: <MyGroupsPage /> },
                     { path: '/groups/:id', element: <GroupDetailPage /> },
                     { path: '/notifications', element: <NotificationPage /> },
+                    { path: '/hidden', element: <HiddenContentPage /> },
                     { path: '/chat', element: <ChatPage /> },
                     { path: '/feature-1', element: <MyTemplatesPage /> },
                     { path: '/saved', element: <SavedPage /> },

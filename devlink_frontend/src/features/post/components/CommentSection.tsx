@@ -19,6 +19,7 @@ import type {
 } from "../../../types/comment.types";
 import { reactionApi } from "../../../api/post-service/reactionApi";
 import type { ReactionType } from "../../../types/reaction.types";
+import { WS_EVENTS } from "../../../constants/wsEvents";
 
 const REACTION_DETAILS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
   LIKE: { emoji: '👍', label: 'Like', color: '#3B82F6' },
@@ -1910,7 +1911,20 @@ export default function CommentSection({ postId }: Readonly<Props>) {
 
   useEffect(() => {
     fetchComments(0);
-  }, [fetchComments]);
+
+    const handleNewCommentEvent = () => {
+        // Option 1: Just re-fetch page 0 to show latest (if sorted DESC)
+        // This is safe since we want to show new comments.
+        // Actually, our fetchComments resets state if page is 0!
+        fetchComments(0);
+    };
+
+    window.addEventListener(WS_EVENTS.getWindowNewCommentEvent(postId), handleNewCommentEvent);
+
+    return () => {
+        window.removeEventListener(WS_EVENTS.getWindowNewCommentEvent(postId), handleNewCommentEvent);
+    };
+  }, [fetchComments, postId]);
 
   // Auto-scroll "load more" button into view after new comments render
   useEffect(() => {
@@ -1945,15 +1959,7 @@ export default function CommentSection({ postId }: Readonly<Props>) {
         scrollBehavior: "smooth",
       }}
     >
-      {/* ── Write comment input ── */}
-      <div style={{ marginBottom: 16 }}>
-        <CommentInput
-          postId={postId}
-          currentUserAvatar={currentUserAvatar}
-          currentUserName={currentUserName}
-          onSuccess={(c) => handleNewComment(c as CommentSummaryResponse)}
-        />
-      </div>
+
 
       {/* ── Error ── */}
       {error && (
@@ -2087,6 +2093,16 @@ export default function CommentSection({ postId }: Readonly<Props>) {
           </p>
         </div>
       )}
+
+      {/* ── Write comment input ── */}
+      <div style={{ marginTop: 16, position: 'sticky', bottom: -16, background: '#fff', paddingTop: 8, paddingBottom: 16, borderTop: '1px solid #E4E6EB', zIndex: 10 }}>
+        <CommentInput
+          postId={postId}
+          currentUserAvatar={currentUserAvatar}
+          currentUserName={currentUserName}
+          onSuccess={(c) => handleNewComment(c as CommentSummaryResponse)}
+        />
+      </div>
 
       {/* ── Toast ── */}
       {toast.msg && (

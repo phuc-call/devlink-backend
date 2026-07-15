@@ -64,9 +64,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
             SELECT new com.devlink.user_service.dto.internal.UserInfoForCommentInternal(
-                u.id, u.username, u.profile.avatarUrl
+                u.id, p.fullName, p.avatarUrl
             )
             FROM User u
+            LEFT JOIN u.profile p
             WHERE u.id IN :ids
             """)
     List<UserInfoForCommentInternal> findBasicInfoByIds(@Param("ids") List<Long> ids);

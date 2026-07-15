@@ -82,6 +82,60 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void forgotPasswordInit(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        emailVerificationRepository.deleteByEmailAndVerificationType(request.getEmail(), VerificationType.PASSWORD_RESET);
+
+        String otp = generateOtp();
+        emailVerificationRepository.save(EmailVerification.builder()
+                .userId(user.getId())
+                .email(request.getEmail())
+                .verificationType(VerificationType.PASSWORD_RESET)
+                .code(passwordEncoder.encode(otp))
+                .expiresAt(LocalDateTime.now().plusMinutes(Constants.OPS_EXPIRATION_MINUTES))
+                .used(false)
+                .build());
+        emailService.sendEmailDTO(request.getEmail(), EmailTemplateType.OTP.name(), Map.of("otp", otp));
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        emailService.verifyOtp(request.getEmail(), request.getOtp(), VerificationType.PASSWORD_RESET);
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Revoke all existing sessions for security
+        authTokeRepository.deleteAllByUserId(user.getId());
+        
+        log.info("[AUTH] Password reset successfully for userId={}", user.getId());
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Optional: Logout other sessions? The user is changing their password, so it's good practice.
+        authTokeRepository.deleteAllByUserId(user.getId());
+
+        log.info("[AUTH] Password changed successfully for userId={}", user.getId());
+    }
+
+    @Override
     public LogoutResponse logout(RefreshTokenRequest request, String accessToken) {
         String hash = TokenHashUtil.hash(request.getRefreshToken());
         boolean isToken = authTokeRepository.findByTokenHashAndExpiresAtAfter(hash, LocalDateTime.now())

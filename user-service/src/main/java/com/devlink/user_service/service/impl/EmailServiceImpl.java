@@ -76,7 +76,7 @@ public class EmailServiceImpl implements EmailService {
 
         EmailVerification ev =emailVerificationRepository.
                 findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc(email,type,false)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_OTP));
+                .orElseThrow(() -> new AppException(ErrorCode.OTP_NOT_FOUND));
         if (ev.getExpiresAt().isBefore(LocalDateTime.now()))
             throw new AppException(ErrorCode.OTP_EXPIRED);
         if (!passwordEncoder.matches(code, ev.getCode()))

@@ -45,6 +45,7 @@ export default function GroupDetailPage() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState<string | undefined>(undefined);
     const [openCommentPostId, setOpenCommentPostId] = useState<number | null>(null);
+    const [memberToKick, setMemberToKick] = useState<number | null>(null);
     const loadingRef = useRef(false);
 
     useEffect(() => {
@@ -308,15 +309,17 @@ export default function GroupDetailPage() {
         }
     };
 
-    const handleKickMember = async (memberId: number) => {
-        if (!window.confirm("Xóa thành viên này khỏi nhóm?")) return;
+    const handleKickMember = async () => {
+        if (!memberToKick) return;
         try {
-            await groupApi.kickMember(groupId, memberId);
-            showToast("Đã xóa thành viên", "success");
+            await groupApi.kickMember(groupId, memberToKick);
+            showToast("Đã loại thành viên khỏi nhóm", "success");
             loadMembers();
         } catch (err) {
             console.error(err);
-            showToast("Lỗi xóa thành viên", "error");
+            showToast("Lỗi khi loại thành viên", "error");
+        } finally {
+            setMemberToKick(null);
         }
     };
 
@@ -450,8 +453,9 @@ export default function GroupDetailPage() {
                 ) : (
                     <>
                         {activeTab === 'feed' && (
-                            <div className={styles.tabContent}>
+                            <div className={styles.tabContent} style={{ paddingBottom: 0, backgroundColor: 'transparent', boxShadow: 'none', padding: 0 }}>
                                 {myRole && (
+                                    <div style={{ background: '#fff', padding: '16px 24px', borderRadius: '0 0 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: 16 }}>
                                     <>
                                         {showCreatePost && (
                                             <CreatePostModal
@@ -470,7 +474,7 @@ export default function GroupDetailPage() {
                                             onClick={() => setShowCreatePost(true)}
                                             style={{
                                                 background: '#fff', borderRadius: 10,
-                                                padding: '10px 16px', marginBottom: 16,
+                                                padding: '10px 16px', marginBottom: 0,
                                                 border: '1px solid #E4E6EB',
                                                 display: 'flex', alignItems: 'center', gap: 10,
                                                 cursor: 'pointer', width: '100%', textAlign: 'left',
@@ -501,6 +505,7 @@ export default function GroupDetailPage() {
                                             </span>
                                         </button>
                                     </>
+                                    </div>
                                 )}
                                 
                                 {loadingPosts && posts.length === 0 ? (
@@ -570,7 +575,11 @@ export default function GroupDetailPage() {
                             <div className={styles.memberList}>
                                 {members.map(m => (
                                     <div key={m.id} className={styles.memberItem}>
-                                        <div className={styles.memberInfo}>
+                                        <div 
+                                            className={styles.memberInfo}
+                                            onClick={() => navigate(`/profile/${m.id}`)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             <img src={m.avatar || 'https://placehold.co/40x40/png'} alt={m.name} className={styles.memberAvatar} />
                                             <div>
                                                 <h4>{m.name}</h4>
@@ -592,7 +601,7 @@ export default function GroupDetailPage() {
                                                 </span>
                                             )}
                                             {myRole === 'ADMIN' && m.role !== 'ADMIN' && (
-                                                <button className={styles.kickBtn} onClick={() => handleKickMember(m.id)}>Kích xuất</button>
+                                                <button className={styles.kickBtn} onClick={(e) => { e.stopPropagation(); setMemberToKick(m.id); }}>Kích xuất</button>
                                             )}
                                         </div>
                                     </div>
@@ -609,7 +618,11 @@ export default function GroupDetailPage() {
                             <div className={styles.memberList}>
                                 {pendingMembers.map(m => (
                                     <div key={m.userId} className={styles.memberItem}>
-                                        <div className={styles.memberInfo}>
+                                        <div 
+                                            className={styles.memberInfo}
+                                            onClick={() => navigate(`/profile/${m.userId}`)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             <img src={m.avatarUrl || 'https://placehold.co/40x40/png'} alt={m.fullName} className={styles.memberAvatar} />
                                             <h4>{m.fullName}</h4>
                                         </div>
@@ -710,6 +723,19 @@ export default function GroupDetailPage() {
                         <div className={styles.modalActions}>
                             <button className={styles.cancelBtn} onClick={() => setShowLeaveModal(false)}>Hủy</button>
                             <button className={styles.confirmLeaveBtn} onClick={handleConfirmLeaveModal}>Xác nhận Rời Nhóm</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {memberToKick && (
+                <div className={styles.modalOverlay} onClick={() => setMemberToKick(null)}>
+                    <div className={styles.leaveModal} onClick={e => e.stopPropagation()}>
+                        <h3>Kích xuất thành viên</h3>
+                        <p>Bạn có chắc chắn muốn loại thành viên này khỏi nhóm?</p>
+                        <div className={styles.modalActions}>
+                            <button className={styles.cancelBtn} onClick={() => setMemberToKick(null)}>Hủy</button>
+                            <button className={styles.confirmLeaveBtn} onClick={handleKickMember}>Kích xuất</button>
                         </div>
                     </div>
                 </div>

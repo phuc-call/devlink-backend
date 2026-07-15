@@ -134,11 +134,7 @@ export default function SavedPage() {
                 </div>
             )}
 
-            {!hasMore && posts.length > 0 && (
-                <div style={{ textAlign: 'center', padding: '16px', color: '#9CA3AF', fontSize: 13 }}>
-                    Đã xem hết các bài viết
-                </div>
-            )}
+
         </div>
     );
 }
