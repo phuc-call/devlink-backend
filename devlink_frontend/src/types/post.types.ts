@@ -36,14 +36,9 @@ export interface PostResponse {
 
 // src/types/post.types.ts — thêm vào
 export interface AuthorInfo {
-    id: number;
-    fullName: string;
+    userId: number;
+    userName: string;
     avatarUrl: string;
-    badge: string;
-    followerCount: number;
-    followingCount: number;
-    isFollowing: boolean | null;
-    isFriend: boolean | null;
 }
 
 export interface MediaResponse {

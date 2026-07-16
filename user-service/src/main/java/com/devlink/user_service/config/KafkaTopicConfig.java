@@ -28,4 +28,17 @@ public class KafkaTopicConfig {
                 .build();
     }
 
+    /**
+     * Topic dùng để đồng bộ profile (userName, avatarUrl, language) sang post-service.
+     * Bắn khi user cập nhật profile hoặc avatar hoặc language.
+     */
+    @Bean
+    public NewTopic userProfileUpdatedTopic() {
+        return TopicBuilder.name("user-profile-updated")
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000")
+                .build();
+    }
+
 }

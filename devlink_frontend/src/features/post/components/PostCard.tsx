@@ -12,7 +12,7 @@ import { getCurrentUserId } from '../../../utils/auth';
 import { postApi } from '../../../api/post-service/postApi';
 import { groupApi } from '../../../api/user-service/groupApi';
 import CommentSection from './CommentSection';
-import { useWebSocket, WsEvent } from '../../../hooks/useWebSocket';
+import { useWebSocket, type WsEvent } from '../../../hooks/useWebSocket';
 import { WS_EVENTS } from '../../../constants/wsEvents';
 import styles from './PostCard.module.css';
 import { savedPostApi } from '../../../api/post-service/savedPostApi';
@@ -482,8 +482,8 @@ export default function PostCard({
 
     const safeTags = post.tags ?? [];
     const safeMediaList = post.mediaList ?? [];
-    const authorId = post.author?.id ?? post.authorId;
-    const authorName = post.author?.fullName ?? 'Người dùng';
+    const authorId = post.author?.userId ?? post.authorId;
+    const authorName = post.author?.userName ?? 'Người dùng';
     const authorAvatar = post.author?.avatarUrl
         ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=3B82F6&color=fff`;
 
@@ -532,7 +532,7 @@ export default function PostCard({
         if (post.groupId && !hideGroupInfo) {
             groupApi.getGroupBasicInfo(post.groupId)
                 .then(res => {
-                    if (isMounted && res.data.success) {
+                    if (isMounted && res.data) {
                         setGroupInfo(res.data.data);
                     }
                 })
@@ -770,7 +770,7 @@ export default function PostCard({
                 open={showReport}
                 targetId={post.id}
                 targetType="POST"
-                targetName={post.author?.fullName ?? undefined}
+                targetName={post.author?.userName ?? undefined}
                 onClose={() => setShowReport(false)}
             />
 
@@ -1112,16 +1112,7 @@ export default function PostCard({
                                         </button>
                                     </>
                                 )}
-                                {post.author?.badge != null && post.author.badge !== 'NONE' && (
-                                    <span style={{
-                                        background: '#DBEAFE', color: '#2563EB',
-                                        fontSize: 11, padding: '2px 6px',
-                                        borderRadius: 9999, fontWeight: 500, flexShrink: 0,
-                                        display: 'flex', alignItems: 'center'
-                                    }}>
-                                        {post.author.badge === 'POPULAR' ? '⭐ Nổi bật' : '✓ Verified'}
-                                    </span>
-                                )}
+
                             </div>
                             <div style={{
                                 fontSize: 12, color: '#6B7280',

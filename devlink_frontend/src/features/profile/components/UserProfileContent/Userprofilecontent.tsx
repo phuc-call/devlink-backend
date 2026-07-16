@@ -28,6 +28,7 @@ export default function UserProfileContent({ profile }: Props) {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const postId = params.get('postId');
+        const commentId = params.get('commentId');
         if (postId && posts.length > 0) {
             setTimeout(() => {
                 const el = document.getElementById(`post-${postId}`);
@@ -38,6 +39,21 @@ export default function UserProfileContent({ profile }: Props) {
                     setTimeout(() => {
                         el.style.boxShadow = 'none';
                     }, 3000);
+                    
+                    if (commentId) {
+                        setOpenCommentPostId(Number(postId));
+                        setTimeout(() => {
+                            const commentEl = document.getElementById(`comment-${commentId}`) || document.getElementById(`reply-${commentId}`);
+                            if (commentEl) {
+                                commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                commentEl.style.transition = 'background-color 0.3s ease-in-out';
+                                commentEl.style.backgroundColor = '#EEF2FF';
+                                setTimeout(() => {
+                                    commentEl.style.backgroundColor = 'transparent';
+                                }, 3000);
+                            }
+                        }, 1200); // Give time for comments to load
+                    }
                 }
             }, 500); // Wait a bit for render
         }

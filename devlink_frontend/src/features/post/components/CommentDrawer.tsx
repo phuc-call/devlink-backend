@@ -76,7 +76,7 @@ const CommentDrawer: React.FC<Props> = ({ postId, commentCount, onClose }) => {
                 likeCount: 0,
                 replyCount: 0,
                 createdAt: new Date().toISOString(),
-                fullName: null,
+                userName: null,
                 avatarUrl: null,
                 type: 'COMMENT',
             };
@@ -141,17 +141,17 @@ const CommentDrawer: React.FC<Props> = ({ postId, commentCount, onClose }) => {
                                 {c.avatarUrl ? (
                                     <img
                                         src={c.avatarUrl}
-                                        alt={c.fullName ?? ''}
+                                        alt={c.userName ?? ''}
                                         className={styles.commentAvatar}
                                     />
                                 ) : (
                                     <div className={styles.commentAvatarPlaceholder}>
-                                        {(c.fullName?.[0] ?? '?').toUpperCase()}
+                                        {(c.userName?.[0] ?? '?').toUpperCase()}
                                     </div>
                                 )}
                                 <div className={styles.commentBody}>
                                     <div className={styles.commentAuthor}>
-                                        {c.fullName ?? `User #${c.authorId}`}
+                                        {c.userName ?? `User #${c.authorId}`}
                                     </div>
                                     <div className={styles.commentText}>{c.content}</div>
                                     <div className={styles.commentMeta}>

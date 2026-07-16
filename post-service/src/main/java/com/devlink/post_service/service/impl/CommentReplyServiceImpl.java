@@ -1,8 +1,5 @@
 package com.devlink.post_service.service.impl;
 
-
-import com.devlink.post_service.client.cache.UserInfoCacheClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.dto.request.CreateCommentReplyRequest;
 import com.devlink.post_service.dto.request.ModerationResult;
@@ -10,15 +7,19 @@ import com.devlink.post_service.dto.response.CommentReplyResponse;
 import com.devlink.post_service.dto.response.CommentReplySummaryResponse;
 import com.devlink.post_service.entity.Comment;
 import com.devlink.post_service.entity.CommentReply;
+import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.entity.enums.CommentStatus;
 import com.devlink.post_service.entity.enums.CommentType;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.CommentReplyRepository;
 import com.devlink.post_service.repository.CommentRepository;
+import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentReplyService;
 import com.devlink.post_service.service.GeminiModerationService;
+import com.devlink.post_service.service.WebSocketEventPublisher;
+import com.devlink.post_service.config.WsEventConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +40,8 @@ public class CommentReplyServiceImpl implements CommentReplyService {
     private final CommentRepository commentRepository;
     private final CommentReplyRepository commentReplyRepository;
     private final GeminiModerationService geminiModerationService;
-
-    private final UserInfoCacheClient userInfoCacheClient;
+    private final UserProfileRepository userProfileRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Override
     @Transactional
@@ -63,7 +65,8 @@ public class CommentReplyServiceImpl implements CommentReplyService {
 
         String mentionedName = null;
         if (parentReply != null) {
-            mentionedName = userInfoCacheClient.getUserName(parentReply.getAuthorId());
+            UserProfile mentionedProfile = userProfileRepository.findById(parentReply.getAuthorId()).orElse(null);
+            mentionedName = mentionedProfile != null ? mentionedProfile.getUserName() : null;
             log.info("[Reply] Resolved mentionedName={} for authorId={}",
                     mentionedName, parentReply.getAuthorId());
         }
@@ -101,6 +104,8 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 saved.getParentReply() != null ? saved.getParentReply().getId() : null,
                 saved.getAuthorId());
 
+        webSocketEventPublisher.publishPostEvent(request.getPostId(), WsEventConstants.NEW_COMMENT, null);
+
         return toResponse(saved);
     }
 
@@ -126,11 +131,13 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserInfoForCommentClient> userInfoMap =
-                userInfoCacheClient.getBasicInfo(authorIds);
+        Map<Long, UserProfileRepository.UserBasicInfo> userProfileMap = authorIds.isEmpty()
+                ? Map.of()
+                : userProfileRepository.findBasicInfoByIds(authorIds)
+                        .stream().collect(Collectors.toMap(UserProfileRepository.UserBasicInfo::getUserId, p -> p));
 
         List<CommentReplySummaryResponse> content = replies.stream().map(r -> {
-            UserInfoForCommentClient user = userInfoMap.get(r.getAuthorId());
+            UserProfileRepository.UserBasicInfo user = userProfileMap.get(r.getAuthorId());
             return CommentReplySummaryResponse.builder()
                     .id(r.getId())
                     .postId(r.getPostId())
@@ -138,13 +145,13 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                     .parentReplyId(r.getParentReplyId())
                     .authorId(r.getAuthorId())
                     .content(r.getContent())
-                    .status(CommentStatus.valueOf(r.getStatus())) // String → Enum
+                    .status(CommentStatus.valueOf(r.getStatus()))
                     .likeCount(r.getLikeCount())
                     .mentionedName(r.getMentionedName())
                     .type(CommentType.REPLY)
                     .createdAt(r.getCreatedAt())
                     .updatedAt(r.getUpdatedAt())
-                    .fullName(user != null ? user.getFullName() : null)
+                    .userName(user != null ? user.getUserName() : null)
                     .avatarUrl(user != null ? user.getAvatarUrl() : null)
                     .build();
         }).toList();

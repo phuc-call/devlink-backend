@@ -7,7 +7,10 @@ export type NotificationType =
     | 'FOLLOW_REQUEST'
     | 'REPORT'
     | 'REPORT_REVIEWED'
-    | 'REPORT_VIOLATION';
+    | 'REPORT_VIOLATION'
+    | 'REACTION'
+    | 'COMMENT'
+    | 'REPLY';
 
 export type NotificationAction = 'HIDE' | 'SHOW' | 'DELETE' | 'DELETE_MANY';
 

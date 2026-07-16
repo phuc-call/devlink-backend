@@ -16,6 +16,8 @@ export interface GroupResponse {
     memberCount: number;
     inviteCode: string;
     createdAt: string;
+    joinStatus?: string | null;
+    role?: GroupRole | null;
 }
 
 export interface GroupSearchResponse {

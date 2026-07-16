@@ -68,11 +68,7 @@ export function UserCard({
         return 'Theo dõi';
     };
 
-    const handleMessage = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setShowMenu(false);
-        navigate(`/chat`);
-    };
+
 
     const handleBlock = async (e: React.MouseEvent) => {
         e.stopPropagation();

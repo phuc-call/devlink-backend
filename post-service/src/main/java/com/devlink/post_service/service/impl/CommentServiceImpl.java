@@ -1,7 +1,5 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.cache.UserInfoCacheClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentClient;
 import com.devlink.post_service.dto.event.CommentCreatedEvent;
 import com.devlink.post_service.config.WsEventConstants;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
@@ -12,6 +10,7 @@ import com.devlink.post_service.dto.response.CommentResponse;
 import com.devlink.post_service.dto.response.CommentSummaryResponse;
 import com.devlink.post_service.entity.Comment;
 import com.devlink.post_service.entity.CommentReply;
+import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.entity.enums.CommentStatus;
 import com.devlink.post_service.entity.enums.CommentType;
 import com.devlink.post_service.entity.enums.PostStatus;
@@ -21,6 +20,7 @@ import com.devlink.post_service.repository.CommentLockRepository;
 import com.devlink.post_service.repository.CommentReplyRepository;
 import com.devlink.post_service.repository.CommentRepository;
 import com.devlink.post_service.repository.PostRepository;
+import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentService;
 import com.devlink.post_service.service.GeminiModerationService;
@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.devlink.post_service.config.Constants.COMMENT_CREATED_TOPIC;
 
@@ -51,7 +52,7 @@ public class CommentServiceImpl implements CommentService {
     private final PostRepository postRepository;
     private final GeminiModerationService geminiModerationService;
     private final CommentReplyRepository commentReplyRepository;
-    private final UserInfoCacheClient userInfoCacheClient;
+    private final UserProfileRepository userProfileRepository;
     private final PostServiceImpl postService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final WebSocketEventPublisher webSocketEventPublisher;
@@ -134,10 +135,13 @@ public class CommentServiceImpl implements CommentService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserInfoForCommentClient> userInfoMap = userInfoCacheClient.getBasicInfo(authorIds);
+        Map<Long, UserProfileRepository.UserBasicInfo> userProfileMap = authorIds.isEmpty()
+                ? Map.of()
+                : userProfileRepository.findBasicInfoByIds(authorIds)
+                        .stream().collect(Collectors.toMap(UserProfileRepository.UserBasicInfo::getUserId, p -> p));
 
         return commentPage.map(c -> {
-            UserInfoForCommentClient user = userInfoMap.get(c.getAuthorId());
+            UserProfileRepository.UserBasicInfo user = userProfileMap.get(c.getAuthorId());
             return CommentSummaryResponse.builder()
                     .id(c.getId())
                     .postId(c.getPostId())
@@ -147,7 +151,7 @@ public class CommentServiceImpl implements CommentService {
                     .status(c.getStatus())
                     .likeCount(c.getLikeCount())
                     .createdAt(c.getCreatedAt())
-                    .fullName(user != null ? user.getFullName() : null)
+                    .userName(user != null ? user.getUserName() : null)
                     .avatarUrl(user != null ? user.getAvatarUrl() : null)
                     .build();
         });

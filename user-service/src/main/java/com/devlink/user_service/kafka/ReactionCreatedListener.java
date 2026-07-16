@@ -35,6 +35,13 @@ public class ReactionCreatedListener {
 
         String content = buildContent(event);
 
+        Long refId = event.getPostId() != null ? event.getPostId() : event.getTargetId();
+        String refType = switch (event.getTargetType()) {
+            case "COMMENT" -> "COMMENT_" + event.getTargetId();
+            case "REPLY", "COMMENT_REPLY" -> "REPLY_" + event.getTargetId();
+            default -> event.getTargetType();
+        };
+
         Notification saved = notificationRepository.save(Notification.builder()
                 .userId(event.getReceiverId())
                 .actorId(event.getActorId())
@@ -43,8 +50,8 @@ public class ReactionCreatedListener {
                 .isRead(false)
                 .isHidden(false)
                 .createdAt(LocalDateTime.now())
-                .referenceId(event.getTargetId())
-                .referenceType(event.getTargetType())
+                .referenceId(refId)
+                .referenceType(refType)
                 .build());
 
         webSocketEventPublisher.publishUserEvent(event.getReceiverId(), WsEventConstants.NEW_NOTIFICATION, null);
@@ -58,11 +65,25 @@ public class ReactionCreatedListener {
     }
 
     private String buildContent(ReactionCreatedEvent event) {
+        String reactionStr = mapReactionType(event.getReactionType());
         return switch (event.getTargetType()) {
-            case "POST" -> "đã bày tỏ cảm xúc về bài viết của bạn.";
-            case "COMMENT" -> "đã bày tỏ cảm xúc về bình luận của bạn.";
-            case "REPLY" -> "đã bày tỏ cảm xúc về phản hồi của bạn.";
-            default -> "đã bày tỏ cảm xúc về nội dung của bạn.";
+            case "POST" -> "đã bày tỏ " + reactionStr + " về bài viết của bạn.";
+            case "COMMENT" -> "đã bày tỏ " + reactionStr + " về bình luận của bạn.";
+            case "REPLY", "COMMENT_REPLY" -> "đã bày tỏ " + reactionStr + " về phản hồi của bạn.";
+            default -> "đã bày tỏ " + reactionStr + " về nội dung của bạn.";
+        };
+    }
+
+    private String mapReactionType(String reactionType) {
+        if (reactionType == null) return "cảm xúc";
+        return switch (reactionType.toUpperCase()) {
+            case "LIKE" -> "Thích";
+            case "LOVE" -> "Yêu thích";
+            case "HA_HA", "HAHA" -> "Haha";
+            case "WOW" -> "Wow";
+            case "SAD" -> "Buồn";
+            case "ANGRY" -> "Phẫn nộ";
+            default -> "cảm xúc";
         };
     }
 }

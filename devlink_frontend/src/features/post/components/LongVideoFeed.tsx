@@ -55,7 +55,7 @@ const LongVideoFeed: React.FC<Props> = ({ video, onClickDetail }) => {
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbnailUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
     const captionText = video.content ?? '';
     const shouldTruncate = captionText.length > 150;
 
@@ -160,13 +160,13 @@ const LongVideoFeed: React.FC<Props> = ({ video, onClickDetail }) => {
             <div className={styles.header}>
                 <div className={styles.avatarWrap}>
                     {author?.avatarUrl ? (
-                        <img src={author.avatarUrl} alt={author.fullName} className={styles.avatar} />
+                        <img src={author.avatarUrl} alt={author.userName} className={styles.avatar} />
                     ) : (
                         <div className={styles.avatarPlaceholder}>{authorInitial}</div>
                     )}
                 </div>
                 <div className={styles.authorMeta}>
-                    <span className={styles.authorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                    <span className={styles.authorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                     <span className={styles.postTime}>{timeAgo(video.createdAt)}</span>
                 </div>
                 {video.feedBucket && (

@@ -1,6 +1,5 @@
 package com.devlink.post_service.dto.response;
 
-import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import lombok.*;
 
 import java.time.Instant;
@@ -22,15 +21,15 @@ public class VideoFeedResponse {
     private List<TagResponse> tags;
     /** All media attachments (video + thumbnails) */
     private List<MediaResponse> mediaList;
-    /** Author display info enriched from user-service */
-    private UserFeedInfoClient author;
+    /** Author display info enriched from local user_profiles table */
+    private AuthorInfo author;
     /**
      * "PRIORITY" (top ~80%) or "DISCOVERY" (bottom ~20%).
      */
     private String feedBucket;
     /**
      * Computed priority score — higher = shown earlier.
-     * Formula: badgeWeight×10000 + followerCount×0.5 + likeCount×1.0
+     * Formula: likeCount×1.0
      */
     private Double priorityScore;
 }

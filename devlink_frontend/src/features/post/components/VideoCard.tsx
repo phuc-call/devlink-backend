@@ -115,7 +115,7 @@ const VideoCard: React.FC<Props> = ({ video, isActive, onOpenComments }) => {
     const likeCount = reaction?.totalCount ?? video.likeCount ?? 0;
 
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
 
     return (
         <div className={styles.slide}>
@@ -170,7 +170,7 @@ const VideoCard: React.FC<Props> = ({ video, isActive, onOpenComments }) => {
                 {/* Author avatar */}
                 <div className={styles.avatarWrap}>
                     {author?.avatarUrl ? (
-                        <img src={author.avatarUrl} alt={author.fullName} className={styles.avatar} />
+                        <img src={author.avatarUrl} alt={author.userName} className={styles.avatar} />
                     ) : (
                         <div className={styles.avatarPlaceholder}>{authorInitial}</div>
                     )}
@@ -222,7 +222,7 @@ const VideoCard: React.FC<Props> = ({ video, isActive, onOpenComments }) => {
             {/* ── Bottom meta ── */}
             <div className={styles.meta}>
                 <div className={styles.authorName}>
-                    @{author?.fullName ?? `user_${video.authorId}`}
+                    @{author?.userName ?? `user_${video.authorId}`}
                 </div>
                 {video.content && (
                     <div

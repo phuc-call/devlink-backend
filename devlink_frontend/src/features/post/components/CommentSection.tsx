@@ -558,7 +558,7 @@ function CommentInput({
         const created = res.data.data;
         const optimistic: CommentReplySummaryResponse = {
           ...created,
-          fullName: currentUserName ?? null,
+          userName: currentUserName ?? null,
           avatarUrl: currentUserAvatar ?? null,
           type: "REPLY",
           mentionedName: null,
@@ -579,7 +579,7 @@ function CommentInput({
           likeCount: 0,
           replyCount: 0,
           createdAt: created.createdAt,
-          fullName: currentUserName ?? null,
+          userName: currentUserName ?? null,
           avatarUrl: currentUserAvatar ?? null,
           type: "COMMENT",
           mentionedName: null,
@@ -962,8 +962,8 @@ function ReplyItem({
       className="comment-row"
     >
       <img
-        src={getAvatar(reply.fullName, reply.avatarUrl)}
-        alt={reply.fullName ?? "User"}
+        src={getAvatar(reply.userName, reply.avatarUrl)}
+        alt={reply.userName ?? "User"}
         style={{
           width: 28,
           height: 28,
@@ -1006,7 +1006,7 @@ function ReplyItem({
                   display: "block",
                 }}
               >
-                {reply.fullName ?? "User"}
+                {reply.userName ?? "User"}
               </span>
               <p
                 style={{
@@ -1198,7 +1198,7 @@ function ReplyItem({
               postId={postId}
               commentId={commentId}
               parentReplyId={reply.id}
-              placeholder={`Reply to ${reply.fullName ?? "user"}…`}
+              placeholder={`Reply to ${reply.userName ?? "user"}…`}
               autoFocus
               compact
               isReplyMode
@@ -1226,7 +1226,7 @@ function ReplyItem({
     open={showReportModal}
     targetId={reply.id}
     targetType="COMMENT_REPLY"
-    targetName={reply.fullName ?? 'user'}
+    targetName={reply.userName ?? 'user'}
     onClose={() => setShowReportModal(false)}
     onSuccess={() => { setShowReportModal(false); showToast('Đã gửi tố cáo thành công.'); }}
 />
@@ -1489,12 +1489,13 @@ function CommentItem({
 
   return (
     <div
+      id={`comment-${comment.id}`}
       style={{ display: "flex", gap: 8, alignItems: "flex-start" }}
       className="comment-row"
     >
       <img
-        src={getAvatar(comment.fullName, comment.avatarUrl)}
-        alt={comment.fullName ?? "User"}
+        src={getAvatar(comment.userName, comment.avatarUrl)}
+        alt={comment.userName ?? "User"}
         style={{
           width: 36,
           height: 36,
@@ -1536,7 +1537,7 @@ function CommentItem({
                   display: "block",
                 }}
               >
-                {comment.fullName ?? "User"}
+                {comment.userName ?? "User"}
               </span>
               <p
                 style={{
@@ -1694,7 +1695,7 @@ function CommentItem({
             <CommentInput
               postId={postId}
               commentId={comment.id}
-              placeholder={`Reply to ${comment.fullName ?? "user"}…`}
+              placeholder={`Reply to ${comment.userName ?? "user"}…`}
               autoFocus
               compact
               isReplyMode
@@ -1826,7 +1827,7 @@ function CommentItem({
     open={showReportModal}
     targetId={comment.id}
     targetType="COMMENT"
-    targetName={comment.fullName ?? 'user'}
+    targetName={comment.userName ?? 'user'}
     onClose={() => setShowReportModal(false)}
     onSuccess={() => { setShowReportModal(false); showToast('Đã gửi tố cáo thành công.'); }}
 />
@@ -1913,10 +1914,9 @@ export default function CommentSection({ postId }: Readonly<Props>) {
     fetchComments(0);
 
     const handleNewCommentEvent = () => {
-        // Option 1: Just re-fetch page 0 to show latest (if sorted DESC)
-        // This is safe since we want to show new comments.
-        // Actually, our fetchComments resets state if page is 0!
-        fetchComments(0);
+        setTimeout(() => {
+            fetchComments(0);
+        }, 800);
     };
 
     window.addEventListener(WS_EVENTS.getWindowNewCommentEvent(postId), handleNewCommentEvent);

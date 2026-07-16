@@ -20,11 +20,10 @@ public class CommentSummaryResponse {
     private Long parentCommentId;
     private String content;
     private CommentStatus status;
-    private String badge;
     private Long replyCount;
     private Long likeCount;
     private String mentionedName;
     private Instant createdAt;
-    private String fullName;
+    private String userName;
     private String avatarUrl;
 }

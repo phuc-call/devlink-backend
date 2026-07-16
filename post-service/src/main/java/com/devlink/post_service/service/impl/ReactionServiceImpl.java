@@ -86,6 +86,7 @@ public class ReactionServiceImpl implements ReactionService {
 
     private void publishReactionCreatedEvent(ReactionRequest request, Long actorId) {
         Long receiverId = resolveReceiverId(request.getTargetId(), request.getTargetType());
+        Long postId = resolvePostId(request.getTargetId(), request.getTargetType());
 
         if (receiverId.equals(actorId)) {
             return;
@@ -94,6 +95,7 @@ public class ReactionServiceImpl implements ReactionService {
         ReactionCreatedEvent event = ReactionCreatedEvent.builder()
                 .actorId(actorId)
                 .receiverId(receiverId)
+                .postId(postId)
                 .targetId(request.getTargetId())
                 .targetType(request.getTargetType())
                 .reactionType(request.getReactionType())
@@ -101,6 +103,17 @@ public class ReactionServiceImpl implements ReactionService {
                 .build();
 
         kafkaTemplate.send(REACTION_CREATED_TOPIC, String.valueOf(receiverId), event);
+    }
+
+    private Long resolvePostId(Long targetId, TargetType targetType) {
+        return switch (targetType) {
+            case POST -> targetId;
+            case COMMENT -> commentRepository.findById(targetId)
+                    .map(com.devlink.post_service.entity.Comment::getPostId).orElse(null);
+            case COMMENT_REPLY -> commentReplyRepository.findById(targetId)
+                    .map(com.devlink.post_service.entity.CommentReply::getPostId).orElse(null);
+            default -> null;
+        };
     }
 
     private Long resolveReceiverId(Long targetId, TargetType targetType) {

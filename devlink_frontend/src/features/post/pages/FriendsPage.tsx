@@ -37,7 +37,7 @@ export default function FriendsPage() {
                     const mapped = res.data.data.map(u => ({
                         userId: u.id,
                         fullName: u.fullName,
-                        avatarUrl: u.avatar || null,
+                        avatarUrl: u.avatar || undefined,
                     }));
                     setUsers(mapped);
                     setAllUsers(mapped);
@@ -55,7 +55,7 @@ export default function FriendsPage() {
                 const mapped = data.content.map(u => ({
                     userId: u.userId,
                     fullName: u.fullName,
-                    avatarUrl: u.avatar || null,
+                    avatarUrl: u.avatar || undefined,
                 }));
                 if (reset) {
                     setAllUsers(mapped);

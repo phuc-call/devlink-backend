@@ -11,8 +11,10 @@ import com.devlink.post_service.entity.UserTemplateFork;
 import com.devlink.post_service.entity.enums.*;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
+import com.devlink.post_service.client.cache.UserLanguageCacheClient;
 import com.devlink.post_service.repository.LearningTemplateRepository;
 import com.devlink.post_service.repository.UserInteractionRepository;
+import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.repository.UserTemplateForkRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
@@ -52,6 +54,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     private final ObjectMapper objectMapper;
     private final UserTemplateForkRepository forkRepository;
     private final UserInteractionRepository interactionRepository;
+    private final UserProfileRepository userProfileRepository;
 
 
     private final PostAsyncService postAsyncService;
@@ -183,7 +186,13 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     @Transactional(readOnly = true)
     public PagedResponse<TemplateCardResponse> getMyTemplates(int page, int size, Difficulty difficulty, String tag) {
         Long userId = SecurityUtils.getCurrentUserId();
-        List<String> languages = userLanguageCacheClient.getUserLanguages(userId);
+
+        // Lấy language từ user_profiles cục bộ thay vì gọi userLanguageCacheClient
+        List<String> languages = userProfileRepository.findById(userId)
+                .map(p -> p.getLanguage() != null && !p.getLanguage().isBlank()
+                        ? List.of(p.getLanguage())
+                        : List.<String>of())
+                .orElse(List.of());
 
         if (languages.isEmpty()) {
             return PagedResponse.empty("Bạn chưa cài đặt ngôn ngữ lập trình. Hãy cập nhật profile để xem template phù hợp.");

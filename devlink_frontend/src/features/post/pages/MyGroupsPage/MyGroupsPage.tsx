@@ -29,11 +29,6 @@ export default function MyGroupsPage() {
         void fetchGroups();
     }, [roleFilter]);
 
-    const getTitle = () => {
-        if (roleFilter === 'ADMIN') return 'Groups You Manage';
-        return 'Your Groups';
-    };
-
     return (
         <div className={styles.container}>
 

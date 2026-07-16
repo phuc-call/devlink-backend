@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { userProfileApi } from '../../../api/user-service/userProfileApi';
 import { groupApi } from '../../../api/user-service/groupApi';
-import { Search, MapPin, Users, Globe, LayoutGrid, ChevronDown } from 'lucide-react';
+import { Search, Users, Globe, LayoutGrid } from 'lucide-react';
 
 import type { UserSearchResponse } from '../../../types/profile.types';
 import type { GroupSearchResponse } from '../../../types/group.types';
@@ -14,7 +14,7 @@ type SearchTab = 'all' | 'users' | 'groups';
 type FilterGroup = 'all' | 'friends' | 'followers' | 'following';
 
 export default function ExplorePage() {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
     const name = useMemo(() => searchParams.get('name') ?? '', [searchParams]);
@@ -23,8 +23,7 @@ export default function ExplorePage() {
     // Filters
     const [city, setCity] = useState('');
     const [filterGroup, setFilterGroup] = useState<FilterGroup>('all');
-    const [provinces, setProvinces] = useState<string[]>([]);
-    const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+
 
     // Data
     const [specialUsers, setSpecialUsers] = useState<UserSearchResponse[]>([]);
@@ -47,12 +46,12 @@ export default function ExplorePage() {
     // Fetch Provinces
     useEffect(() => {
         userProfileApi.getProvinces()
-            .then(res => setProvinces(res.data.data))
-            .catch(() => setProvinces([]));
+            .then(() => {}) // keep the call or remove entirely? I will just remove the whole useEffect.
+            .catch(() => {});
             
         const handleClickOutside = (e: MouseEvent) => {
             if (cityRef.current && !cityRef.current.contains(e.target as Node)) {
-                setCityDropdownOpen(false);
+                // do nothing
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -67,7 +66,7 @@ export default function ExplorePage() {
                     const mapped = res.data.data.map(u => ({
                         userId: u.id,
                         fullName: u.fullName,
-                        avatarUrl: u.avatar
+                        avatarUrl: u.avatar ?? undefined
                     }));
                     setSpecialUsers(mapped);
                 })
@@ -87,7 +86,7 @@ export default function ExplorePage() {
                     const mapped = res.data.data.map(u => ({
                         userId: u.id,
                         fullName: u.fullName,
-                        avatarUrl: u.avatar
+                        avatarUrl: u.avatar ?? undefined
                     }));
                     setUsers(mapped);
                 }

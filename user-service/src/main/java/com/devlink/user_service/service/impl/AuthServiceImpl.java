@@ -9,6 +9,7 @@ import com.devlink.user_service.dto.response.AuthResponse;
 import com.devlink.user_service.dto.response.AuthTokenItemResponse;
 import com.devlink.user_service.dto.response.AuthTokenResponse;
 import com.devlink.user_service.dto.response.LogoutResponse;
+import com.devlink.user_service.dto.event.UserProfileUpdatedEvent;
 import com.devlink.user_service.entity.*;
 import com.devlink.user_service.entity.enums.*;
 import com.devlink.user_service.exception.AppException;
@@ -51,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserHelper userHelper;
+    private final org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public void registerInit(RegisterInitRequest request) {
@@ -224,6 +226,19 @@ public class AuthServiceImpl implements AuthService {
         userProfile.setCoverAvatar("https://picsum.photos/seed/cover" + coverAvatarId + "/1500/500");
         userProfileRepository.save(userProfile);
         emailVerificationRepository.deleteByEmailAndVerificationType(request.getEmail(), VerificationType.EMAIL_OTP);
+
+        try {
+            UserProfileUpdatedEvent event = UserProfileUpdatedEvent.builder()
+                    .userId(savedUser.getId())
+                    .userName(userProfile.getFullName())
+                    .avatarUrl(userProfile.getAvatarUrl())
+                    .language(null)
+                    .build();
+            kafkaTemplate.send("user-profile-updated", String.valueOf(savedUser.getId()), event);
+            log.info("[AUTH] Fired UserProfileUpdatedEvent for new userId={}", savedUser.getId());
+        } catch (Exception e) {
+            log.error("[AUTH] Failed to fire UserProfileUpdatedEvent for new userId={}: {}", savedUser.getId(), e.getMessage());
+        }
 
         log.info("[AUTH] User registered: {}", savedUser.getEmail());
 

@@ -60,7 +60,7 @@ export default function GroupDetailPage() {
     }, []);
     const [candidates, setCandidates] = useState<GroupCandidateResponse[]>([]);
 
-    const [myUserId, setMyUserId] = useState<number | null>(null);
+    // Remove unused myUserId
     const [myRole, setMyRole] = useState<'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(
         groupInfo?.joinStatus === 'APPROVED' ? (groupInfo?.role || null) : null
     );
@@ -93,8 +93,7 @@ export default function GroupDetailPage() {
 
                 // 1. Lấy My Profile (just to have it if needed)
                 const { userProfileApi } = await import('../../../api/user-service/userProfileApi');
-                const profileRes = await userProfileApi.getProfile();
-                setMyUserId(profileRes.data.data.userId);
+                await userProfileApi.getProfile();
 
                 // Initialize role from backend response
                 if (groupData.joinStatus === 'APPROVED' && groupData.role) {

@@ -1,0 +1,8 @@
+CREATE TABLE user_profiles (
+    user_id BIGINT PRIMARY KEY,
+    user_name VARCHAR(255) NOT NULL,
+    avatar_url VARCHAR(500),
+    language VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

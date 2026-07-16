@@ -32,7 +32,7 @@ export interface CommentSummaryResponse {
     likeCount: number;
     replyCount: number;
     createdAt: string;
-    fullName: string | null;
+    userName: string | null;
     avatarUrl: string | null;
     type: CommentType;
     mentionedName?: string | null;
@@ -71,7 +71,7 @@ export interface CommentReplySummaryResponse {
     likeCount: number;
     createdAt: string;
     updatedAt: string;
-    fullName: string | null;
+    userName: string | null;
     avatarUrl: string | null;
     type: CommentType;
     mentionedName?: string | null;

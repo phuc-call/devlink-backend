@@ -2,13 +2,14 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.VideoFeedProperties;
-import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.PostMediaRepository;
 import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.PostTagRepository;
+import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.VideoFeedService;
 import com.devlink.post_service.service.helper.FeedPriorityHelper;
@@ -25,12 +26,8 @@ import java.util.stream.Collectors;
 
 /**
  * Video feed with priority-based ranking and bucket split.
- * Short/long classification uses fileSize from VideoFeedProperties.
- * Score: badgeWeight×10000 + followerCount×0.5 + likeCount×1.0
- * Badge weights: RED_TICK=3, BLUE_TICK=2, POPULAR=1, NONE=0
+ * Score: likeCount×1.0 (badge/follower no longer stored locally — replaced by local user_profiles DB)
  * Buckets: top-scored → priority (80%), lowest-scored shuffled → discovery (20%)
- * FIX safeGetFriendIds: was calling getFollowingIds (may fail or be empty for new users),
- * now also tries getFriendIds as fallback to ensure FOLLOWERS_ONLY posts surface correctly.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,8 +41,7 @@ public class VideoFeedServiceImpl implements VideoFeedService {
     private final UserRelationCacheClient userRelationCacheClient;
     private final VideoFeedProperties videoFeedProperties;
     private final FeedPriorityHelper feedPriorityHelper;
-
-    private final static String KEYWORD_SEARCH_VIDEO_FEED = "keyword_search_video_feed:";
+    private final UserProfileRepository userProfileRepository;
 
     @Override
     public VideoFeedPageResponse getShortVideoFeed(int page, int size) {
@@ -96,16 +92,11 @@ public class VideoFeedServiceImpl implements VideoFeedService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserFeedInfoClient> authorMap = feedPriorityHelper.safeGetFeedInfo(authorIds);
-        Map<Long, Integer> badgeWeights = feedPriorityHelper.resolveBadgeWeights(authorIds, authorMap);
+        Map<Long, UserProfileRepository.UserBasicInfo> authorMap = feedPriorityHelper.safeGetProfiles(authorIds);
 
         List<ScoredVideo> scored = rawPosts.stream().map(p -> {
-            int badgeWeight = badgeWeights.getOrDefault(p.getAuthorId(), 0);
-            int followerCount = Optional.ofNullable(authorMap.get(p.getAuthorId()))
-                    .map(UserFeedInfoClient::getFollowerCount)
-                    .orElse(0);
             long likeCount = p.getLikeCount() != null ? p.getLikeCount() : 0L;
-            double score = feedPriorityHelper.computeScore(badgeWeight, followerCount, likeCount);
+            double score = feedPriorityHelper.computeScore(likeCount);
             return new ScoredVideo(p, score);
         }).toList();
 
@@ -158,13 +149,19 @@ public class VideoFeedServiceImpl implements VideoFeedService {
 
     private List<VideoFeedResponse> toResponses(
             List<ScoredVideo> scored,
-            Map<Long, UserFeedInfoClient> authorMap,
+            Map<Long, UserProfileRepository.UserBasicInfo> authorMap,
             Map<Long, List<TagResponse>> tagsMap,
             Map<Long, List<MediaResponse>> mediaMap,
             String bucket) {
 
         return scored.stream().map(sv -> {
             VideoPostResponse p = sv.post();
+            UserProfileRepository.UserBasicInfo profile = authorMap.get(p.getAuthorId());
+            AuthorInfo authorInfo = profile != null ? AuthorInfo.builder()
+                    .userId(profile.getUserId())
+                    .userName(profile.getUserName())
+                    .avatarUrl(profile.getAvatarUrl())
+                    .build() : null;
             return VideoFeedResponse.builder()
                     .id(p.getPostId())
                     .authorId(p.getAuthorId())
@@ -178,7 +175,7 @@ public class VideoFeedServiceImpl implements VideoFeedService {
                     .priorityScore(sv.score())
                     .tags(tagsMap.getOrDefault(p.getPostId(), List.of()))
                     .mediaList(mediaMap.getOrDefault(p.getPostId(), List.of()))
-                    .author(authorMap.get(p.getAuthorId()))
+                    .author(authorInfo)
                     .build();
         }).toList();
     }
@@ -229,9 +226,13 @@ public class VideoFeedServiceImpl implements VideoFeedService {
         List<TagResponse> tags = postTagRepository.findTagsByPostIds(postIds);
         List<MediaResponse> mediaList = postMediaRepository.findMediaByPostIds(postIds);
 
-        UserFeedInfoClient author = feedPriorityHelper
-                .safeGetFeedInfo(List.of(p.getAuthorId()))
+        UserProfileRepository.UserBasicInfo profile = feedPriorityHelper.safeGetProfiles(List.of(p.getAuthorId()))
                 .get(p.getAuthorId());
+        AuthorInfo author = profile != null ? AuthorInfo.builder()
+                .userId(profile.getUserId())
+                .userName(profile.getUserName())
+                .avatarUrl(profile.getAvatarUrl())
+                .build() : null;
 
         log.info("[VideoFeed] getVideoDetail postId={} requestedBy={}", postId, currentUserId);
 
@@ -251,10 +252,7 @@ public class VideoFeedServiceImpl implements VideoFeedService {
     }
 
     /**
-     * FIX: Original code called getFollowingIds() which could fail or be empty for users
-     * with no following list, causing FOLLOWERS_ONLY posts to never appear.
-     * Now tries getFollowingIds first (for feed purpose = "people I follow can see my posts"),
-     * with a safe fallback to empty list that prevents query failure.
+     * Tries getFollowingIds first; falls back to -1L sentinel so DB query won't fail.
      */
     private List<Long> safeGetFriendIds(Long currentUserId) {
         try {

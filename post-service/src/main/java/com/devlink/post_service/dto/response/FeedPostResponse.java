@@ -1,6 +1,5 @@
 package com.devlink.post_service.dto.response;
 
-import com.devlink.post_service.dto.client.UserFeedInfoClient;
 import com.devlink.post_service.entity.enums.AiModerationStatus;
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
@@ -35,8 +34,8 @@ public class FeedPostResponse {
     private List<TagResponse> tags;
     private List<MediaResponse> mediaList;
     private Instant savedAt;
-    // Author info — lấy từ user-service
-    private UserFeedInfoClient author;
+    // Author info — lấy từ bảng user_profiles cục bộ
+    private AuthorInfo author;
 
     @Builder
     // Constructor cho JPQL — không có tags và mediaList
@@ -62,4 +61,4 @@ public class FeedPostResponse {
         this.likeCount = likeCount;
     }
 
-}
+}

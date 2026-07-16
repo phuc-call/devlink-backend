@@ -75,7 +75,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
         } catch { /* ignore */ }
     };
 
-    const initial = comment.fullName?.[0]?.toUpperCase() ?? '?';
+    const initial = comment.userName?.[0]?.toUpperCase() ?? '?';
 
     return (
         <div className={styles.commentItem}>
@@ -86,7 +86,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
                 }
                 <div className={styles.cContent}>
                     <div className={styles.cBubble}>
-                        <span className={styles.cName}>{comment.fullName ?? `user_${comment.authorId}`}</span>
+                        <span className={styles.cName}>{comment.userName ?? `user_${comment.authorId}`}</span>
                         <p className={styles.cText}>{comment.content}</p>
                     </div>
                     <div className={styles.cMeta}>
@@ -99,7 +99,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
                         </button>
                         <button
                             className={styles.cMetaBtn}
-                            onClick={() => onReply(comment.id, comment.fullName ?? `user_${comment.authorId}`)}
+                            onClick={() => onReply(comment.id, comment.userName ?? `user_${comment.authorId}`)}
                         >
                             Phản hồi
                         </button>
@@ -118,11 +118,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onReply }) => {
                                 <div key={rp.id} className={styles.replyItem}>
                                     {rp.avatarUrl
                                         ? <img src={rp.avatarUrl} className={styles.rAvatar} alt="" />
-                                        : <div className={styles.rAvatarPh}>{rp.fullName?.[0]?.toUpperCase() ?? '?'}</div>
+                                        : <div className={styles.rAvatarPh}>{rp.userName?.[0]?.toUpperCase() ?? '?'}</div>
                                     }
                                     <div className={styles.cContent}>
                                         <div className={styles.cBubble}>
-                                            <span className={styles.cName}>{rp.fullName ?? `user_${rp.authorId}`}</span>
+                                            <span className={styles.cName}>{rp.userName ?? `user_${rp.authorId}`}</span>
                                             <p className={styles.cText}>{rp.content}</p>
                                         </div>
                                         <div className={styles.cMeta}>
@@ -342,7 +342,7 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isCommentOpen, onTo
                     likeCount: 0,
                     replyCount: 0,
                     createdAt: new Date().toISOString(),
-                    fullName: null,
+                    userName: null,
                     avatarUrl: null,
                     type: 'COMMENT',
                 };
@@ -355,7 +355,7 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isCommentOpen, onTo
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
     const isLiked = reaction?.currentUserReaction === 'LIKE';
     const likeCount = reaction?.totalCount ?? video.likeCount ?? 0;
     const captionText = video.content ?? '';
@@ -370,7 +370,7 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isCommentOpen, onTo
                     : <div className={styles.detailAvatarPh}>{authorInitial}</div>
                 }
                 <div className={styles.detailAuthorInfo}>
-                    <span className={styles.detailAuthorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                    <span className={styles.detailAuthorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                     <span className={styles.detailPostTime}>{timeAgo(video.createdAt)}</span>
                 </div>
                 <button className={styles.moreBtn}><MoreHorizontal size={18} color="#65676b" /></button>
@@ -628,9 +628,9 @@ const ShortCard: React.FC<ShortCardProps> = ({ video, onOpen }) => {
                 <div className={styles.shortAuthorRow}>
                     {author?.avatarUrl
                         ? <img src={author.avatarUrl} className={styles.shortAvatar} alt="" />
-                        : <div className={styles.shortAvatarPh}>{author?.fullName?.[0]?.toUpperCase() ?? '?'}</div>
+                        : <div className={styles.shortAvatarPh}>{author?.userName?.[0]?.toUpperCase() ?? '?'}</div>
                     }
-                    <span className={styles.shortAuthorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                    <span className={styles.shortAuthorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                 </div>
                 <div className={styles.shortStats}>
                     <span><Heart size={10} /> {fmt(video.likeCount ?? 0)}</span>
@@ -693,10 +693,10 @@ const LongCard: React.FC<LongCardProps> = ({ video, onOpen }) => {
             <div className={styles.longHeader}>
                 {author?.avatarUrl
                     ? <img src={author.avatarUrl} className={styles.longAvatar} alt="" />
-                    : <div className={styles.longAvatarPh}>{author?.fullName?.[0]?.toUpperCase() ?? '?'}</div>
+                    : <div className={styles.longAvatarPh}>{author?.userName?.[0]?.toUpperCase() ?? '?'}</div>
                 }
                 <div className={styles.longAuthorInfo}>
-                    <span className={styles.longAuthorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                    <span className={styles.longAuthorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                     <span className={styles.longTime}>{timeAgo(video.createdAt)}</span>
                 </div>
                 <button className={styles.moreBtn}><MoreHorizontal size={18} color="#65676b" /></button>

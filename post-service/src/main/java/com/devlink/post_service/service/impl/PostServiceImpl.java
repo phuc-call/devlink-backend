@@ -1,7 +1,6 @@
 package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.client.UserServiceClient;
-import com.devlink.post_service.client.cache.UserInfoCacheClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.client.GroupBasicInfoClient;
@@ -64,7 +63,6 @@ public class PostServiceImpl implements PostService {
     private final FileStorageService fileStorageService;
     private final PostAsyncService postAsyncService;
     private final VideoLimitChecker videoLimitChecker;
-    private final UserInfoCacheClient userInfoCacheClient;
 
     private final PostMediaRepository postMediaRepository;
 
@@ -729,20 +727,10 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
-     * * Retrieves the user's badge from the Redis cache (via the UserInfo Cache
-     * Client). * Fallback to
-     * "NONE" if the user-service is unavailable.
+     * Badge no longer resolved via cache/Feign call.
+     * VideoLimitChecker will use the "NONE" tier by default.
      */
     private String resolveBadgeType(Long userId) {
-        try {
-            Map<Long, com.devlink.post_service.entity.enums.BadgeType> badgeMap = userInfoCacheClient
-                    .getUserBadge(userId);
-            if (badgeMap != null && badgeMap.containsKey(userId)) {
-                return badgeMap.get(userId).name();
-            }
-        } catch (Exception e) {
-            log.warn("[PostService] resolveBadgeType fallback userId={}, reason={}", userId, e.getMessage());
-        }
         return "NONE";
     }
 

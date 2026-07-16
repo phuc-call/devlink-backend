@@ -16,6 +16,7 @@ public class ReactionCreatedEvent {
     private Long actorId;
     private Long receiverId;
 
+    private Long postId;
     private Long targetId;
     private TargetType targetType;
     private ReactionType reactionType;

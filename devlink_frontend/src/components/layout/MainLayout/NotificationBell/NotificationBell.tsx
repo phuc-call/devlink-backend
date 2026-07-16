@@ -314,7 +314,14 @@ function NotificationItem({
 
         // ── Reaction & Comment → navigate to specific post in profile ───────────
         if ((notification.type === 'REACTION' || notification.type === 'COMMENT') && notification.referenceId) {
-            void navigate(`/profile/me?postId=${notification.referenceId}`);
+            let url = `/profile/me?postId=${notification.referenceId}`;
+            if (notification.referenceType && (notification.referenceType.startsWith('COMMENT_') || notification.referenceType.startsWith('REPLY_'))) {
+                const parts = notification.referenceType.split('_');
+                if (parts.length > 1) {
+                    url += `&commentId=${parts[1]}`;
+                }
+            }
+            void navigate(url);
             return;
         }
 

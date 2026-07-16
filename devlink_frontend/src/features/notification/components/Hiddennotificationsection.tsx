@@ -418,8 +418,6 @@ export default function HiddenNotificationSection() {
     const [open, setOpen] = useState(false);
     const [hiddenCount, setHiddenCount] = useState(0);
     const [step, setStep] = useState<InnerStep>('enter-password');
-    const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
-    const [loadingList, setLoadingList] = useState(false);
 
     // Fetch count khi mount
     useEffect(() => {
@@ -441,20 +439,6 @@ export default function HiddenNotificationSection() {
         }
     };
 
-    // Fetch danh sách sau khi unlock
-    const fetchHiddenList = async () => {
-        setLoadingList(true);
-        try {
-            const res = await notificationApi.getNotifications(0, 50);
-            setNotifications(
-                res.data.data.content.filter((n: NotificationResponse) => n.isHidden)
-            );
-            // cập nhật lại count
-            const countRes = await notificationApi.getUnreadCountHidden();
-            setHiddenCount(countRes.data.data);
-        } catch { /* ignore */ }
-        finally { setLoadingList(false); }
-    };
 
     const navigate = useNavigate();
 

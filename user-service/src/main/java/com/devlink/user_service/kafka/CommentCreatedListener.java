@@ -42,7 +42,7 @@ public class CommentCreatedListener {
                 .isHidden(false)
                 .createdAt(LocalDateTime.now())
                 .referenceId(event.getPostId()) // Truyền postId để click vào chuyển tới bài viết
-                .referenceType("POST")
+                .referenceType("COMMENT_" + event.getCommentId())
                 .build());
 
         webSocketEventPublisher.publishUserEvent(event.getReceiverId(), WsEventConstants.NEW_NOTIFICATION, null);

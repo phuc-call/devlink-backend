@@ -28,7 +28,7 @@ const ShortVideoCard: React.FC<Props> = ({ video, onClickDetail }) => {
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
 
     useEffect(() => {
         reactionApi.getSummary(video.id, 'POST')
@@ -131,7 +131,7 @@ const ShortVideoCard: React.FC<Props> = ({ video, onClickDetail }) => {
                         ? <img src={author.avatarUrl} alt="" className={styles.avatar} />
                         : <div className={styles.avatarPlaceholder}>{authorInitial}</div>
                     }
-                    <span className={styles.authorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                    <span className={styles.authorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                 </div>
 
                 <div className={styles.statsRow}>

@@ -1,6 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.dto.event.UserProfileUpdatedEvent;
 import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.dto.response.*;
@@ -29,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -41,16 +43,19 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class UserProfileServiceImpl implements UserProfileService {
+    private static final String USER_PROFILE_UPDATED_TOPIC = "user-profile-updated";
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final ProfileNudgeConfigRepository profileNudgeConfigRepository;
     private final UserBlockRepository userBlockRepository;
     private final FileStorageService fileStorageService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private final RestTemplate restTemplate;
     private final ModelMapper modelMapper;
@@ -101,6 +106,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         }
         log.info("User {} updated profile. Completion: {}%", user.getId(), percent);
         UserProfile savedProfile = userProfileRepository.save(userProfile);
+
+        // Bắn event để post-service đồng bộ UserProfile cục bộ
+        publishProfileUpdatedEvent(user.getId(), savedProfile);
+
         return modelMapper.map(savedProfile, UserProfileResponse.class);
     }
 
@@ -116,6 +125,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         String avatarUrl = fileStorageService.upload(file, "avatars");
         userProfile.setAvatarUrl(avatarUrl);
         userProfileRepository.save(userProfile);
+
+        // Bắn event để post-service đồng bộ avatar mới
+        publishProfileUpdatedEvent(user.getId(), userProfile);
+
         return avatarUrl;
     }
 
@@ -363,6 +376,29 @@ public class UserProfileServiceImpl implements UserProfileService {
             userProfileRepository.save(profile);
         }
         return profile;
+    }
+
+    /**
+     * Bắn Kafka event để post-service đồng bộ thông tin profile cục bộ.
+     * Language lấy từ favoriteLanguage đầu tiên (nếu có).
+     */
+    private void publishProfileUpdatedEvent(Long userId, UserProfile profile) {
+        try {
+            String language = null;
+            if (profile.getFavoriteLanguage() != null && !profile.getFavoriteLanguage().isEmpty()) {
+                language = profile.getFavoriteLanguage().get(0).name();
+            }
+            UserProfileUpdatedEvent event = UserProfileUpdatedEvent.builder()
+                    .userId(userId)
+                    .userName(profile.getFullName())
+                    .avatarUrl(profile.getAvatarUrl())
+                    .language(language)
+                    .build();
+            kafkaTemplate.send(USER_PROFILE_UPDATED_TOPIC, String.valueOf(userId), event);
+            log.info("[UserProfileService] Fired UserProfileUpdatedEvent for userId={}", userId);
+        } catch (Exception e) {
+            log.error("[UserProfileService] Failed to fire UserProfileUpdatedEvent userId={}: {}", userId, e.getMessage());
+        }
     }
 
     @Autowired

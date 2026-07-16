@@ -159,7 +159,7 @@ const LongVideoCard: React.FC<Props> = ({ video, onOpenComments }) => {
     const isLiked = reaction?.currentUserReaction === 'LIKE';
     const likeCount = reaction?.totalCount ?? video.likeCount ?? 0;
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
     const captionText = video.content ?? '';
     const shouldTruncate = captionText.length > 120;
 
@@ -253,7 +253,7 @@ const LongVideoCard: React.FC<Props> = ({ video, onOpenComments }) => {
                         {author?.avatarUrl ? (
                             <img
                                 src={author.avatarUrl}
-                                alt={author.fullName}
+                                alt={author.userName}
                                 className={styles.longAvatar}
                             />
                         ) : (
@@ -262,7 +262,7 @@ const LongVideoCard: React.FC<Props> = ({ video, onOpenComments }) => {
                     </div>
                     <div className={styles.longAuthorMeta}>
                         <span className={styles.longAuthorName}>
-                            {author?.fullName ?? `user_${video.authorId}`}
+                            {author?.userName ?? `user_${video.authorId}`}
                         </span>
                         <span className={styles.longPostTime}>{timeAgo(video.createdAt)}</span>
                     </div>

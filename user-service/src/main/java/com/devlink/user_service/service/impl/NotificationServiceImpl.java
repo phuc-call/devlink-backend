@@ -101,7 +101,7 @@ public class NotificationServiceImpl implements NotificationService {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         String queueKey = QUEUE_PREFIX + tomorrow;
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(queueKey))) {
+        if (redisTemplate.hasKey(queueKey)) {
             log.info("[Birthday] Queue exists for {}, skip", tomorrow);
             return;
         }
@@ -182,7 +182,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         //Use the birthDay person's name to display in the notification
-        userProfileRepository.findFullNameByUserId(birthdayUserId).ifPresent(fullName ->
+        userProfileRepository.findFullNameByUserId(birthdayUserId).ifPresent(fullName -> {
                 notificationRepository.save(Notification.builder()
                         .userId(followerId)           // receiver
                         .actorId(birthdayUserId)      // who's birthday

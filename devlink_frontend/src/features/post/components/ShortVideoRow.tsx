@@ -45,7 +45,7 @@ const ShortCard: React.FC<CardProps> = ({ video, onClickDetail }) => {
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbnailUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
 
     // Fetch reaction
     useEffect(() => {
@@ -164,7 +164,7 @@ const ShortCard: React.FC<CardProps> = ({ video, onClickDetail }) => {
                             <div className={styles.smallAvatarPlaceholder}>{authorInitial}</div>
                         )}
                         <span className={styles.authorName}>
-                            {author?.fullName ?? `user_${video.authorId}`}
+                            {author?.userName ?? `user_${video.authorId}`}
                         </span>
                     </div>
                     <div className={styles.viewRow}>

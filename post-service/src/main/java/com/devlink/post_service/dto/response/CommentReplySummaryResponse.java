@@ -23,7 +23,7 @@ public class CommentReplySummaryResponse {
     private CommentType type;
     private String mentionedName;
 
-    // Thông tin người reply từ user-service
-    private String fullName;
+    // Thông tin người reply từ local user_profiles
+    private String userName;
     private String avatarUrl;
 }

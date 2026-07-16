@@ -1,7 +1,6 @@
 package com.devlink.post_service.service.impl;
 
-import com.devlink.post_service.client.cache.UserInfoCacheClient;
-import com.devlink.post_service.dto.client.UserInfoForCommentClient;
+
 import com.devlink.post_service.dto.event.ReportCreatedEvent;
 import com.devlink.post_service.dto.event.ReportReviewedEvent;
 import com.devlink.post_service.dto.procedure.ReportItemProjection;
@@ -18,6 +17,8 @@ import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.AccountRestrictionRepository;
 import com.devlink.post_service.repository.ReportRepository;
+import com.devlink.post_service.repository.UserProfileRepository;
+import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReportService;
 import com.devlink.post_service.service.ReportTargetHandler;
@@ -54,8 +55,7 @@ public class ReportServiceImpl implements ReportService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
     private final AccountRestrictionRepository restrictionRepository;
-    private final UserInfoCacheClient userInfoCacheClient;
-
+    private final UserProfileRepository userProfileRepository;
     private final List<ReportTargetHandler> handlers;
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> objectRedisTemplate;
@@ -272,9 +272,13 @@ public class ReportServiceImpl implements ReportService {
                 .distinct()
                 .toList();
 
-        Map<Long, UserInfoForCommentClient> userMap = userIds.isEmpty()
-                ? Map.of()
-                : userInfoCacheClient.getBasicInfo(userIds);
+        List<UserProfileRepository.UserBasicInfo> userProfiles = userIds.isEmpty()
+                ? List.of()
+                : userProfileRepository.findBasicInfoByIds(userIds);
+        Map<Long, String> userMap = userProfiles.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        UserProfileRepository.UserBasicInfo::getUserId, 
+                        UserProfileRepository.UserBasicInfo::getUserName));
 
         List<ReportItemResponse> items = projections.stream()
                 .map(p -> ReportItemResponse.builder()
@@ -301,10 +305,9 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
-    private String userName(Map<Long, UserInfoForCommentClient> map, Long userId) {
+    private String userName(Map<Long, String> map, Long userId) {
         if (userId == null) return null;
-        UserInfoForCommentClient info = map.get(userId);
-        return info != null ? info.getFullName() : null;
+        return map.get(userId);
     }
     @Override
     @Transactional

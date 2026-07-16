@@ -157,7 +157,7 @@ const VideoDetailPage: React.FC = () => {
     const videoUrl = video.mediaList?.find(m => m.mediaType === 'VIDEO')?.url ?? '';
     const thumbnailUrl = video.mediaList?.find(m => m.mediaType === 'IMAGE')?.url ?? '';
     const author = video.author;
-    const authorInitial = author?.fullName?.[0]?.toUpperCase() ?? '?';
+    const authorInitial = author?.userName?.[0]?.toUpperCase() ?? '?';
     const captionText = video.content ?? '';
     const shouldTruncate = captionText.length > 200;
     const isLiked = reaction?.currentUserReaction === 'LIKE';
@@ -239,20 +239,15 @@ const VideoDetailPage: React.FC = () => {
                     <div className={styles.authorRow}>
                         <div className={styles.avatarWrap}>
                             {author?.avatarUrl ? (
-                                <img src={author.avatarUrl} alt={author.fullName} className={styles.avatar} />
+                                <img src={author.avatarUrl} alt={author.userName} className={styles.avatar} />
                             ) : (
                                 <div className={styles.avatarPlaceholder}>{authorInitial}</div>
                             )}
                         </div>
                         <div className={styles.authorMeta}>
-                            <span className={styles.authorName}>{author?.fullName ?? `user_${video.authorId}`}</span>
+                            <span className={styles.authorName}>{author?.userName ?? `user_${video.authorId}`}</span>
                             <span className={styles.postTime}>{timeAgo(video.createdAt)}</span>
                         </div>
-                        {author?.followerCount !== undefined && (
-                            <span className={styles.followerBadge}>
-                                {formatCount(author.followerCount)} followers
-                            </span>
-                        )}
                     </div>
 
                     {/* Caption */}

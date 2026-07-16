@@ -5,7 +5,7 @@ import RightSidebar from './Sidebar/RightSidebar';
 
 import ProfileSetupModal from '../../../features/profile/components/ProfileSetupModal';
 import { useProfileSetup } from '../../../hooks/useProfileSetup';
-import { useWebSocket, WsEvent } from '../../../hooks/useWebSocket';
+import { useWebSocket, type WsEvent } from '../../../hooks/useWebSocket';
 import { WS_EVENTS } from '../../../constants/wsEvents';
 import styles from './MainLayout.module.css';
 

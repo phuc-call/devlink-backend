@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 export type WsEvent = {
