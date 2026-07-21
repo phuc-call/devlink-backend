@@ -17,6 +17,7 @@ import com.devlink.post_service.repository.ReactionRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReactionService;
 import com.devlink.post_service.service.WebSocketEventPublisher;
+import com.devlink.post_service.entity.enums.ActionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -41,6 +42,7 @@ public class ReactionServiceImpl implements ReactionService {
     private final CommentRepository commentRepository;
     private final CommentReplyRepository commentReplyRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final InterestScoringService interestScoringService;
 
     @Override
     public ReactionResponse react(ReactionRequest request) {
@@ -77,6 +79,9 @@ public class ReactionServiceImpl implements ReactionService {
         }
         if(shouldNotify){
             publishReactionCreatedEvent(request,currentUser);
+            if (request.getTargetType() == TargetType.POST) {
+                interestScoringService.recordInterest(currentUser, request.getTargetId(), ActionType.LIKE);
+            }
         }
 
         webSocketEventPublisher.publishPostEvent(request.getTargetId(), WsEventConstants.NEW_REACTION, null);

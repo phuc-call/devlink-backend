@@ -4,7 +4,6 @@ import com.devlink.post_service.client.UserServiceClient;
 import com.devlink.post_service.client.cache.UserRelationCacheClient;
 import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.client.GroupBasicInfoClient;
-import com.devlink.post_service.dto.procedure.FeedPostProcedureResult;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.request.UpdatePostRequest;
 import com.devlink.post_service.dto.response.ApiResponse;
@@ -18,11 +17,9 @@ import com.devlink.post_service.entity.PostTag;
 import com.devlink.post_service.entity.enums.*;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
-import com.devlink.post_service.repository.AccountRestrictionRepository;
-import com.devlink.post_service.repository.PostFileRepository;
-import com.devlink.post_service.repository.PostMediaRepository;
-import com.devlink.post_service.repository.PostRepository;
+import com.devlink.post_service.repository.*;
 import com.devlink.post_service.security.SecurityUtils;
+import com.devlink.post_service.service.FeedConfigService;
 import com.devlink.post_service.service.FileStorageService;
 import com.devlink.post_service.service.PostService;
 import com.devlink.post_service.service.helper.FeedPriorityHelper;
@@ -42,9 +39,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +68,9 @@ public class PostServiceImpl implements PostService {
 
     private final FeedPriorityHelper feedPriorityHelper;
     private final UserServiceClient userServiceClient;
+    private final UserInterestRepository userInterestRepository;
+    private final InterestScoringService interestScoringService;
+    private final FeedConfigService feedConfigService;
 
     @Override
     @Transactional
@@ -128,6 +129,64 @@ public class PostServiceImpl implements PostService {
 
         log.info("[PostService] created postId={}", post.getId());
         return toResponse(post, savedMedia);
+    }
+
+    @Override
+    @Transactional
+    public FeedPostResponse getPostById(Long id) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        if (post.getDeletedAt() != null) {
+            throw new AppException(ErrorCode.POST_UNAVAILABLE);
+        }
+
+        post.setViewCount(post.getViewCount() + 1);
+        postRepository.save(post);
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            interestScoringService.recordInterest(currentUserId, id, ActionType.VIEW);
+        }
+
+        List<FeedPostResponse> responses = postRepository.findFeedPostProjections(List.of(id));
+        if (responses.isEmpty()) {
+            throw new AppException(ErrorCode.POST_NOT_FOUND);
+        }
+
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(responses, List.of(id));
+        return enriched.get(0);
+    }
+
+    @Override
+    @Transactional
+    public PostResponse sharePost(Long originalPostId, String content) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        checkPostRestriction(userId);
+
+        Post originalPost = postRepository.findById(originalPostId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        if (originalPost.getDeletedAt() != null) {
+            throw new AppException(ErrorCode.POST_UNAVAILABLE);
+        }
+
+        Post sharePost = Post.builder()
+                .authorId(userId)
+                .content(content)
+                .postType(PostType.SHARE)
+                .sharedPostId(originalPostId)
+                .visibility(Visibility.PUBLIC)
+                .status(PostStatus.ACTIVE)
+                .build();
+
+        postRepository.save(sharePost);
+
+        interestScoringService.recordInterest(userId, originalPostId, ActionType.SHARE);
+
+        postAsyncService.moderatePost(sharePost.getId());
+
+        return toResponse(sharePost, new ArrayList<>());
     }
 
     private void checkPostRestriction(Long userId) {
@@ -267,65 +326,94 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<FeedPostResponse> getFeed(int page, int size, String postType) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
+        Pageable pageable = PageRequest.of(page, size);
 
-        List<Long> friendIds = userRelationCacheClient.getFriendIds(currentUserId);
-        List<Long> blockedIds = userRelationCacheClient.getBlockedIds(currentUserId);
+        int topTagsLimit = (int) feedConfigService.getConfigValue("feed.top_tags_limit", 5.0);
+        long minLikeThreshold = 0L; // Force 0 so posts without likes appear in the feed
+        long fallbackThreshold = (long) feedConfigService.getConfigValue("feed.fallback_threshold", 5.0);
 
-        PostType postTypeEnum = null;
-        if (postType != null && !postType.isBlank()) {
-            try {
-                postTypeEnum = PostType.valueOf(postType.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new AppException(ErrorCode.INVALID_POST_TYPE);
-            }
+        // Fetch a larger pool of tags to shuffle, so F5 gives a different set of
+        // interests
+        List<String> topTagsPool = userInterestRepository.findTopTagsByUserId(currentUserId, topTagsLimit * 4);
+        List<String> topTags = new ArrayList<>();
+        if (topTagsPool != null && !topTagsPool.isEmpty()) {
+            List<String> mutablePool = new ArrayList<>(topTagsPool);
+            Collections.shuffle(mutablePool);
+            topTags = mutablePool.stream().limit(topTagsLimit).toList();
         }
 
-        List<Long> approvedGroupIds = null;
+        List<Long> approvedGroupIds = new ArrayList<>();
         try {
-            ApiResponse<List<Long>> groupIdsResponse = userServiceClient.getApprovedGroupIds(currentUserId);
-            if (groupIdsResponse != null && groupIdsResponse.isSuccess() && groupIdsResponse.getData() != null) {
-                approvedGroupIds = groupIdsResponse.getData();
+            ApiResponse<List<Long>> res = userServiceClient.getApprovedGroupIds(currentUserId);
+            if (res != null && res.isSuccess() && res.getData() != null && !res.getData().isEmpty()) {
+                approvedGroupIds.addAll(res.getData());
             }
         } catch (Exception e) {
-            log.error("Error fetching group ids for user {}", currentUserId, e);
+            log.error("Failed to fetch approved group ids for feed", e);
         }
-        if (approvedGroupIds == null || approvedGroupIds.isEmpty()) {
-            approvedGroupIds = List.of(-1L);
+        if (approvedGroupIds.isEmpty()) {
+            approvedGroupIds.add(-1L);
         }
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Long> idPage = postRepository.findFeedPostIds(
-                currentUserId, friendIds, blockedIds, approvedGroupIds, postTypeEnum, pageable);
+        int personalizedSize = (int) (size * 0.8);
+        int groupSize = (int) (size * 0.1);
+        int trendingSize = size - personalizedSize - groupSize;
 
-        if (idPage.isEmpty())
+        if (personalizedSize < 1) personalizedSize = 1;
+        if (groupSize < 1) groupSize = 1;
+        if (trendingSize < 1) trendingSize = 1;
+
+        List<FeedPostResponse> combinedPosts = new ArrayList<>();
+        Set<Long> seenIds = new HashSet<>();
+
+        if (!topTags.isEmpty()) {
+            Page<FeedPostResponse> pPage = postRepository.findPersonalizedFeed(topTags, minLikeThreshold, approvedGroupIds, PageRequest.of(page, personalizedSize));
+            for (FeedPostResponse p : pPage.getContent()) {
+                if (seenIds.add(p.getId())) {
+                    combinedPosts.add(p);
+                }
+            }
+        }
+
+        if (approvedGroupIds.size() > 1 || (approvedGroupIds.size() == 1 && !approvedGroupIds.get(0).equals(-1L))) {
+            Page<FeedPostResponse> gPage = postRepository.findGroupTrendingFeed(approvedGroupIds, PageRequest.of(page, groupSize));
+            for (FeedPostResponse p : gPage.getContent()) {
+                if (seenIds.add(p.getId())) {
+                    combinedPosts.add(p);
+                }
+            }
+        }
+
+        Page<FeedPostResponse> tPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds, PageRequest.of(page, trendingSize));
+        for (FeedPostResponse p : tPage.getContent()) {
+            if (seenIds.add(p.getId())) {
+                combinedPosts.add(p);
+            }
+        }
+
+        if (combinedPosts.size() < size) {
+            int missing = size - combinedPosts.size();
+            Page<FeedPostResponse> extraPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds, PageRequest.of(page + 1, missing));
+            for (FeedPostResponse p : extraPage.getContent()) {
+                if (seenIds.add(p.getId())) {
+                    combinedPosts.add(p);
+                }
+            }
+        }
+
+        if (combinedPosts.isEmpty()) {
             return Page.empty(pageable);
+        }
 
-        List<Long> ids = idPage.getContent();
+        List<Long> postIds = combinedPosts.stream().map(FeedPostResponse::getId).toList();
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(combinedPosts, postIds);
+        
+        Collections.shuffle(enriched);
 
-        // Convert ids->String
-        String idsJson = "[" + ids.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(",")) + "]";
-
-        List<FeedPostProcedureResult> rows = postRepository.callGetFeedPosts(idsJson);
-
-        List<FeedPostResponse> posts = new ArrayList<>(rows.stream().map(r -> new FeedPostResponse(
-                r.getId(), r.getAuthorId(), r.getGroupId(), r.getContent(),
-                PostStatus.valueOf(r.getStatus()),
-                Visibility.valueOf(r.getVisibility()),
-                PostType.valueOf(r.getPostType()),
-                r.getViewCount(), r.getIsPinned(),
-                AiModerationStatus.valueOf(r.getAiModerationStatus()),
-                r.getCreatedAt(), r.getUpdatedAt(),
-                r.getCommentCount() != null ? r.getCommentCount() : 0L,
-                r.getLikeCount() != null ? r.getLikeCount() : 0L)).toList());
-
-        // Apply 80/20 priority-discovery ranking (enrich + re-order)
-        List<FeedPostResponse> enrichedOrdered = feedPriorityHelper.enrichAndRank(posts, ids);
-
-        return new PageImpl<>(enrichedOrdered, pageable, idPage.getTotalElements());
+        return new PageImpl<>(enriched, pageable, 10000L);
     }
 
     @Override
@@ -361,10 +449,11 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = PageRequest.of(page, safeSize);
 
         List<Long> friendIds = userRelationCacheClient.getFriendIds(currentUserId);
-        
+
         List<Long> authorIds = new ArrayList<>();
-        if (friendIds != null) authorIds.addAll(friendIds);
-        
+        if (friendIds != null)
+            authorIds.addAll(friendIds);
+
         try {
             ApiResponse<List<Long>> suggestedRes = userServiceClient.getSuggestedFriendIds();
             if (suggestedRes != null && suggestedRes.isSuccess() && suggestedRes.getData() != null) {
@@ -383,7 +472,8 @@ public class PostServiceImpl implements PostService {
         }
 
         Page<FeedPostResponse> postPage = postRepository.findFriendsFeedPosts(authorIds, pageable);
-        if (postPage.isEmpty()) return postPage;
+        if (postPage.isEmpty())
+            return postPage;
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
@@ -399,13 +489,13 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = PageRequest.of(page, safeSize);
 
         List<Long> groupIds = new ArrayList<>();
-        
+
         try {
             ApiResponse<List<Long>> approvedRes = userServiceClient.getApprovedGroupIds(currentUserId);
             if (approvedRes != null && approvedRes.isSuccess() && approvedRes.getData() != null) {
                 groupIds.addAll(approvedRes.getData());
             }
-            
+
             ApiResponse<List<Long>> publicRes = userServiceClient.getTopPublicGroupIds();
             if (publicRes != null && publicRes.isSuccess() && publicRes.getData() != null) {
                 for (Long id : publicRes.getData()) {
@@ -423,7 +513,8 @@ public class PostServiceImpl implements PostService {
         }
 
         Page<FeedPostResponse> postPage = postRepository.findGroupsFeedPosts(groupIds, pageable);
-        if (postPage.isEmpty()) return postPage;
+        if (postPage.isEmpty())
+            return postPage;
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();

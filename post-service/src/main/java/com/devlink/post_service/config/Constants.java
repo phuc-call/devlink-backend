@@ -16,7 +16,8 @@ public final class Constants {
             "/swagger-ui.html",
             "/webjars/**",
             "/actuator/**",
-            "/api/posts/public/**"
+            "/api/posts/public/**",
+            "/ws-post/**"
     };
 
     public static String[] getPublicEndpoints() {
@@ -74,5 +75,12 @@ public final class Constants {
     public static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100 MB
 
     //REST
+
+    // Feed Scoring Config Keys
+    public static final String CONFIG_KEY_SCORE_VIEW = "score.view";
+    public static final String CONFIG_KEY_SCORE_LIKE = "score.like";
+    public static final String CONFIG_KEY_SCORE_BOOKMARK = "score.bookmark";
+    public static final String CONFIG_KEY_SCORE_SHARE = "score.share";
+    public static final String CONFIG_KEY_INTEREST_DECAY_RATE = "interest.decay_rate";
 
 }

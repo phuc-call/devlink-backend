@@ -77,6 +77,8 @@ export interface FeedPostResponse {
     commentCount?: number;
     likeCount?: number;
     groupId?: number;
+    sharedPostId?: number;
+    sharedPost?: FeedPostResponse;
 }
 
 export interface PageResponse<T> {

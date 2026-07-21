@@ -14,7 +14,8 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/user-service/v3/api-docs/**"
+            "/user-service/v3/api-docs/**",
+            "/ws-user/**"
     };
     public static final Long SYSTEM_ACTOR_ID = 0L;
 

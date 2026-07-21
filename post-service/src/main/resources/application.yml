@@ -68,7 +68,8 @@ spring:
         spring.json.trusted.packages: "*"
         spring.json.use.type.headers: true
         spring.json.type.mapping: >-
-          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent
+          mediaCleanup:com.devlink.post_service.dto.event.MediaCleanupEvent,
+          userProfileUpdated:com.devlink.post_service.dto.event.UserProfileEvent
 
   data:
     redis:

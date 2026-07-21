@@ -9,6 +9,10 @@ import org.springframework.data.domain.Page;
 public interface PostService {
     PostResponse createPost(CreatePostRequest request);
 
+    FeedPostResponse getPostById(Long id);
+
+    PostResponse sharePost(Long originalPostId, String content);
+
     Page<FeedPostResponse> getFeed(int page, int size, String postType);
 
     Page<FeedPostResponse> getFollowingFeed(int page, int size);

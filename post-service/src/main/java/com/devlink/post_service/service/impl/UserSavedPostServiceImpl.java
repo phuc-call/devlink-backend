@@ -7,6 +7,7 @@ import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.UserSavedPost;
 import com.devlink.post_service.entity.enums.AiModerationStatus;
 import com.devlink.post_service.entity.enums.Visibility;
+import com.devlink.post_service.entity.enums.ActionType;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.PostRepository;
@@ -39,6 +40,7 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
     private final PostRepository postRepository;
     private final UserRelationCacheClient userRelationCacheClient;
     private final FeedPriorityHelper feedPriorityHelper;
+    private final InterestScoringService interestScoringService;
 
 
     @Override
@@ -58,6 +60,8 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
                 .userId(userId)
                 .postId(postId)
                 .build());
+
+        interestScoringService.recordInterest(userId, postId, ActionType.BOOKMARK);
 
         log.info("[SavedPostService] userId={} saved postId={}", userId, postId);
     }

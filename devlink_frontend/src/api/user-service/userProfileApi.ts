@@ -27,11 +27,11 @@ export const userProfileApi = {
     dismissNudge: (dismissForever: boolean) =>
         axiosInstance.patch(`/api/users/me/profile/nudge-dismiss?dismissNudge=${dismissForever}`),
 
-    getNormalRecommendations: () =>
-        axiosInstance.get<{data: UserRecommendationResponse[]}>('/api/users/me/normal/recommendation'),
+    getNormalRecommendations: (page = 0, size = 5) =>
+        axiosInstance.get<{data: {content: UserRecommendationResponse[], hasNext: boolean}}>('/api/users/me/normal/recommendation', { params: { page, size } }),
 
-    getSpecialRecommendations: () =>
-        axiosInstance.get<{data: UserRecommendationResponse[]}>('/api/users/me/special/recommendation'),
+    getSpecialRecommendations: (page = 0, size = 5) =>
+        axiosInstance.get<{data: {content: UserRecommendationResponse[], hasNext: boolean}}>('/api/users/me/special/recommendation', { params: { page, size } }),
 
 
     getVisibilitySetting: () =>

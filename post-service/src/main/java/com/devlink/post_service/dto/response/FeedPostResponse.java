@@ -36,6 +36,9 @@ public class FeedPostResponse {
     private Instant savedAt;
     // Author info — lấy từ bảng user_profiles cục bộ
     private AuthorInfo author;
+    
+    private Long sharedPostId;
+    private FeedPostResponse sharedPost;
 
     @Builder
     // Constructor cho JPQL — không có tags và mediaList
@@ -44,7 +47,7 @@ public class FeedPostResponse {
             Long viewCount, Boolean isPinned,
             AiModerationStatus aiModerationStatus,
             Instant createdAt, Instant updatedAt,
-            Long commentCount, Long likeCount) {
+            Long commentCount, Long likeCount, Long sharedPostId) {
         this.id = id;
         this.authorId = authorId;
         this.groupId = groupId;
@@ -59,6 +62,7 @@ public class FeedPostResponse {
         this.updatedAt = updatedAt;
         this.commentCount = commentCount;
         this.likeCount = likeCount;
+        this.sharedPostId = sharedPostId;
     }
 
 }

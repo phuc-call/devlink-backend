@@ -2,6 +2,7 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.dto.internal.CandidateProfileInternal;
+import com.devlink.user_service.dto.response.PageResponse;
 import com.devlink.user_service.dto.response.UserRecommendationResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
@@ -46,10 +47,12 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
     }
 
     @Override
-    public List<UserRecommendationResponse> getRecommendations() {
+    public PageResponse<UserRecommendationResponse> getRecommendations(int page, int size) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = user.getProfile();
         Long userId = user.getId();
+
+        List<UserRecommendationResponse> allRecs = new ArrayList<>();
 
         //select the candidate profiles
         List<CandidateProfileInternal> candidateProfiles = userProfileRepository.findCandidateProfiles(
@@ -58,26 +61,46 @@ public class UserRelationshipServiceImpl implements UserRelationshipService {
                 userProfile.getSchool(),
                 userProfile.getMajor());
         if (!candidateProfiles.isEmpty()) {
-            return getNormalRecommendations(userProfile, candidateProfiles, userId);
+            allRecs = getNormalRecommendations(userProfile, candidateProfiles, userId);
+        } else {
+            List<CandidateProfileInternal>badgedProfiles=userProfileRepository.findBadgedCandidates(userId);
+            if(!badgedProfiles.isEmpty()) {
+                allRecs = getNormalRecommendations(userProfile,badgedProfiles,userId);
+            } else {
+                List<CandidateProfileInternal> randomProfiles = userProfileRepository.findRandomCandidates(userId, NORMAL_LIMIT * 2);
+                allRecs = getNormalRecommendations(userProfile, randomProfiles, userId);
+            }
         }
-        List<CandidateProfileInternal>badgedProfiles=userProfileRepository.findBadgedCandidates(userId);
-        if(!badgedProfiles.isEmpty()) {
-            return getNormalRecommendations(userProfile,badgedProfiles,userId);
-        }
-        List<CandidateProfileInternal> randomProfiles = userProfileRepository.findRandomCandidates(userId, NORMAL_LIMIT * 2);
-        return getNormalRecommendations(userProfile, randomProfiles, userId);
+        
+        return paginateList(allRecs, page, size);
     }
     //Only return 3 people highlighted
 
     @Override
-    public List<UserRecommendationResponse>getSpecialRecommendations(){
+    public PageResponse<UserRecommendationResponse> getSpecialRecommendations(int page, int size){
         User user=userHelper.getCurrentUser();
         Long userId=user.getId();
         UserProfile profile=user.getProfile();
-        if(!isActiveMode(userId))return List.of();
+        if(!isActiveMode(userId)) return paginateList(List.of(), page, size);
         List<CandidateProfileInternal>candidate=userProfileRepository.findCandidateProfiles(
                 userId,profile.getCity(),profile.getSchool(),profile.getMajor());
-        return findFeaturedRecommendations(profile,candidate,userId);
+        List<UserRecommendationResponse> allRecs = findFeaturedRecommendations(profile,candidate,userId);
+        return paginateList(allRecs, page, size);
+    }
+
+    private <T> PageResponse<T> paginateList(List<T> allItems, int page, int size) {
+        int start = page * size;
+        int end = Math.min(start + size, allItems.size());
+        List<T> content = start >= allItems.size() ? List.of() : allItems.subList(start, end);
+        
+        PageResponse<T> response = new PageResponse<>();
+        response.setContent(content);
+        response.setPageNumber(page);
+        response.setPageSize(size);
+        response.setTotalElement(allItems.size());
+        response.setTotalPage((int) Math.ceil((double) allItems.size() / size));
+        response.setHasNext(end < allItems.size());
+        return response;
     }
     private List<UserRecommendationResponse> getNormalRecommendations(
             UserProfile currentProfile,

@@ -33,4 +33,16 @@ export const postApi = {
             { params: { page, size } }
         );
     },
+
+    getPostById: (id: number) => {
+        return axiosInstance.get<{ data: FeedPostResponse }>(`/api/posts/${id}`);
+    },
+
+    sharePost: (id: number, content?: string) => {
+        return axiosInstance.post<{ data: PostResponse }>(
+            `/api/posts/${id}/share`,
+            null,
+            { params: { content } }
+        );
+    },
 };

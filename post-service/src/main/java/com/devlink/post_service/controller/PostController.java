@@ -45,8 +45,9 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "4") @Max(20) int size,
             @RequestParam(required = false) String postType) {
+        int safeSize = Math.min(size, 20);
         return ResponseEntity.ok(
-                ApiResponse.ok(postService.getFeed(page, size, postType), SUCCESS)
+                ApiResponse.ok(postService.getFeed(page, safeSize, postType), SUCCESS)
         );
     }
 
@@ -57,6 +58,18 @@ public class PostController {
         return ResponseEntity.ok(
                 ApiResponse.ok(postService.updatePost(id, request), "Update post successfully")
         );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<FeedPostResponse>> getPost(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.getPostById(id), SUCCESS));
+    }
+
+    @PostMapping("/{id}/share")
+    public ResponseEntity<ApiResponse<PostResponse>> sharePost(
+            @PathVariable Long id,
+            @RequestParam(required = false) String content) {
+        return ResponseEntity.ok(ApiResponse.ok(postService.sharePost(id, content), SUCCESS));
     }
     @GetMapping("/following")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getFollowingFeed(

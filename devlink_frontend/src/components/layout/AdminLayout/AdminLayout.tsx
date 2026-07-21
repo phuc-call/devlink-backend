@@ -15,6 +15,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Bell,
+    Sliders,
 } from 'lucide-react';
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     {
         title: 'Hệ thống',
         items: [
+            { label: 'Feed Config',      path: '/admin/feed-config',   icon: <Sliders size={16} /> },
             { label: 'Cài đặt',         path: '/admin/settings',      icon: <Settings size={16} /> },
         ],
     },

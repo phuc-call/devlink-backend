@@ -7,6 +7,7 @@ import com.devlink.post_service.dto.response.MediaResponse;
 import com.devlink.post_service.dto.response.TagResponse;
 import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.repository.PostMediaRepository;
+import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.PostTagRepository;
 import com.devlink.post_service.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class FeedPriorityHelper {
     private final PostMediaRepository postMediaRepository;
     private final UserProfileRepository userProfileRepository;
     private final VideoFeedProperties videoFeedProperties;
+    private final PostRepository postRepository;
 
     /**
      * Enriches posts with tags, media, and author info, then re-orders them
@@ -77,6 +79,55 @@ public class FeedPriorityHelper {
                         .build());
             }
         });
+
+        // Enrich shared posts
+        List<Long> sharedPostIds = posts.stream()
+                .map(FeedPostResponse::getSharedPostId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (!sharedPostIds.isEmpty()) {
+            List<FeedPostResponse> sharedPosts = postRepository.findFeedPostProjections(sharedPostIds);
+            
+            // Enrich the shared posts themselves (without recursion to avoid infinite loops)
+            Map<Long, List<TagResponse>> sharedTagsMap = postTagRepository
+                    .findTagsByPostIds(sharedPostIds).stream()
+                    .collect(Collectors.groupingBy(TagResponse::getPostId));
+
+            Map<Long, List<MediaResponse>> sharedMediaMap = postMediaRepository
+                    .findMediaByPostIds(sharedPostIds).stream()
+                    .collect(Collectors.groupingBy(MediaResponse::getPostId));
+
+            List<Long> sharedAuthorIds = sharedPosts.stream()
+                    .map(FeedPostResponse::getAuthorId)
+                    .distinct()
+                    .toList();
+
+            Map<Long, UserProfileRepository.UserBasicInfo> sharedAuthorMap = safeGetProfiles(sharedAuthorIds);
+
+            sharedPosts.forEach(sp -> {
+                sp.setTags(sharedTagsMap.getOrDefault(sp.getId(), List.of()));
+                sp.setMediaList(sharedMediaMap.getOrDefault(sp.getId(), List.of()));
+                UserProfileRepository.UserBasicInfo profile = sharedAuthorMap.get(sp.getAuthorId());
+                if (profile != null) {
+                    sp.setAuthor(AuthorInfo.builder()
+                            .userId(profile.getUserId())
+                            .userName(profile.getUserName())
+                            .avatarUrl(profile.getAvatarUrl())
+                            .build());
+                }
+            });
+
+            Map<Long, FeedPostResponse> sharedPostsMap = sharedPosts.stream()
+                    .collect(Collectors.toMap(FeedPostResponse::getId, p -> p));
+
+            posts.forEach(p -> {
+                if (p.getSharedPostId() != null) {
+                    p.setSharedPost(sharedPostsMap.get(p.getSharedPostId()));
+                }
+            });
+        }
 
         record Scored(FeedPostResponse post, double score) {
         }

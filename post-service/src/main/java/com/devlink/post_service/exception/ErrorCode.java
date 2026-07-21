@@ -99,7 +99,11 @@ public enum ErrorCode {
     //badge
     VIDEO_DURATION_EXCEEDED("Video duration exceeds your badge limit", HttpStatus.BAD_REQUEST),
     VIDEO_DAILY_LIMIT_EXCEEDED("Daily video upload limit reached", HttpStatus.BAD_REQUEST),
-    VIDEO_LIMIT_CONFIG_NOT_FOUND("Video limit config not found", HttpStatus.SERVICE_UNAVAILABLE);
+    VIDEO_LIMIT_CONFIG_NOT_FOUND("Video limit config not found", HttpStatus.SERVICE_UNAVAILABLE),
+
+    // Feed scoring config
+    FEED_CONFIG_NOT_FOUND("Feed config key not found", HttpStatus.NOT_FOUND),
+    FEED_CONFIG_INVALID_DECAY_RATE("Decay rate must be less than 1.0 (e.g. 0.95 means 5% daily decay)", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

@@ -1,10 +1,9 @@
 package com.devlink.user_service.service;
 
+import com.devlink.user_service.dto.response.PageResponse;
 import com.devlink.user_service.dto.response.UserRecommendationResponse;
 
-import java.util.List;
-
 public interface UserRelationshipService {
-    public List<UserRecommendationResponse> getRecommendations();
-    public List<UserRecommendationResponse>getSpecialRecommendations();
+    PageResponse<UserRecommendationResponse> getRecommendations(int page, int size);
+    PageResponse<UserRecommendationResponse> getSpecialRecommendations(int page, int size);
 }

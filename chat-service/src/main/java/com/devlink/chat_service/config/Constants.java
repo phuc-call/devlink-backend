@@ -11,8 +11,8 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-
-            "/chat-service/v3/api-docs/**"
+            "/chat-service/v3/api-docs/**",
+            "/ws-chat/**"
     };
 
     public static final String PAGE_NUMBER = "0";

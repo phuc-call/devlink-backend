@@ -41,6 +41,8 @@ spring:
         linger.ms: 5
         batch.size: 32768
         spring.json.add.type.headers: true
+        spring.json.type.mapping: >-
+          userProfileUpdated:com.devlink.user_service.dto.event.UserProfileUpdatedEvent
     consumer:
       group-id: user-service-group
       auto-offset-reset: earliest

@@ -37,6 +37,7 @@ import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
 import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
+import AdminFeedConfigPage from '../features/admin/pages/AdminFeedConfigPage';
 import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkeditorpage.tsx';
 import SavedPage from '../features/saved/pages/SavedPage';
 import VideoFeedPage from '../features/post/pages/VideoFeedPage';
@@ -105,9 +106,10 @@ const router = createBrowserRouter([
                     { path: '/admin/comments', element: <AdminCommentsPage /> },
                     { path: '/admin/templates', element: <AdminTemplatesPage /> },
                     { path: '/admin/users', element: <AdminUsersPage /> },
-                    { path: '/admin/badges', element: <AdminBadgePage /> },
-                    { path: '/admin/reports', element: <AdminReportsPage /> },
-                    { path: '/admin/settings', element: <AdminSettingsPage /> },
+                    { path: '/admin/badges',      element: <AdminBadgePage /> },
+                    { path: '/admin/reports',     element: <AdminReportsPage /> },
+                    { path: '/admin/feed-config', element: <AdminFeedConfigPage /> },
+                    { path: '/admin/settings',    element: <AdminSettingsPage /> },
                 ],
             },
         ],

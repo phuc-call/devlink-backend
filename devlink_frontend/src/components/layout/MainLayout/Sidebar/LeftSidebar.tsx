@@ -1,4 +1,9 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { groupApi } from '../../../../api/user-service/groupApi';
+import { followApi } from '../../../../api/user-service/followApi';
+import { userProfileApi } from '../../../../api/user-service/userProfileApi';
+import type { GroupSearchResponse } from '../../../../types/group.types';
 import styles from './LeftSidebar.module.css';
 
 /* ─── Nav chính ─── */
@@ -217,7 +222,166 @@ export default function LeftSidebar() {
                 ))}
             </nav>
 
+            <div className={styles.divider} />
+            <div className={styles.indexSection}>
+                <SidebarGroups />
+                <SidebarFriends />
+            </div>
+        </div>
+    );
+}
 
+function SidebarGroups() {
+    const [groups, setGroups] = useState<GroupSearchResponse[]>([]);
+    const [isSuggested, setIsSuggested] = useState(false);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const fetchGroups = async (currentPage: number, currentIsSuggested: boolean) => {
+        setLoading(true);
+        try {
+            if (currentIsSuggested) {
+                const res = await groupApi.getRecommendedGroups(currentPage, 5);
+                if (res.data.data.content.length > 0) {
+                    setGroups(prev => currentPage === 0 ? res.data.data.content : [...prev, ...res.data.data.content]);
+                    setHasMore(!res.data.data.last);
+                }
+            } else {
+                const res = await groupApi.getMyGroups('', currentPage, 5);
+                if (res.data.data.content.length > 0) {
+                    setGroups(prev => currentPage === 0 ? res.data.data.content : [...prev, ...res.data.data.content]);
+                    setHasMore(!res.data.data.last);
+                } else if (currentPage === 0) {
+                    setIsSuggested(true);
+                    const recRes = await groupApi.getRecommendedGroups(0, 5);
+                    setGroups(recRes.data.data.content);
+                    setHasMore(!recRes.data.data.last);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchGroups(0, false);
+    }, []);
+
+    const handleSeeMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchGroups(nextPage, isSuggested);
+    };
+
+    if (groups.length === 0 && !loading) return null;
+
+    return (
+        <div className={styles.indexGroup}>
+            <div className={styles.indexTitle}>{isSuggested ? 'Gợi ý nhóm' : 'Nhóm của bạn'}</div>
+            {groups.map(g => (
+                <button key={g.id} className={styles.recommendItem} onClick={() => navigate(`/groups/${g.id}`)}>
+                    <img src={g.coverImage || 'https://via.placeholder.com/150'} alt="" className={styles.recommendAvatar} />
+                    <div className={styles.recommendInfo}>
+                        <span className={styles.recommendName}>{g.name}</span>
+                        <span className={styles.recommendSub}>{g.memberCount} thành viên</span>
+                    </div>
+                </button>
+            ))}
+            {hasMore && (
+                <button className={styles.viewMoreBtn} onClick={handleSeeMore} disabled={loading}>
+                    {loading ? 'Đang tải...' : 'Xem thêm'}
+                </button>
+            )}
+        </div>
+    );
+}
+
+function SidebarFriends() {
+    const [friends, setFriends] = useState<{id: number, name: string, avatar?: string, sub: string}[]>([]);
+    const [isSuggested, setIsSuggested] = useState(false);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const fetchFriends = async (currentPage: number, currentIsSuggested: boolean) => {
+        setLoading(true);
+        try {
+            if (currentIsSuggested) {
+                const res = await userProfileApi.getNormalRecommendations(currentPage, 5);
+                const newItems = res.data.data.content.map(u => ({
+                    id: u.id,
+                    name: u.fullName,
+                    avatar: u.avatar,
+                    sub: u.school || u.city || 'Gợi ý cho bạn'
+                }));
+                
+                setFriends(prev => currentPage === 0 ? newItems : [...prev, ...newItems]);
+                setHasMore(res.data.data.hasNext);
+            } else {
+                const res = await followApi.getFollowList('FRIENDS', currentPage, 5);
+                if (res.data.data.content.length > 0) {
+                    const newItems = res.data.data.content.map(u => ({
+                        id: u.userId,
+                        name: u.fullName,
+                        avatar: u.avatar,
+                        sub: 'Bạn bè'
+                    }));
+                    setFriends(prev => currentPage === 0 ? newItems : [...prev, ...newItems]);
+                    setHasMore(res.data.data.hasNext);
+                } else if (currentPage === 0) {
+                    setIsSuggested(true);
+                    const recRes = await userProfileApi.getNormalRecommendations(0, 5);
+                    const newItems = recRes.data.data.content.map(u => ({
+                        id: u.id,
+                        name: u.fullName,
+                        avatar: u.avatar,
+                        sub: u.school || u.city || 'Gợi ý cho bạn'
+                    }));
+                    setFriends(newItems);
+                    setHasMore(recRes.data.data.hasNext);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFriends(0, false);
+    }, []);
+
+    const handleSeeMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchFriends(nextPage, isSuggested);
+    };
+
+    if (friends.length === 0 && !loading) return null;
+
+    return (
+        <div className={styles.indexGroup}>
+            <div className={styles.indexTitle}>{isSuggested ? 'Gợi ý kết bạn' : 'Bạn bè'}</div>
+            {friends.map(f => (
+                <button key={f.id} className={styles.recommendItem} onClick={() => navigate(`/profile/${f.id}`)}>
+                    <img src={f.avatar || 'https://via.placeholder.com/150'} alt="" className={styles.recommendAvatar} />
+                    <div className={styles.recommendInfo}>
+                        <span className={styles.recommendName}>{f.name}</span>
+                        <span className={styles.recommendSub}>{f.sub}</span>
+                    </div>
+                </button>
+            ))}
+            {hasMore && (
+                <button className={styles.viewMoreBtn} onClick={handleSeeMore} disabled={loading}>
+                    {loading ? 'Đang tải...' : 'Xem thêm'}
+                </button>
+            )}
         </div>
     );
 }

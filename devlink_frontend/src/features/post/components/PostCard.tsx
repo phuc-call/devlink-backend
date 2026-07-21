@@ -492,7 +492,15 @@ export default function PostCard({
     const [showReport, setShowReport] = useState(false);
     const [selectedMediaIdx, setSelectedMediaIdx] = useState<number | null>(null);
 
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareContent, setShareContent] = useState('');
+    const [shareLoading, setShareLoading] = useState(false);
+    
+    const [hasViewed, setHasViewed] = useState(false);
+
     const [groupInfo, setGroupInfo] = useState<{ id: number; name: string; coverImage: string; } | null>(null);
+
+    const [isContentExpanded, setIsContentExpanded] = useState(false);
 
     const visualMedia = safeMediaList.filter(m => m.mediaType === 'IMAGE' || m.mediaType === 'VIDEO');
     const fileMedia = safeMediaList.filter(m => m.mediaType === 'FILE');
@@ -755,6 +763,29 @@ export default function PostCard({
 
         navigate(`/profile/${authorId}`);
     }, [authorId, currentUserId, navigate]);
+
+    const handleSharePost = async () => {
+        setShareLoading(true);
+        try {
+            await postApi.sharePost(post.sharedPostId || post.id, shareContent);
+            setShowShareModal(false);
+            setShareContent('');
+            // TODO: show toast instead of alert
+            alert('Đã chia sẻ thành công!');
+        } catch (error) {
+            console.error('Lỗi khi chia sẻ', error);
+            alert('Chia sẻ thất bại');
+        } finally {
+            setShareLoading(false);
+        }
+    };
+
+    const handleViewPost = () => {
+        if (!hasViewed) {
+            setHasViewed(true);
+            postApi.getPostById(post.id).catch(err => console.error("Failed to mark view", err));
+        }
+    };
 
     return (
         <>
@@ -1228,10 +1259,36 @@ export default function PostCard({
                         onSaved={handleUpdated}
                     />
                 ) : (
-                    <>
+                    <div onClick={handleViewPost} style={{ cursor: 'default' }}>
                         {post.content && (
                             <div style={{ padding: '0 16px 12px', fontSize: 14, color: '#111827', lineHeight: 1.6, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                                {post.content}
+                                {post.content.length > 300 && !isContentExpanded ? (
+                                    <>
+                                        {post.content.slice(0, 300)}...{' '}
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setIsContentExpanded(true); }}
+                                            style={{ color: '#6B7280', cursor: 'pointer', fontWeight: 500 }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+                                        >
+                                            Xem thêm
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        {post.content}
+                                        {post.content.length > 300 && isContentExpanded && (
+                                            <span
+                                                onClick={(e) => { e.stopPropagation(); setIsContentExpanded(false); }}
+                                                style={{ color: '#6B7280', cursor: 'pointer', fontWeight: 500, marginLeft: '8px' }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+                                            >
+                                                Thu gọn
+                                            </span>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -1383,7 +1440,36 @@ export default function PostCard({
                                 );
                             })()
                         )}
-                    </>
+                        
+                        {post.sharedPost && (
+                            <div style={{
+                                margin: '0 16px 12px',
+                                border: '1px solid #E5E7EB',
+                                borderRadius: 8,
+                                padding: '12px',
+                                background: '#F9FAFB'
+                            }}>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                                    <img 
+                                        src={post.sharedPost.author?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.sharedPost.author?.userName || 'U')}&background=3B82F6&color=fff`} 
+                                        alt="" 
+                                        style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }}
+                                    />
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                                        {post.sharedPost.author?.userName}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: 13, color: '#374151', marginBottom: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                    {post.sharedPost.content}
+                                </div>
+                                {post.sharedPost.mediaList && post.sharedPost.mediaList.length > 0 && (
+                                    <div style={{ color: '#3B82F6', fontSize: 12, fontWeight: 500 }}>
+                                        [Đính kèm {post.sharedPost.mediaList.length} media]
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* ── Reactions & Comments Count Summary Bar ── */}
@@ -1523,7 +1609,10 @@ export default function PostCard({
 
                     <button
                         type="button"
-                        onClick={handleToggleComment}
+                        onClick={() => {
+                            handleViewPost();
+                            handleToggleComment();
+                        }}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 5,
                             padding: '6px 8px', borderRadius: 6, border: 'none',
@@ -1540,13 +1629,98 @@ export default function PostCard({
                         Bình luận
                     </button>
 
-                    <FooterBtn icon={<Share2 size={14} />} label="Chia sẻ" />
+                    <button
+                        type="button"
+                        onClick={() => setShowShareModal(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                            padding: '6px 8px', borderRadius: 6, border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer', fontSize: 13, color: '#6B7280',
+                            fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                            transition: 'background 0.12s',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                        <Share2 size={14} /> Chia sẻ
+                    </button>
                 </div>
 
                 {commentOpen && (
                     <CommentSection postId={post.id} commentCount={post.commentCount} />
                 )}
             </div>
+            
+            {/* Share Modal */}
+            {showShareModal && (
+                <div style={{
+                    position: 'fixed', inset: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 9999, padding: 16
+                }}>
+                    <div style={{
+                        background: '#fff', borderRadius: 12, padding: 20,
+                        width: '100%', maxWidth: 500, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#111827' }}>Chia sẻ bài viết</h3>
+                            <button onClick={() => setShowShareModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
+                                <X size={20} color="#6B7280" />
+                            </button>
+                        </div>
+                        
+                        <textarea
+                            value={shareContent}
+                            onChange={e => setShareContent(e.target.value)}
+                            placeholder="Hãy nói gì đó về bài viết này..."
+                            rows={3}
+                            style={{
+                                width: '100%', border: '1px solid #E5E7EB', borderRadius: 8, padding: 12,
+                                fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none',
+                                resize: 'none', marginBottom: 16, boxSizing: 'border-box'
+                            }}
+                        />
+                        
+                        <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: 12, background: '#F9FAFB', marginBottom: 20 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <img src={authorAvatar} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                                <span style={{ fontSize: 13, fontWeight: 600 }}>{authorName}</span>
+                            </div>
+                            <div style={{ fontSize: 13, color: '#374151', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {post.content || '[Hình ảnh/Video]'}
+                            </div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                            <button
+                                onClick={() => setShowShareModal(false)}
+                                style={{
+                                    padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB',
+                                    background: '#fff', cursor: 'pointer', fontWeight: 500
+                                }}
+                            >
+                                Huỷ
+                            </button>
+                            <button
+                                onClick={() => void handleSharePost()}
+                                disabled={shareLoading}
+                                style={{
+                                    padding: '8px 16px', borderRadius: 6, border: 'none',
+                                    background: shareLoading ? '#93C5FD' : '#3B82F6', color: '#fff',
+                                    cursor: shareLoading ? 'not-allowed' : 'pointer', fontWeight: 500,
+                                    display: 'flex', alignItems: 'center', gap: 6
+                                }}
+                            >
+                                {shareLoading ? 'Đang chia sẻ...' : 'Chia sẻ ngay'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
