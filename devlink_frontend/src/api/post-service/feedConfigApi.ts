@@ -16,8 +16,8 @@ export interface FeedScoringConfigRequest {
 
 export const feedConfigApi = {
     getAll: () =>
-        axiosInstance.get<{ data: FeedScoringConfigResponse[] }>('/post-service/api/admin/feed-config'),
+        axiosInstance.get<{ data: FeedScoringConfigResponse[] }>('/api/posts/admin/feed-config'),
 
     update: (request: FeedScoringConfigRequest) =>
-        axiosInstance.put<{ data: FeedScoringConfigResponse }>('/post-service/api/admin/feed-config', request),
+        axiosInstance.put<{ data: FeedScoringConfigResponse }>('/api/posts/admin/feed-config', request),
 };

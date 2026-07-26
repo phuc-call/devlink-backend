@@ -3,12 +3,14 @@ package com.devlink.user_service.service;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
 import com.devlink.user_service.dto.request.UpdateGroupRequest;
-import com.devlink.user_service.dto.response.*;
+import com.devlink.user_service.dto.response.GroupCandidateResponse;
+import com.devlink.user_service.dto.response.GroupMemberResponse;
+import com.devlink.user_service.dto.response.GroupResponse;
+import com.devlink.user_service.dto.response.GroupSearchResponse;
+import com.devlink.user_service.dto.response.UserSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 public interface GroupService {
 
@@ -33,12 +35,11 @@ public interface GroupService {
     /**
      * Gets groups that the current user has joined.
      *
-     * @param role optional role to filter by
+     * @param role     optional role to filter by
      * @param pageable pagination parameters
      * @return a paginated list of GroupSearchResponse DTOs
      */
     Page<GroupSearchResponse> getMyGroups(com.devlink.user_service.entity.enums.GroupRole role, Pageable pageable);
-
 
     /**
      * Searches for groups by their name and returns optimized data for group
@@ -78,7 +79,7 @@ public interface GroupService {
      * group
      * with the provided code and saves the changes.
      *
-     * @param groupId the ID of the group
+     * @param groupId    the ID of the group
      * @param inviteCode the request payload containing the invite code information
      * @return the newly generated or updated invite code as a String
      */
@@ -98,7 +99,8 @@ public interface GroupService {
     void joinGroup(Long groupId);
 
     /**
-     * Admin leaves the group. If newAdminId is provided, that user becomes the new admin.
+     * Admin leaves the group. If newAdminId is provided, that user becomes the new
+     * admin.
      * If newAdminId is null, the group is deleted.
      */
     void leaveOrDeleteGroup(Long groupId, Long newAdminId);
@@ -147,7 +149,7 @@ public interface GroupService {
     /**
      * Get list of group IDs that the user has joined (APPROVED).
      */
-    List<Long> getApprovedGroupIdsByUserId(Long userId);
+    java.util.List<Long> getApprovedGroupIdsByUserId(Long userId);
 
     /**
      * Get group basic info for post display.

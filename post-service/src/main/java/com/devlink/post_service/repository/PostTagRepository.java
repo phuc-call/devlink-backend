@@ -35,4 +35,13 @@ public interface PostTagRepository extends JpaRepository<PostTag, Long> {
      */
     @Query("SELECT pt.tag FROM PostTag pt WHERE pt.post.id = :postId")
     List<String> findTagStringsByPostId(@Param("postId") Long postId);
+
+    @Query("SELECT DISTINCT pt.tag FROM PostTag pt WHERE LOWER(pt.tag) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<String> findDistinctTagsByKeyword(@Param("keyword") String keyword);
+
+    @Query(value = "SELECT pt.tag, COUNT(pt.tag) as cnt FROM post_tags pt GROUP BY pt.tag ORDER BY cnt DESC", nativeQuery = true)
+    List<Object[]> findAllDistinctTagsWithCount();
+
+    @Query(value = "SELECT pt.tag, COUNT(pt.tag) as cnt FROM post_tags pt GROUP BY pt.tag ORDER BY cnt DESC LIMIT 50", nativeQuery = true)
+    List<Object[]> findPopularTags();
 }

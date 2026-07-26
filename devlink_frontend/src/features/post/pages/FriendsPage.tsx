@@ -34,7 +34,7 @@ export default function FriendsPage() {
             if (activeTab === 'suggestions') {
                 if (reset) {
                     const res = await userProfileApi.getNormalRecommendations();
-                    const mapped = res.data.data.map(u => ({
+                    const mapped = res.data.data.content.map(u => ({
                         userId: u.id,
                         fullName: u.fullName,
                         avatarUrl: u.avatar || undefined,

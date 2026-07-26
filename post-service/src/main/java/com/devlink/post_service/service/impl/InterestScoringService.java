@@ -34,27 +34,27 @@ public class InterestScoringService {
             }
 
             double scoreToAdd = resolveScore(action);
-            double decayRate  = feedConfigService.getConfigValue(Constants.CONFIG_KEY_INTEREST_DECAY_RATE, 0.95);
+            double decayRate = feedConfigService.getConfigValue(Constants.CONFIG_KEY_INTEREST_DECAY_RATE, 0.95);
 
             for (String tag : tags) {
                 userInterestRepository.upsertScore(userId, tag, scoreToAdd, decayRate);
             }
 
             log.debug("[Interest] userId={} postId={} action={} -> +{} score for {} tags (decayRate={})",
-                      userId, postId, action, scoreToAdd, tags.size(), decayRate);
+                    userId, postId, action, scoreToAdd, tags.size(), decayRate);
 
         } catch (Exception e) {
             log.error("[Interest] Failed to record interest for userId={} postId={}: {}",
-                      userId, postId, e.getMessage());
+                    userId, postId, e.getMessage());
         }
     }
 
     private double resolveScore(ActionType action) {
         return switch (action) {
-            case VIEW     -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_VIEW,     1.0);
-            case LIKE     -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_LIKE,     5.0);
+            case VIEW -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_VIEW, 1.0);
+            case LIKE -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_LIKE, 5.0);
             case BOOKMARK -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_BOOKMARK, 8.0);
-            case SHARE    -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_SHARE,    6.0);
+            case SHARE -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_SHARE, 6.0);
         };
     }
 }

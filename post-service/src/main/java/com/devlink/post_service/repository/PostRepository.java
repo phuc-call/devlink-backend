@@ -297,4 +297,44 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   Page<FeedPostResponse> findGroupTrendingFeed(
       @Param("approvedGroupIds") List<Long> approvedGroupIds,
       Pageable pageable);
+
+  @Query(value = FEED_SELECT + """
+          FROM Post p
+          WHERE p.status <> 'DELETED'
+            AND p.deletedAt IS NULL
+            AND (p.visibility = 'PUBLIC' 
+                 OR (p.visibility = 'FOLLOWERS_ONLY' AND p.authorId IN :friendIds)
+                 OR p.authorId = :currentUserId)
+            AND (p.groupId IS NULL OR p.groupId IN :approvedGroupIds)
+            AND EXISTS (
+                SELECT 1 FROM PostTag pt
+                WHERE pt.post = p
+                AND LOWER(pt.tag) LIKE LOWER(CONCAT('%', :tag, '%'))
+            )
+          ORDER BY p.createdAt DESC
+      """, countQuery = """
+          SELECT count(p.id)
+          FROM Post p
+          WHERE p.status <> 'DELETED'
+            AND p.deletedAt IS NULL
+            AND (p.visibility = 'PUBLIC' 
+                 OR (p.visibility = 'FOLLOWERS_ONLY' AND p.authorId IN :friendIds)
+                 OR p.authorId = :currentUserId)
+            AND (p.groupId IS NULL OR p.groupId IN :approvedGroupIds)
+            AND EXISTS (
+                SELECT 1 FROM PostTag pt
+                WHERE pt.post = p
+                AND LOWER(pt.tag) LIKE LOWER(CONCAT('%', :tag, '%'))
+            )
+      """)
+  Page<FeedPostResponse> findPostsByTag(
+      @Param("tag") String tag,
+      @Param("currentUserId") Long currentUserId,
+      @Param("friendIds") List<Long> friendIds,
+      @Param("approvedGroupIds") List<Long> approvedGroupIds,
+      Pageable pageable);
+
+  /** Fetch minimal post data for a set of post IDs (used by admin viewed posts) */
+  @Query(FEED_SELECT + "FROM Post p WHERE p.id IN :postIds ORDER BY p.createdAt DESC")
+  List<FeedPostResponse> findByIdIn(@Param("postIds") List<Long> postIds);
 }

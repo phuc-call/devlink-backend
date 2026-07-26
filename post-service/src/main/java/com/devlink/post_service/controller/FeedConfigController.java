@@ -31,7 +31,7 @@ import static com.devlink.post_service.config.Constants.SUCCESS;
  *   interest.decay_rate      - daily score decay multiplier (e.g. 0.95 = 5%/day)
  */
 @RestController
-@RequestMapping("/api/admin/feed-config")
+@RequestMapping("/api/posts/admin/feed-config")
 @RequiredArgsConstructor
 public class FeedConfigController {
 

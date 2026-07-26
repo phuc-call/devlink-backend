@@ -1,6 +1,8 @@
 package com.devlink.post_service.repository;
 
 import com.devlink.post_service.entity.UserInterest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -56,4 +58,27 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, Long
                      @Param("decayRate") double decayRate);
 
     Optional<UserInterest> findByUserIdAndTag(Long userId, String tag);
+
+    List<UserInterest> findByUserIdOrderByScoreDesc(Long userId);
+
+    Page<UserInterest> findByUserId(Long userId, Pageable pageable);
+
+    @Query("SELECT DISTINCT u.userId FROM UserInterest u")
+    List<Long> findDistinctUserIds();
+
+    @Modifying
+    @Query("DELETE FROM UserInterest u WHERE u.userId = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM UserInterest u WHERE u.userId = :userId AND u.tag = :tag")
+    void deleteByUserIdAndTag(@Param("userId") Long userId, @Param("tag") String tag);
+
+    @Query("SELECT u FROM UserInterest u WHERE u.userId IN :userIds ORDER BY u.score DESC")
+    List<UserInterest> findByUserIdInOrderByScore(@Param("userIds") List<Long> userIds);
+
+    @Query(value = "SELECT tag, COUNT(*) AS cnt FROM user_interests GROUP BY tag ORDER BY cnt DESC LIMIT :limit",
+           nativeQuery = true)
+    List<Object[]> findTopTagsGlobally(@Param("limit") int limit);
 }
+

@@ -1,6 +1,8 @@
 package com.devlink.post_service.repository;
 
 import com.devlink.post_service.entity.UserProfile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,8 +19,14 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
         String getAvatarUrl();
     }
 
+    @Query("SELECT u FROM UserProfile u WHERE LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<UserProfile> searchByName(@Param("search") String search, Pageable pageable);
+
+    Page<UserProfile> findAll(Pageable pageable);
+
     @Query("SELECT u.userId AS userId, u.userName AS userName, u.avatarUrl AS avatarUrl FROM UserProfile u WHERE u.userId IN :userIds")
     List<UserBasicInfo> findBasicInfoByIds(@Param("userIds") List<Long> userIds);
 
-
+    long count();
 }
+

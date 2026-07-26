@@ -46,4 +46,6 @@ public interface PostService {
     Page<FeedPostResponse> getUserPosts(Long targetUserId, int page, int size);
 
     Page<FeedPostResponse> getGroupPosts(Long groupId, int page, int size);
+
+    Page<FeedPostResponse> getPostsByTag(String tag, int page, int size);
 }

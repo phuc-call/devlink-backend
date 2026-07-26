@@ -83,4 +83,17 @@ public final class Constants {
     public static final String CONFIG_KEY_SCORE_SHARE = "score.share";
     public static final String CONFIG_KEY_INTEREST_DECAY_RATE = "interest.decay_rate";
 
+    // Tag Group Messages
+    public static final String MSG_TAG_GROUP_CREATED = "Tag group created";
+    public static final String MSG_TAG_GROUP_CREATED_KEYWORD = "Group created from keyword";
+    public static final String MSG_POPULAR_TAGS_FETCHED = "Popular tags fetched";
+    public static final String MSG_TAGS_SEARCHED = "Tags searched";
+    public static final String MSG_TAG_GROUPS_RANKED = "Tag groups ranked by popularity";
+    public static final String MSG_UPDATED = "Updated";
+    public static final String MSG_DELETED = "Deleted";
+    public static final String MSG_GROUPS_ASSIGNED = "Groups assigned to users";
+    public static final String MSG_GROUP_REMOVED = "Group removed from user";
+    public static final String MSG_AUTO_ASSIGNED_ALL = "Auto-assigned groups to %d users";
+    public static final String MSG_AUTO_ASSIGNED_USER = "Auto-assigned %d groups to user %d";
+
 }

@@ -55,8 +55,7 @@ public class EmailServiceImpl implements EmailService {
             log.error("[EMAIL] Failed type={} to={}: {}", type, toEmail, e.getMessage());
         }
     }
-
-
+    
     private void sendEmailFallback(String toEmail, String type,
                                    Map<String, String> variables, Throwable t) {
         log.error("[EMAIL] Fallback - Gmail down. to={} type={} error={}",
@@ -76,7 +75,7 @@ public class EmailServiceImpl implements EmailService {
 
         EmailVerification ev =emailVerificationRepository.
                 findTopByEmailAndVerificationTypeAndUsedOrderByCreatedAtDesc(email,type,false)
-                .orElseThrow(() -> new AppException(ErrorCode.OTP_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_OTP));
         if (ev.getExpiresAt().isBefore(LocalDateTime.now()))
             throw new AppException(ErrorCode.OTP_EXPIRED);
         if (!passwordEncoder.matches(code, ev.getCode()))

@@ -32,6 +32,7 @@ public class LearningTemplate {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private Difficulty difficulty = Difficulty.BEGINNER;
 
     @Enumerated(EnumType.STRING)
@@ -76,6 +77,7 @@ public class LearningTemplate {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
+    @Builder.Default
     private TemplateStatus status = TemplateStatus.ACTIVE;
 
     @Column(name = "created_by", nullable = false)

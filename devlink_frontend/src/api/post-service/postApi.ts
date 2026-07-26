@@ -39,10 +39,17 @@ export const postApi = {
     },
 
     sharePost: (id: number, content?: string) => {
-        return axiosInstance.post<{ data: PostResponse }>(
+        return axiosInstance.post<{ data: FeedPostResponse }>(
             `/api/posts/${id}/share`,
             null,
             { params: { content } }
+        );
+    },
+
+    getPostsByTag: (tag: string, page: number = 0, size: number = 10) => {
+        return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
+            `/api/posts/tags`,
+            { params: { tag, page, size } }
         );
     },
 };

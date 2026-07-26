@@ -793,6 +793,50 @@ public class PostServiceImpl implements PostService {
         log.info("[PostService] deletePost postId={} by userId={}", postId, currentUserId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<FeedPostResponse> getPostsByTag(String tag, int page, int size) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (tag != null && tag.startsWith("#")) {
+            tag = tag.substring(1);
+        }
+
+        List<Long> friendIds = userRelationCacheClient.getFriendIds(currentUserId);
+        if (friendIds == null) {
+            friendIds = new ArrayList<>();
+        }
+        if (friendIds.isEmpty()) {
+            friendIds.add(-1L);
+        }
+
+        List<Long> approvedGroupIds = new ArrayList<>();
+        try {
+            ApiResponse<List<Long>> res = userServiceClient.getApprovedGroupIds(currentUserId);
+            if (res != null && res.isSuccess() && res.getData() != null && !res.getData().isEmpty()) {
+                approvedGroupIds.addAll(res.getData());
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch approved group ids for getPostsByTag", e);
+        }
+        if (approvedGroupIds.isEmpty()) {
+            approvedGroupIds.add(-1L);
+        }
+
+        Page<FeedPostResponse> postPage = postRepository.findPostsByTag(tag, currentUserId, friendIds, approvedGroupIds, pageable);
+
+        if (!postPage.hasContent()) {
+            return postPage;
+        }
+
+        List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
+        List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
+        
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
+    }
+
     private PostMedia uploadAndBuildMedia(MultipartFile file, Post post, int orderIndex) {
         String ext = getExt(file.getOriginalFilename());
         MediaType mType = resolveMediaType(ext);

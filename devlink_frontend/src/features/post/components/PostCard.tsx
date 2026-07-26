@@ -1295,10 +1295,20 @@ export default function PostCard({
                         {safeTags.length > 0 && (
                             <div style={{ padding: '0 16px 10px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                 {safeTags.map(t => (
-                                    <span key={t.id} style={{
-                                        background: '#EFF6FF', color: '#3B82F6',
-                                        fontSize: 12, padding: '2px 8px', borderRadius: 9999,
-                                    }}>
+                                    <span 
+                                        key={t.id} 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/explore?name=${encodeURIComponent(t.tag)}&tab=posts`);
+                                        }}
+                                        style={{
+                                            background: '#EFF6FF', color: '#3B82F6',
+                                            fontSize: 12, padding: '2px 8px', borderRadius: 9999,
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+                                    >
                                         #{t.tag}
                                     </span>
                                 ))}

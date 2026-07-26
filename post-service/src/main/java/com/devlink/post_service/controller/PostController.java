@@ -110,6 +110,17 @@ public class PostController {
                 .build();
     }
 
+    @GetMapping("/tags")
+    public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getPostsByTag(
+            @RequestParam String tag,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") @Max(20) int size
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(postService.getPostsByTag(tag, page, size), SUCCESS)
+        );
+    }
+
     @GetMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<Page<FeedPostResponse>>> getUserPosts(
             @PathVariable Long userId,

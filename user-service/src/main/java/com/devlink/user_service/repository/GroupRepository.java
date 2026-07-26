@@ -1,6 +1,12 @@
 package com.devlink.user_service.repository;
 
+import com.devlink.user_service.dto.response.GroupBasicInfoResponse;
 import com.devlink.user_service.entity.Group;
+import com.devlink.user_service.entity.enums.GroupRole;
+
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -56,15 +62,15 @@ public interface GroupRepository extends JpaRepository<Group,Long> {
         END ASC, 
         g.memberCount DESC
     """)
-    Page<Group> findMyGroups(@Param("userId") Long userId, @Param("role") com.devlink.user_service.entity.enums.GroupRole role, Pageable pageable);
+    Page<Group> findMyGroups(@Param("userId") Long userId, @Param("role") GroupRole role, Pageable pageable);
 
     @Query("SELECT new com.devlink.user_service.dto.response.GroupBasicInfoResponse(g.id, g.name, g.coverImage, g.privacy) FROM Group g WHERE g.id = :groupId")
-    java.util.Optional<com.devlink.user_service.dto.response.GroupBasicInfoResponse> findGroupBasicInfoById(@Param("groupId") Long groupId);
+    Optional<GroupBasicInfoResponse> findGroupBasicInfoById(@Param("groupId") Long groupId);
 
     @Query("""
         SELECT g.id FROM Group g 
         WHERE g.privacy = com.devlink.user_service.entity.enums.GroupPrivacy.PUBLIC
         ORDER BY g.memberCount DESC
     """)
-    java.util.List<Long> findTopPublicGroupIds(Pageable pageable);
+    List<Long> findTopPublicGroupIds(Pageable pageable);
 }

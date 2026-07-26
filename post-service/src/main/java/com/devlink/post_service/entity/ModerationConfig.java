@@ -20,15 +20,18 @@ public class ModerationConfig {
     private Long id;
 
     @Column(name = "ai_enabled", nullable = false)
+    @Builder.Default
     private Boolean aiEnabled = true;
 
     @Column(name = "auto_lock_comment_days", nullable = false)
+    @Builder.Default
     private Integer autoLockCommentDays = 7;
 
     @Column(name = "auto_lock_threshold", nullable = false)
     private Integer autoLockThreshold = 3;
 
     @Column(name = "report_auto_review_enabled", nullable = false)
+    @Builder.Default
     private Boolean reportAutoReviewEnabled = true;
 
     @Column(name = "updated_by")
