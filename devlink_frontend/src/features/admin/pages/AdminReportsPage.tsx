@@ -1,5 +1,4 @@
 // src/features/admin/pages/AdminReportsPage.tsx
-// Gọi API thật — không hard code, không dữ liệu tĩnh
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -15,8 +14,15 @@ import {
     Clock,
     RefreshCw,
     Ban,
+    BarChart2,
+    Settings,
+    History,
+    FileText,
+    Edit2,
+    Save,
 } from 'lucide-react';
 import { reportApi } from '../../../api/post-service/reportApi';
+import { violationApi } from '../../../api/post-service/violationApi';
 import type {
     ReportItemResponse,
     ReportPageResponse,
@@ -28,11 +34,26 @@ import {
     REPORT_STATUS_LABELS,
     TARGET_TYPE_LABELS,
 } from '../../../types/report.types';
+import type {
+    ViolationOverviewResponse,
+    ViolationHistoryResponse,
+    PenaltyConfigResponse,
+    ViolationPageResponse,
+} from '../../../types/violation.types';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function timeAgo(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
+function timeAgo(dateStr: string | null): string {
+    if (!dateStr) return '';
+    // Fix timezone: ensure the date string is treated as UTC if it doesn't have timezone info
+    const utcDateStr = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
+    const diff = Date.now() - new Date(utcDateStr).getTime();
+    
+    // Check if diff is negative (future time due to clock sync issues)
+    if (diff < 0) return 'Vừa xong';
+
     const m = Math.floor(diff / 60000);
     const h = Math.floor(m / 60);
     const d = Math.floor(h / 24);
@@ -491,9 +512,300 @@ function SkeletonRow() {
     );
 }
 
+// ── Overview section ───────────────────────────────────────────────────
+
+function OverviewSection() {
+    const [data, setData] = useState<ViolationOverviewResponse | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        violationApi.getOverview()
+            .then(r => setData(r.data.data))
+            .catch(() => null)
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <div style={{ padding: 40, textAlign: 'center', color: '#6B7280' }}>
+                Đang tải dữ liệu tổng quan...
+            </div>
+        );
+    }
+
+    if (!data) {
+        return (
+            <div style={{ padding: 40, textAlign: 'center', color: '#EF4444' }}>
+                Lỗi khi tải dữ liệu tổng quan.
+            </div>
+        );
+    }
+
+    const reportStatusData = [
+        { name: 'Chờ xử lý', value: data.pendingReports, color: '#F59E0B' },
+        { name: 'Đã xử lý', value: data.resolvedReports, color: '#22C55E' },
+        { name: 'Đã từ chối', value: data.rejectedReports, color: '#6B7280' },
+    ];
+
+    const violationData = [
+        { name: 'Tổng vi phạm', value: data.totalViolations, fill: '#EF4444' },
+        { name: 'Đang bị phạt', value: data.activeViolations, fill: '#8B5CF6' },
+    ];
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+            {/* Reports Chart */}
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Trạng thái Báo cáo</h3>
+                <div style={{ height: 260, width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={reportStatusData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {reportStatusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => [`${value} báo cáo`, 'Số lượng']} />
+                            <Legend verticalAlign="bottom" height={36} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Violations Chart */}
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Thống kê Vi phạm</h3>
+                <div style={{ height: 260, width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={violationData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                            <Tooltip cursor={{ fill: '#F9FAFB' }} formatter={(value) => [value, 'Số lượng']} />
+                            <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                                {violationData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Violation History Tab ───────────────────────────────────────────────
+
+function ViolationHistoryTab() {
+    const [data, setData] = useState<ViolationPageResponse | null>(null);
+    const [page, setPage] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [filterUser, setFilterUser] = useState('');
+
+    const fetch = useCallback(async () => {
+        setLoading(true);
+        try {
+            const uid = filterUser.trim() !== '' ? Number(filterUser) : undefined;
+            const res = await violationApi.getHistories(uid, page, 15);
+            setData(res.data.data);
+        } catch { /* ignore */ } finally { setLoading(false); }
+    }, [page, filterUser]);
+
+    useEffect(() => { void fetch(); }, [fetch]);
+
+    const thS: React.CSSProperties = { padding:'10px 14px', fontSize:11, fontWeight:600, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.04em', borderBottom:'1px solid #E5E7EB', textAlign:'left', whiteSpace:'nowrap' };
+
+    const formatDate = (s: string | null) => {
+        if (!s) return '∞ (Vĩnh viễn)';
+        const utcDateStr = s.endsWith('Z') ? s : `${s}Z`;
+        return new Date(utcDateStr).toLocaleDateString('vi-VN');
+    };
+
+    return (
+        <div>
+            <div style={{display:'flex',gap:10,marginBottom:14,alignItems:'center'}}>
+                <input
+                    value={filterUser} onChange={e=>{setFilterUser(e.target.value);setPage(0);}}
+                    placeholder="Lọc theo User ID người vi phạm..."
+                    style={{padding:'7px 12px',borderRadius:8,border:'1px solid #D1D5DB',fontSize:13,width:260,outline:'none'}}
+                />
+                <button type="button" onClick={()=>void fetch()} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 14px',borderRadius:8,border:'1px solid #E5E7EB',background:'#fff',fontSize:13,color:'#6B7280',cursor:'pointer'}}>
+                    <RefreshCw size={13}/> Làm mới
+                </button>
+            </div>
+            <div style={{background:'#fff',borderRadius:10,border:'1px solid #E5E7EB',overflow:'hidden'}}>
+                <div style={{overflowX:'auto'}}>
+                    <table style={{width:'100%',borderCollapse:'collapse'}}>
+                        <thead><tr style={{background:'#F9FAFB'}}>
+                            <th style={thS}>ID</th><th style={thS}>Người vi phạm</th><th style={thS}>Loại</th>
+                            <th style={thS}>Lý do</th><th style={thS}>Ngày vi phạm</th><th style={thS}>Bắt đầu phạt</th>
+                            <th style={thS}>Hết hạn phạt</th><th style={thS}>Lần thứ</th>
+                        </tr></thead>
+                        <tbody>
+                            {loading && Array.from({length:5}).map((_,i)=>(
+                                <tr key={i}>{Array.from({length:8}).map((__,j)=>(
+                                    <td key={j} style={{padding:'12px 14px'}}><div style={{height:13,background:'#F3F4F6',borderRadius:4}}/></td>
+                                ))}</tr>
+                            ))}
+                            {!loading && data?.content.length === 0 && (
+                                <tr><td colSpan={8} style={{padding:40,textAlign:'center',color:'#9CA3AF',fontSize:14}}>Chưa có lịch sử vi phạm nào</td></tr>
+                            )}
+                            {!loading && data?.content.map((v: ViolationHistoryResponse)=>(
+                                <tr key={v.id} style={{borderBottom:'1px solid #F3F4F6'}}>
+                                    <td style={{padding:'12px 14px',fontSize:12,color:'#9CA3AF'}}>#{v.id}</td>
+                                    <td style={{padding:'12px 14px',fontSize:13,color:'#374151',fontWeight:500}}>{v.violatorId}</td>
+                                    <td style={{padding:'12px 14px'}}><TargetBadge type={v.targetType as ReportTargetType}/></td>
+                                    <td style={{padding:'12px 14px',fontSize:13,color:'#374151'}}>{REPORT_REASON_LABELS[v.reason as keyof typeof REPORT_REASON_LABELS] ?? v.reason}</td>
+                                    <td style={{padding:'12px 14px',fontSize:12,color:'#6B7280'}}>{formatDate(v.violationAt)}</td>
+                                    <td style={{padding:'12px 14px',fontSize:12,color:'#6B7280'}}>{formatDate(v.penaltyStartAt)}</td>
+                                    <td style={{padding:'12px 14px',fontSize:12,color: v.penaltyEndAt ? '#EF4444' : '#8B5CF6',fontWeight:500}}>{formatDate(v.penaltyEndAt)}</td>
+                                    <td style={{padding:'12px 14px',textAlign:'center'}}>
+                                        <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:28,height:28,borderRadius:'50%',background: v.violationCount >= 3 ? '#FEF2F2' : '#F0FDF4',color: v.violationCount >= 3 ? '#DC2626' : '#16A34A',fontSize:13,fontWeight:700}}>{v.violationCount}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {data && data.totalPages > 1 && (
+                    <div style={{padding:'10px 14px',borderTop:'1px solid #E5E7EB',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:13,color:'#6B7280'}}>
+                        <span>{data.totalElements} bản ghi</span>
+                        <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                            <button type="button" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{width:30,height:30,borderRadius:6,border:'1px solid #E5E7EB',background:page===0?'#F9FAFB':'#fff',color:page===0?'#D1D5DB':'#374151',cursor:page===0?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevronLeft size={15}/></button>
+                            <span style={{padding:'0 8px',fontWeight:500,color:'#374151'}}>{page+1}/{data.totalPages}</span>
+                            <button type="button" onClick={()=>setPage(p=>Math.min(data.totalPages-1,p+1))} disabled={page>=data.totalPages-1} style={{width:30,height:30,borderRadius:6,border:'1px solid #E5E7EB',background:page>=data.totalPages-1?'#F9FAFB':'#fff',color:page>=data.totalPages-1?'#D1D5DB':'#374151',cursor:page>=data.totalPages-1?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevronRight size={15}/></button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ── Penalty Config Tab ─────────────────────────────────────────────────
+
+function PenaltyConfigTab() {
+    const [configs, setConfigs] = useState<PenaltyConfigResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [editId, setEditId] = useState<number|null>(null);
+    const [editDays, setEditDays] = useState(0);
+    const [editPerm, setEditPerm] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const fetchConfigs = useCallback(async () => {
+        setLoading(true);
+        try { const r = await violationApi.getPenaltyConfigs(); setConfigs(r.data.data); }
+        catch { /* ignore */ } finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { void fetchConfigs(); }, [fetchConfigs]);
+
+    const startEdit = (c: PenaltyConfigResponse) => { setEditId(c.id); setEditDays(c.penaltyDays); setEditPerm(c.permanent); };
+    const cancelEdit = () => setEditId(null);
+
+    const saveEdit = async (id: number) => {
+        setSaving(true);
+        try {
+            await violationApi.updatePenaltyConfig(id, { penaltyDays: editDays, permanent: editPerm });
+            await fetchConfigs();
+            setEditId(null);
+        } catch { /* ignore */ } finally { setSaving(false); }
+    };
+
+    const grouped = configs.reduce<Record<string, PenaltyConfigResponse[]>>((acc, c) => {
+        (acc[c.targetType] ??= []).push(c);
+        return acc;
+    }, {});
+
+    const typeColor: Record<string,{bg:string,color:string}> = {
+        POST:          {bg:'#EFF6FF',color:'#2563EB'},
+        COMMENT:       {bg:'#F5F3FF',color:'#7C3AED'},
+        COMMENT_REPLY: {bg:'#FFF7ED',color:'#C2410C'},
+    };
+
+    return (
+        <div style={{display:'flex',flexDirection:'column',gap:20}}>
+            <div style={{background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#92400E',display:'flex',alignItems:'center',gap:8}}>
+                <AlertTriangle size={15}/> Thay đổi config sẽ áp dụng cho các vi phạm <strong>mới</strong> tiếp theo, không ảnh hưởng đến vi phạm đã được xử lý.
+            </div>
+            {loading ? <div style={{textAlign:'center',padding:40,color:'#9CA3AF'}}>Đang tải...</div> : Object.entries(grouped).map(([type, list])=>(
+                <div key={type} style={{background:'#fff',borderRadius:10,border:'1px solid #E5E7EB',overflow:'hidden'}}>
+                    <div style={{padding:'12px 16px',borderBottom:'1px solid #E5E7EB',display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{padding:'3px 10px',borderRadius:9999,fontSize:12,fontWeight:600,...(typeColor[type]??{bg:'#F3F4F6',color:'#6B7280'})}}>{TARGET_TYPE_LABELS[type as ReportTargetType]??type}</span>
+                        <span style={{fontSize:12,color:'#9CA3AF'}}>{list.length} mức phạt</span>
+                    </div>
+                    <table style={{width:'100%',borderCollapse:'collapse'}}>
+                        <thead><tr style={{background:'#F9FAFB'}}>
+                            <th style={{padding:'9px 14px',fontSize:11,fontWeight:600,color:'#6B7280',textAlign:'left',textTransform:'uppercase'}}>Lần vi phạm</th>
+                            <th style={{padding:'9px 14px',fontSize:11,fontWeight:600,color:'#6B7280',textAlign:'left',textTransform:'uppercase'}}>Số ngày phạt</th>
+                            <th style={{padding:'9px 14px',fontSize:11,fontWeight:600,color:'#6B7280',textAlign:'left',textTransform:'uppercase'}}>Vĩnh viễn</th>
+                            <th style={{padding:'9px 14px',fontSize:11,fontWeight:600,color:'#6B7280',textAlign:'center',textTransform:'uppercase'}}>Hành động</th>
+                        </tr></thead>
+                        <tbody>
+                            {list.sort((a,b)=>a.offenseNumber-b.offenseNumber).map(c=>(
+                                <tr key={c.id} style={{borderBottom:'1px solid #F3F4F6'}}>
+                                    <td style={{padding:'11px 14px',fontSize:13}}>
+                                        <span style={{background:'#F3F4F6',borderRadius:6,padding:'2px 10px',fontWeight:600,color:'#374151'}}>Lần {c.offenseNumber}</span>
+                                    </td>
+                                    <td style={{padding:'11px 14px',fontSize:13,color:'#374151'}}>
+                                        {editId===c.id ? (
+                                            <input type="number" min={0} value={editDays} onChange={e=>setEditDays(Number(e.target.value))}
+                                                style={{width:70,padding:'4px 8px',border:'1px solid #3B82F6',borderRadius:6,fontSize:13,outline:'none'}}/>
+                                        ) : (
+                                            <span style={{fontWeight:600,color: c.permanent?'#8B5CF6':'#111827'}}>{c.permanent ? '—' : `${c.penaltyDays} ngày`}</span>
+                                        )}
+                                    </td>
+                                    <td style={{padding:'11px 14px'}}>
+                                        {editId===c.id ? (
+                                            <label style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer',fontSize:13}}>
+                                                <input type="checkbox" checked={editPerm} onChange={e=>setEditPerm(e.target.checked)} style={{width:15,height:15}}/>
+                                                <span style={{color:'#6B7280'}}>Vĩnh viễn</span>
+                                            </label>
+                                        ) : (
+                                            <span style={{padding:'2px 8px',borderRadius:9999,fontSize:11,fontWeight:600,background:c.permanent?'#F5F3FF':'#F3F4F6',color:c.permanent?'#7C3AED':'#6B7280'}}>
+                                                {c.permanent?'Có':'Không'}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td style={{padding:'11px 14px',textAlign:'center'}}>
+                                        {editId===c.id ? (
+                                            <div style={{display:'flex',gap:6,justifyContent:'center'}}>
+                                                <button type="button" onClick={()=>void saveEdit(c.id)} disabled={saving}
+                                                    style={{display:'flex',alignItems:'center',gap:4,padding:'5px 12px',borderRadius:7,border:'none',background:'#22C55E',color:'#fff',fontSize:12,fontWeight:600,cursor:saving?'not-allowed':'pointer'}}>
+                                                    <Save size={13}/>{saving?'...':'Lưu'}
+                                                </button>
+                                                <button type="button" onClick={cancelEdit} style={{padding:'5px 10px',borderRadius:7,border:'1px solid #E5E7EB',background:'#fff',fontSize:12,color:'#6B7280',cursor:'pointer'}}>Hủy</button>
+                                            </div>
+                                        ) : (
+                                            <button type="button" onClick={()=>startEdit(c)}
+                                                style={{display:'flex',alignItems:'center',gap:4,padding:'5px 12px',borderRadius:7,border:'1px solid #E5E7EB',background:'#fff',color:'#374151',fontSize:12,cursor:'pointer',margin:'0 auto'}}>
+                                                <Edit2 size={13}/> Sửa
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────
 
 export default function AdminReportsPage() {
+    const [mainTab, setMainTab] = useState<'overview'|'reports'|'violations'|'configs'>('overview');
     const [targetType, setTargetType] = useState<ReportTargetType>('POST');
     const [status, setStatus]         = useState<ReportStatus | ''>('');
     const [page, setPage]             = useState(0);
@@ -525,40 +837,26 @@ export default function AdminReportsPage() {
         }
     }, [targetType, status, page]);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-useEffect(() => { void fetchReports(); }, [fetchReports]);
+    useEffect(() => { void fetchReports(); }, [fetchReports]);
 
-    // Reset về trang 0 khi đổi filter
-    const handleTargetChange = (t: ReportTargetType) => {
-        setTargetType(t);
-        setPage(0);
-    };
-    const handleStatusChange = (s: ReportStatus | '') => {
-        setStatus(s);
-        setPage(0);
-    };
+    const handleTargetChange = (t: ReportTargetType) => { setTargetType(t); setPage(0); };
+    const handleStatusChange = (s: ReportStatus | '') => { setStatus(s); setPage(0); };
 
-    const handleReviewDone = async () => {
-        setReviewTarget(null);
-        await fetchReports();
-    };
-
-    const handleDeleteDone = async () => {
-        setDeleteTarget(null);
-        await fetchReports();
-    };
+    const handleReviewDone = async () => { setReviewTarget(null); await fetchReports(); };
+    const handleDeleteDone = async () => { setDeleteTarget(null); await fetchReports(); };
 
     const thStyle: React.CSSProperties = {
-        padding: '10px 16px',
-        textAlign: 'left',
-        fontSize: 12,
-        fontWeight: 600,
-        color: '#6B7280',
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        whiteSpace: 'nowrap',
-        borderBottom: '1px solid #E5E7EB',
+        padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600,
+        color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em',
+        whiteSpace: 'nowrap', borderBottom: '1px solid #E5E7EB',
     };
+
+    const tabDefs = [
+        { key: 'overview',   label: 'Tổng quan',        icon: <BarChart2 size={14}/> },
+        { key: 'reports',    label: 'Báo cáo',          icon: <FileText size={14}/> },
+        { key: 'violations', label: 'Lịch sử vi phạm',  icon: <History size={14}/> },
+        { key: 'configs',    label: 'Cấu hình phạt',    icon: <Settings size={14}/> },
+    ] as const;
 
     return (
         <div style={{ fontFamily: "'Inter', sans-serif", color: '#111827' }}>
@@ -572,18 +870,45 @@ useEffect(() => { void fetchReports(); }, [fetchReports]);
             `}</style>
 
             {/* Page header */}
-            <div style={{ marginBottom: 20 }}>
-                <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
-                    Báo cáo & Vi phạm
+            <div style={{ marginBottom: 16 }}>
+                <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display:'flex', alignItems:'center', gap:10 }}>
+                    <ShieldAlert size={22} color="#3B82F6"/> Báo cáo &amp; Vi phạm
                 </h1>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6B7280' }}>
-                    Xử lý báo cáo từ người dùng về bài viết và bình luận
+                    Quản lý báo cáo, lịch sử vi phạm và cấu hình mức phạt
                 </p>
             </div>
+
+            {/* Main tabs */}
+            <div style={{display:'flex',gap:4,background:'#F3F4F6',borderRadius:10,padding:4,marginBottom:18,width:'fit-content'}}>
+                {tabDefs.map(t=>(
+                    <button key={t.key} type="button" onClick={()=>setMainTab(t.key)}
+                        style={{display:'flex',alignItems:'center',gap:6,padding:'7px 18px',borderRadius:7,border:'none',
+                            background: mainTab===t.key ? '#fff' : 'transparent',
+                            boxShadow: mainTab===t.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                            fontSize:13,fontWeight: mainTab===t.key ? 600 : 400,
+                            color: mainTab===t.key ? '#111827' : '#6B7280',cursor:'pointer',transition:'all 0.15s'}}>
+                        {t.icon}{t.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Overview tab */}
+            {mainTab === 'overview' && <OverviewSection/>}
+
+            {/* Violation History tab */}
+            {mainTab === 'violations' && <ViolationHistoryTab/>}
+
+            {/* Penalty Config tab */}
+            {mainTab === 'configs' && <PenaltyConfigTab/>}
+
+            {/* Reports tab content */}
+            {mainTab === 'reports' && <>
 
             {/* Filter bar */}
             <div style={{
                 background: '#fff',
+
                 borderRadius: 10,
                 border: '1px solid #E5E7EB',
                 padding: '12px 16px',
@@ -966,6 +1291,7 @@ useEffect(() => { void fetchReports(); }, [fetchReports]);
                     onDone={() => { void handleDeleteDone(); }}
                 />
             )}
+            </>}
         </div>
     );
-}
+}

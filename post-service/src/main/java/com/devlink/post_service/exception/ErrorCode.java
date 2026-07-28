@@ -103,7 +103,10 @@ public enum ErrorCode {
 
     // Feed scoring config
     FEED_CONFIG_NOT_FOUND("Feed config key not found", HttpStatus.NOT_FOUND),
-    FEED_CONFIG_INVALID_DECAY_RATE("Decay rate must be less than 1.0 (e.g. 0.95 means 5% daily decay)", HttpStatus.BAD_REQUEST);
+    FEED_CONFIG_INVALID_DECAY_RATE("Decay rate must be less than 1.0 (e.g. 0.95 means 5% daily decay)", HttpStatus.BAD_REQUEST),
+
+    VIOLATION_NOT_FOUND("Violation history record not found", HttpStatus.NOT_FOUND),
+    PENALTY_CONFIG_NOT_FOUND("Penalty config not found", HttpStatus.NOT_FOUND);
 
     private final String message;
     private final HttpStatus httpStatus;

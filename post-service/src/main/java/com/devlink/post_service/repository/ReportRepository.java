@@ -130,4 +130,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     """)
     Optional<Report> findByRestrictionId(@Param("restrictionId") Long restrictionId);
 
+    @Query("SELECT COUNT(r) FROM Report r WHERE r.status = :status")
+    long countByStatus(@Param("status") ReportStatus status);
+
 }

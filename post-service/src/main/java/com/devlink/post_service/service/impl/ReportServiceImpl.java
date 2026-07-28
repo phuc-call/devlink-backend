@@ -10,6 +10,8 @@ import com.devlink.post_service.dto.request.ReportReviewRequest;
 import com.devlink.post_service.dto.response.*;
 import com.devlink.post_service.entity.AccountRestriction;
 import com.devlink.post_service.entity.Report;
+import com.devlink.post_service.entity.ReportReporterDetail;
+import com.devlink.post_service.entity.ViolationHistory;
 import com.devlink.post_service.entity.enums.ReportStatus;
 import com.devlink.post_service.entity.enums.RestrictionType;
 import com.devlink.post_service.entity.enums.TargetType;
@@ -17,7 +19,10 @@ import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.AccountRestrictionRepository;
 import com.devlink.post_service.repository.ReportRepository;
+import com.devlink.post_service.repository.ReportReporterDetailRepository;
 import com.devlink.post_service.repository.UserProfileRepository;
+import com.devlink.post_service.repository.ViolationHistoryRepository;
+import com.devlink.post_service.repository.ViolationPenaltyConfigRepository;
 import com.devlink.post_service.entity.UserProfile;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.ReportService;
@@ -59,6 +64,9 @@ public class ReportServiceImpl implements ReportService {
     private final List<ReportTargetHandler> handlers;
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> objectRedisTemplate;
+    private final ViolationHistoryRepository violationHistoryRepository;
+    private final ViolationPenaltyConfigRepository penaltyConfigRepository;
+    private final ReportReporterDetailRepository reporterDetailRepository;
 
     private ReportTargetHandler getHandler(TargetType type) {
         return handlers.stream()
@@ -109,6 +117,17 @@ public class ReportServiceImpl implements ReportService {
                 .build();
 
         Report saved = reportRepository.save(report);
+
+        Long authorId = getHandler(req.getTargetType()).getAuthorId(req.getTargetId());
+        if (authorId != null && !reporterDetailRepository.existsByReportId(saved.getId())) {
+            reporterDetailRepository.save(ReportReporterDetail.builder()
+                    .reportId(saved.getId())
+                    .reporterId(reporterId)
+                    .reportedId(authorId)
+                    .reporterNote(req.getDescription())
+                    .build());
+        }
+
         publishEvent(saved, false);
         return toResponse(saved);
     }
@@ -175,12 +194,12 @@ public class ReportServiceImpl implements ReportService {
             String key = String.format(DELETED_CONTENT_KEY, handler.getSnapshotKey(), report.getTargetId());
             redisTemplate.opsForValue().set(key, snapshot, DELETED_SNAPSHOT_DAYS, TimeUnit.DAYS);
 
-            Instant restrictedUntil = req.isPermanent() ? null : Instant.now().plus(7, ChronoUnit.DAYS);
             RestrictionType restrictionType = handler.getRestrictionType();
+            int offenseCount = violationHistoryRepository.countByViolatorIdAndTargetType(authorId, report.getTargetType());
+            Instant restrictedUntil = resolveRestrictedUntil(req, report.getTargetType().name(), report.getReason().name(), offenseCount);
 
-            // save history report
             AccountRestriction restriction = AccountRestriction.builder()
-                    .userId(authorId) // Punish the RIGHT person.
+                    .userId(authorId)
                     .restrictionType(restrictionType)
                     .restrictedBy(String.valueOf(adminId))
                     .reason(report.getReason().name())
@@ -188,6 +207,20 @@ public class ReportServiceImpl implements ReportService {
                     .build();
 
             Long restrictionId = restrictionRepository.save(restriction).getId();
+
+            Instant now = Instant.now();
+            violationHistoryRepository.save(ViolationHistory.builder()
+                    .reportId(report.getId())
+                    .violatorId(authorId)
+                    .targetType(report.getTargetType())
+                    .targetId(report.getTargetId())
+                    .reason(report.getReason().name())
+                    .violationAt(now)
+                    .penaltyStartAt(now)
+                    .penaltyEndAt(restrictedUntil)
+                    .violationCount(offenseCount + 1)
+                    .restrictionId(restrictionId)
+                    .build());
 
             report.setStatus(ReportStatus.RESOLVED);
             report.setRestrictionId(restrictionId);
@@ -207,6 +240,18 @@ public class ReportServiceImpl implements ReportService {
         report.setReviewNote(req.getReviewNote());
 
         return toResponse(reportRepository.save(report));
+    }
+
+    private Instant resolveRestrictedUntil(ReportReviewRequest req, String targetType, String reason, int currentOffenseCount) {
+        if (req.isPermanent()) return null;
+        int nextOffense = currentOffenseCount + 1;
+        return penaltyConfigRepository
+                .findApplicable(targetType, reason, nextOffense)
+                .or(() -> penaltyConfigRepository.findApplicableFallback(targetType, reason, nextOffense))
+                .map(config -> config.getPermanent()
+                        ? null
+                        : Instant.now().plus(config.getPenaltyDays(), ChronoUnit.DAYS))
+                .orElse(Instant.now().plus(7, ChronoUnit.DAYS));
     }
 
     private void publishReviewedEvent(Report report, Long targetUserId, Long adminId,
