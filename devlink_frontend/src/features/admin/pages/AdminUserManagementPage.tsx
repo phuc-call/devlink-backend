@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, X, Tag, Image, Video, Link as LinkIcon, FileText, Eye, Trash2, Plus, Users as UsersIcon } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { adminUserApi } from '../../../api/post-service/adminApi';
 import type { AdminUserResponse, AdminUserDetailResponse, UserInterestSummary, MediaItem, PostLinkItem } from '../../../api/post-service/adminApi';
 
@@ -38,6 +39,7 @@ export default function AdminUserManagementPage() {
     const [addTags, setAddTags] = useState('');
     const searchTimeout = useRef<ReturnType<typeof setTimeout>|null>(null);
     const SIZE = 15;
+    const [searchParams] = useSearchParams();
 
     const toast = (type: 'success'|'error', msg: string) => { setStatus({type, msg}); setTimeout(() => setStatus(null), 4000); };
 
@@ -53,7 +55,35 @@ export default function AdminUserManagementPage() {
         finally { setLoading(false); }
     }, [search]);
 
-    useEffect(() => { void loadUsers(0); }, []);
+    useEffect(() => { 
+        void loadUsers(0); 
+        const uid = searchParams.get('userId');
+        if (uid) {
+            openUserById(Number(uid));
+        }
+    }, []);
+
+    const openUserById = async (uid: number) => {
+        setDetailLoading(true); setTab('interests'); setContentPage(0);
+        try {
+            const detailRes = await adminUserApi.getDetail(uid);
+            const detail = detailRes.data?.data;
+            if (detail) {
+                const mockUser: AdminUserResponse = {
+                    userId: detail.userId,
+                    userName: detail.userName,
+                    avatarUrl: detail.avatarUrl,
+                    interestCount: detail.interests.length,
+                    topInterests: detail.interests.slice(0, 3).map(i => i.tag),
+                    lastActivity: detail.lastActivity,
+                    viewedPostCount: detail.viewedPostCount
+                };
+                setSelected({ user: mockUser, detail });
+                void loadContent('interests', uid, 0);
+            }
+        } catch { toast('error', 'Failed to load user detail'); }
+        finally { setDetailLoading(false); }
+    };
 
     const handleSearch = (v: string) => {
         setSearch(v);

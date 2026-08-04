@@ -26,14 +26,19 @@ export interface ViolationPageResponse {
 }
 
 export interface PenaltyConfigResponse {
-    id:            number;
-    targetType:    string;
-    reason:        string;
-    offenseNumber: number;
-    penaltyDays:   number;
-    permanent:     boolean;
-    updatedBy:     number | null;
-    updatedAt:     string;
+    id:             number;
+    targetType:     string;
+    reason:         string;
+    offenseNumber:  number;
+    penaltyDays:    number;
+    permanent:      boolean;
+    active:         boolean;
+    updatedBy:      number | null;
+    updatedAt:      string;
+    createdBy?:     number | null;
+    createdAt?:     string;
+    adminName?:     string;
+    adminAvatarUrl?: string;
 }
 
 export interface ViolationOverviewResponse {
@@ -48,4 +53,40 @@ export interface ViolationOverviewResponse {
 export interface UpdatePenaltyConfigRequest {
     penaltyDays: number;
     permanent:   boolean;
+    active?:     boolean;
+}
+
+export interface CreatePenaltyConfigRequest {
+    targetType:  string;
+    penaltyDays: number;
+    permanent:   boolean;
+}
+
+export interface PenalizedUserResponse {
+    userId:          number;
+    userName:        string;
+    avatarUrl:       string | null;
+    lastViolationAt: string;
+}
+
+export interface PenalizedUserPageResponse {
+    content:       PenalizedUserResponse[];
+    totalElements: number;
+    totalPages:    number;
+    number:        number;
+    size:          number;
+}
+
+export interface TopViolatorResponse {
+    userId:         number;
+    userName:       string;
+    avatarUrl:      string | null;
+    violationCount: number;
+}
+
+export interface ViolationTypeStatsResponse {
+    targetType:      TargetType;
+    totalViolations: number;
+    uniqueViolators: number;
+    topViolators:    TopViolatorResponse[];
 }

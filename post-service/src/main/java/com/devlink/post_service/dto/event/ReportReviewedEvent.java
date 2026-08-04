@@ -22,6 +22,7 @@ public class ReportReviewedEvent {
     private String reviewedBy;
     private Instant reviewedAt;
     private Instant restrictedUntil;
+    private Integer violationCount;
 
     private Long targetId;
     private String targetType;

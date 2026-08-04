@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,14 +65,32 @@ public class ReportReviewedListener {
                     .createdAt(LocalDateTime.now())
                     .build());
 
+            String readableRestrictionType = switch (event.getRestrictionType()) {
+                case "POST_BAN" -> "Cấm đăng bài";
+                case "COMMENT_BAN" -> "Cấm bình luận";
+                case "FULL_BAN" -> "Khóa tài khoản (Toàn bộ chức năng)";
+                default -> event.getRestrictionType() != null ? event.getRestrictionType() : "Hạn chế tính năng";
+            };
+            
+            String penaltyDuration = "Vĩnh viễn";
+            if (event.getRestrictedUntil() != null) {
+                long days = java.time.Duration.between(Instant.now(), event.getRestrictedUntil()).toDays();
+                penaltyDuration = days > 0 ? days + " ngày" : "Dưới 1 ngày";
+            }
+            
+            String violationCountStr = event.getViolationCount() != null ? String.valueOf(event.getViolationCount()) : "1";
+            
+            String formattedRestrictionType = String.format("%s (Lần vi phạm: %s, Thời gian phạt: %s)",
+                    readableRestrictionType, violationCountStr, penaltyDuration);
+
             userRepository.findById(event.getTargetUserId()).ifPresent(user ->
                     emailService.sendEmailDTO(
                             user.getEmail(),
                             "REPORT_VIOLATION",
                             Map.of(
                                     "username", user.getUsername(),
-                                    "reason", event.getReviewNote() != null ? event.getReviewNote() : "",
-                                    "restrictionType", event.getRestrictionType() != null ? event.getRestrictionType() : ""
+                                    "reason", event.getReviewNote() != null && !event.getReviewNote().isEmpty() ? event.getReviewNote() : (event.getReason() != null ? event.getReason() : "Vi phạm tiêu chuẩn cộng đồng"),
+                                    "restrictionType", formattedRestrictionType
                             )
                     )
             );

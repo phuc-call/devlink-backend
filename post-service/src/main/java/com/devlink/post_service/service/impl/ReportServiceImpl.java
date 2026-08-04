@@ -228,11 +228,11 @@ public class ReportServiceImpl implements ReportService {
                     ? LocalDateTime.ofInstant(restrictedUntil, ZoneOffset.UTC)
                     : null);
 
-            publishReviewedEvent(report, authorId, adminId, req, restrictionType, true, restrictedUntil);
+            publishReviewedEvent(report, authorId, adminId, req, restrictionType, true, restrictedUntil, offenseCount + 1);
 
         } else {
             report.setStatus(ReportStatus.REJECTED);
-            publishReviewedEvent(report, null, adminId, req, null, false, null);
+            publishReviewedEvent(report, null, adminId, req, null, false, null, null);
         }
 
         report.setReviewedBy(adminId);
@@ -258,7 +258,8 @@ public class ReportServiceImpl implements ReportService {
                                       ReportReviewRequest req,
                                       RestrictionType restrictionType,
                                       boolean approved,
-                                      Instant restrictedUntil) {
+                                      Instant restrictedUntil,
+                                      Integer violationCount) {
         ReportReviewedEvent event = ReportReviewedEvent.builder()
                 .reportId(report.getId())
                 .targetUserId(targetUserId)
@@ -269,6 +270,7 @@ public class ReportServiceImpl implements ReportService {
                 .reviewedBy(String.valueOf(adminId))
                 .reviewedAt(Instant.now())
                 .restrictedUntil(restrictedUntil)
+                .violationCount(violationCount)
                 .targetId(report.getTargetId())
                 .targetType(report.getTargetType().name())
                 .reason(report.getReason().name())
@@ -320,25 +322,32 @@ public class ReportServiceImpl implements ReportService {
         List<UserProfileRepository.UserBasicInfo> userProfiles = userIds.isEmpty()
                 ? List.of()
                 : userProfileRepository.findBasicInfoByIds(userIds);
-        Map<Long, String> userMap = userProfiles.stream()
+        Map<Long, UserProfileRepository.UserBasicInfo> userMap = userProfiles.stream()
                 .collect(java.util.stream.Collectors.toMap(
                         UserProfileRepository.UserBasicInfo::getUserId, 
-                        UserProfileRepository.UserBasicInfo::getUserName));
+                        u -> u));
 
         List<ReportItemResponse> items = projections.stream()
-                .map(p -> ReportItemResponse.builder()
+                .map(p -> {
+                    UserProfileRepository.UserBasicInfo violator = userMap.get(p.getViolatorUserId());
+                    UserProfileRepository.UserBasicInfo reporter = userMap.get(p.getReporterId());
+
+                    return ReportItemResponse.builder()
                         .reportId(p.getReportId())
                         .targetId(p.getTargetId())
                         .targetType(p.getTargetType())
                         .violatorUserId(p.getViolatorUserId())
-                        .violatorName(userName(userMap, p.getViolatorUserId()))
+                        .violatorName(violator != null ? violator.getUserName() : null)
+                        .violatorAvatar(violator != null ? violator.getAvatarUrl() : null)
                         .reporterId(p.getReporterId())
-                        .reporterName(userName(userMap, p.getReporterId()))
+                        .reporterName(reporter != null ? reporter.getUserName() : null)
+                        .reporterAvatar(reporter != null ? reporter.getAvatarUrl() : null)
                         .reason(p.getReason())
                         .description(p.getDescription())
                         .status(p.getStatus())
                         .createdAt(p.getCreatedAt())
-                        .build())
+                        .build();
+                })
                 .toList();
 
         return ReportPageResponse.builder()
@@ -450,5 +459,63 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ReportAdminDetailResponse getReportAdminDetail(Long reportId) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
 
+        ReportTargetHandler reportTargetHandler = getHandler(report.getTargetType());
+        Object targetContent;
+        boolean contentDeleted;
+
+        if (reportTargetHandler.exists(report.getTargetId())) {
+            targetContent = reportTargetHandler.getSnapshot(report.getTargetId());
+            contentDeleted = false;
+        } else {
+            String snapshotKey = String.format(DELETED_CONTENT_KEY,
+                    reportTargetHandler.getSnapshotKey(), report.getTargetId());
+            targetContent = sanitizeSnapshot(redisTemplate.opsForValue().get(snapshotKey));
+            contentDeleted = true;
+        }
+
+        // Fetch user basic info
+        List<Long> userIds = Stream.of(report.getReporterId(), getViolatorId(report))
+                .filter(Objects::nonNull).distinct().toList();
+        List<UserProfileRepository.UserBasicInfo> userProfiles = userProfileRepository.findBasicInfoByIds(userIds);
+        
+        UserProfileRepository.UserBasicInfo reporterInfo = userProfiles.stream()
+                .filter(u -> u.getUserId().equals(report.getReporterId())).findFirst().orElse(null);
+        Long violatorId = getViolatorId(report);
+        UserProfileRepository.UserBasicInfo violatorInfo = userProfiles.stream()
+                .filter(u -> u.getUserId().equals(violatorId)).findFirst().orElse(null);
+
+        return ReportAdminDetailResponse.builder()
+                .reportId(report.getId())
+                .targetId(report.getTargetId())
+                .targetType(report.getTargetType())
+                .violatorUserId(violatorId)
+                .violatorName(violatorInfo != null ? violatorInfo.getUserName() : null)
+                .violatorAvatar(violatorInfo != null ? violatorInfo.getAvatarUrl() : null)
+                .reporterId(report.getReporterId())
+                .reporterName(reporterInfo != null ? reporterInfo.getUserName() : null)
+                .reporterAvatar(reporterInfo != null ? reporterInfo.getAvatarUrl() : null)
+                .reason(report.getReason())
+                .description(report.getDescription())
+                .status(report.getStatus())
+                .createdAt(report.getCreatedAt())
+                .targetContent(targetContent)
+                .contentDeleted(contentDeleted)
+                .build();
+    }
+
+    private Long getViolatorId(Report report) {
+        try {
+            return getHandler(report.getTargetType()).getAuthorId(report.getTargetId());
+        } catch (Exception e) {
+            // If target is deleted and authorId is not easily fetched, we can try to get it from reporter detail
+            return reporterDetailRepository.findByReportId(report.getId())
+                    .map(ReportReporterDetail::getReportedId).orElse(null);
+        }
+    }
 }

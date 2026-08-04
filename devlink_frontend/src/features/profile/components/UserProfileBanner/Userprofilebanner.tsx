@@ -4,11 +4,13 @@ import styles from './UserProfileBanner.module.css';
 interface Props {
     profile: UserProfileResponse | null;
     onCoverClick?: () => void;
+    activeTab?: string;
+    onTabChange?: (tab: string) => void;
 }
 
 const TABS = ['Bài viết', 'Giới thiệu', 'Đang theo dõi', 'Ảnh'];
 
-export default function UserProfileBanner({ profile, onCoverClick }: Props) {
+export default function UserProfileBanner({ profile, onCoverClick, activeTab = 'Bài viết', onTabChange }: Props) {
     const coverUrl = profile?.coverImageUrl || profile?.coverAvatar;
 
     return (
@@ -28,10 +30,11 @@ export default function UserProfileBanner({ profile, onCoverClick }: Props) {
 
             <div className={styles.navBar}>
                 <div className={styles.navTabs}>
-                    {TABS.map((tab, i) => (
+                    {TABS.map((tab) => (
                         <button
                             key={tab}
-                            className={`${styles.navTab} ${i === 0 ? styles.navActive : ''}`}
+                            className={`${styles.navTab} ${activeTab === tab ? styles.navActive : ''}`}
+                            onClick={() => onTabChange?.(tab)}
                         >
                             {tab}
                         </button>

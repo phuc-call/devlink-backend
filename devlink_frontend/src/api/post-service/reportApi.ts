@@ -10,7 +10,7 @@ import type {
     MyViolationResponse,
     ReportTargetType,
     ReportStatus,
-    
+    ReportAdminDetailResponse
 } from '../../types/report.types';
 
 const BASE_URL = '/api/posts/reports';
@@ -111,5 +111,13 @@ export const reportApi = {
         );
     },
 
- 
+    /**
+     * Lấy chi tiết báo cáo dành cho Admin, bao gồm cả nội dung bị báo cáo.
+     * GET /api/posts/reports/admin/{reportId}
+     */
+    getReportAdminDetail(reportId: number) {
+        return axiosInstance.get<{ data: ReportAdminDetailResponse }>(
+            `${BASE_URL}/admin/${reportId}`
+        );
+    },
 };

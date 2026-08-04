@@ -27,7 +27,7 @@ public class PostFile {
     @Column(name = "post_id", nullable = false)
     private Long postId;
 
-    // 1 media → chỉ 1 post_file
+    // 1 media -> chỉ 1 post_file
     @Column(name = "media_id", nullable = false, unique = true)
     private Long mediaId;
 

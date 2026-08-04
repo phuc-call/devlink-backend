@@ -16,6 +16,7 @@ public interface ViolationPenaltyConfigRepository extends JpaRepository<Violatio
         SELECT c FROM ViolationPenaltyConfig c
         WHERE c.targetType = :targetType
           AND c.offenseNumber = :offenseNumber
+          AND c.active = true
           AND (c.reason = :reason OR c.reason = 'ALL')
         ORDER BY CASE WHEN c.reason = :reason THEN 0 ELSE 1 END
         LIMIT 1
@@ -30,6 +31,7 @@ public interface ViolationPenaltyConfigRepository extends JpaRepository<Violatio
         SELECT c FROM ViolationPenaltyConfig c
         WHERE c.targetType = :targetType
           AND c.offenseNumber >= :offenseNumber
+          AND c.active = true
           AND (c.reason = :reason OR c.reason = 'ALL')
         ORDER BY c.offenseNumber ASC
         LIMIT 1

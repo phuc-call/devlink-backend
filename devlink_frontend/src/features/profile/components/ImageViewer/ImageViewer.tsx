@@ -16,10 +16,10 @@ export default function ImageViewer({ userId, type, onClose }: Props) {
     useEffect(() => {
         setLoading(true);
         setError(null);
-        const fetchImg = type === 'avatar' 
-            ? userProfileApi.getAvatarUrl(userId) 
+        const fetchImg = type === 'avatar'
+            ? userProfileApi.getAvatarUrl(userId)
             : userProfileApi.getCoverImageUrl(userId);
-        
+
         fetchImg
             .then(res => {
                 setImgUrl(res.data.data);

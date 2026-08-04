@@ -68,7 +68,7 @@ export default function BadgeOverviewChart() {
                     onClick={() => navigate('/admin/badges')}
                     style={{ border: 'none', background: '#F3F4F6', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', color: '#374151', fontWeight: 600, fontSize: 13 }}
                 >
-                    Quản lý Badge →
+                    Quản lý Badge
                 </button>
             </div>
 

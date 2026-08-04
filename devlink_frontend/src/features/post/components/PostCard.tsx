@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import {
     MoreHorizontal, Pencil, Trash2, Flag, Bookmark, Bell,
-    Eye, Heart, MessageCircle, Share2, Check, X,
+    Heart, MessageCircle, Share2, Check, X,
     ImagePlus, Globe, Users, Lock, FileText, Play,
 } from 'lucide-react';
 import type { FeedPostResponse, MediaResponse, Visibility } from '../../../types/post.types';
@@ -1154,14 +1154,6 @@ export default function PostCard({
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     {vis.icon} {vis.text}
                                 </span>
-                                {post.viewCount != null && (
-                                    <>
-                                        <span>·</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }} title={`${post.viewCount} lượt xem`}>
-                                            <Eye size={12} /> {post.viewCount}
-                                        </span>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>

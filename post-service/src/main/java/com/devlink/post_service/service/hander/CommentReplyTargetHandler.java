@@ -42,6 +42,7 @@ public class CommentReplyTargetHandler extends AbstractTargetHandler<CommentRepl
         map.put("commentId", reply.getComment() != null ? reply.getComment().getId() : null);
         map.put("authorId", reply.getAuthorId());
         map.put("createdAt", reply.getCreatedAt() != null ? reply.getCreatedAt().toString() : null);
+        map.put("likeCount", reply.getLikeCount());
         return map;
     }
 

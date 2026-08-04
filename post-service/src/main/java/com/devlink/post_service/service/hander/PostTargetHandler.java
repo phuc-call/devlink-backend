@@ -68,6 +68,8 @@ public class PostTargetHandler extends AbstractTargetHandler<Post> {
         map.put("authorId", post.getAuthorId());
         map.put("visibility", post.getVisibility() != null ? post.getVisibility().name() : null);
         map.put("createdAt", post.getCreatedAt() != null ? post.getCreatedAt().toString() : null);
+        map.put("viewCount", post.getViewCount());
+        map.put("likeCount", post.getLikeCount());
 
         map.put("tags", post.getTags().stream()
                 .map(PostTag::getTag).toList());

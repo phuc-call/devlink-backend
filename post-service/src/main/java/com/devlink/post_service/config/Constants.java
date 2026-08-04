@@ -60,6 +60,10 @@ public final class Constants {
     public static final int MAX_PERIOD_DAYS = 30;
 
     public static final String REPORT_TOPIC = "report.created";
+    
+    // WebSockets
+    public static final String ADMIN_TOPIC = "/topic/admin";
+    public static final String PENALTY_CONFIG_UPDATED_EVENT = "PENALTY_CONFIG_UPDATED";
 
     public static final long DELETED_SNAPSHOT_DAYS = 7L;
 

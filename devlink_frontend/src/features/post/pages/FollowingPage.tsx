@@ -337,23 +337,6 @@ export default function FollowingPage() {
                         />
                     ))}
 
-                    {loadingPosts && (
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 8,
-                                color: '#6B7280',
-                                padding: 16,
-                                fontSize: 13,
-                            }}
-                        >
-                            <Loader2 size={16} style={{animation: 'spin 1s linear infinite'}}/>
-                            Đang tải thêm bài viết...
-                        </div>
-                    )}
-
                     {hasMorePosts && (
                         <div ref={postsTriggerRef} style={{ padding: '16px', textAlign: 'center' }}>
                             {loadingPosts && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}

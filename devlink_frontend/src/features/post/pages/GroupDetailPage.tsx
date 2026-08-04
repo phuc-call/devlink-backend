@@ -544,17 +544,6 @@ export default function GroupDetailPage() {
                                             />
                                         ))}
                         
-                                        {loadingPosts && hasMore && (
-                                            <div style={{
-                                                display: 'flex', alignItems: 'center',
-                                                justifyContent: 'center', padding: '16px', gap: 8,
-                                                color: '#6B7280', fontSize: 13,
-                                            }}>
-                                                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                                                Đang tải thêm...
-                                            </div>
-                                        )}
-                        
                                         {hasMore && (
                                             <div ref={triggerRef} style={{ padding: '16px', textAlign: 'center' }}>
                                                 {loadingPosts && <span style={{ color: '#9CA3AF', fontSize: 13 }}>Đang tải...</span>}

@@ -18,6 +18,8 @@ public enum ErrorCode {
 
     POST_ACCOUNT_RESTRICTED("Your account has been restricted from posting", HttpStatus.FORBIDDEN),
 
+    UNAUTHENTICATED("You are not authenticated", HttpStatus.UNAUTHORIZED),
+
     POST_NOT_FOUND("Post not found", HttpStatus.NOT_FOUND),
 
     COMMENT_NOT_FOUND("Comment not found", HttpStatus.NOT_FOUND),
@@ -29,6 +31,8 @@ public enum ErrorCode {
     POST_FORBIDDEN("You do not have permission to perform this action", HttpStatus.FORBIDDEN),
 
     AI_SERVICE_UNAVAILABLE("AI service is temporarily unavailable, please try again later", HttpStatus.SERVICE_UNAVAILABLE),
+
+    USER_SERVICE_UNAVAILABLE("User service is temporarily unavailable", HttpStatus.SERVICE_UNAVAILABLE),
 
     POST_FILE_EMPTY("File must not be empty", HttpStatus.BAD_REQUEST),
 
@@ -104,9 +108,10 @@ public enum ErrorCode {
     // Feed scoring config
     FEED_CONFIG_NOT_FOUND("Feed config key not found", HttpStatus.NOT_FOUND),
     FEED_CONFIG_INVALID_DECAY_RATE("Decay rate must be less than 1.0 (e.g. 0.95 means 5% daily decay)", HttpStatus.BAD_REQUEST),
-
+    BAD_REQUEST("Cannot disable the first penalty level", HttpStatus.BAD_REQUEST),
     VIOLATION_NOT_FOUND("Violation history record not found", HttpStatus.NOT_FOUND),
-    PENALTY_CONFIG_NOT_FOUND("Penalty config not found", HttpStatus.NOT_FOUND);
+    PENALTY_CONFIG_NOT_FOUND("Penalty config not found", HttpStatus.NOT_FOUND),
+    PENALTY_CONFIG_CANNOT_DELETE_FIRST_LEVEL("Cannot delete the first penalty level", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

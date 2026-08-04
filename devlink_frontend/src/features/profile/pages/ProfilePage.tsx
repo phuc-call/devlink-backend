@@ -8,6 +8,7 @@ import UserProfileContent from '../components/UserProfileContent/Userprofilecont
 import FollowListPanel from '../components/FollowListPanel/Followlistpanel.tsx';
 import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
 import ImageViewer from '../components/ImageViewer/ImageViewer';
+import ProfileImages from '../components/ProfileImages/ProfileImages';
 import styles from './ProfilePage.module.css';
 
 type FollowListType = 'FOLLOWING' | 'FOLLOWERS' | 'FRIENDS';
@@ -104,6 +105,8 @@ export default function ProfilePage() {
                                 onDone={handleEditDone}
                                 onCancel={() => setIsEditing(false)}
                             />
+                        ) : activeTab === 'Ảnh' ? (
+                            <ProfileImages userId={null} />
                         ) : (
                             <>
                                 <ProfileContent />

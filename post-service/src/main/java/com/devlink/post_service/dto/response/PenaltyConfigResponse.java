@@ -15,6 +15,11 @@ public class PenaltyConfigResponse {
     private Integer offenseNumber;
     private Integer penaltyDays;
     private Boolean permanent;
+    private Boolean active;
     private Long updatedBy;
     private Instant updatedAt;
+    private Long createdBy;
+    private Instant createdAt;
+    private String adminName;
+    private String adminAvatarUrl;
 }

@@ -5,6 +5,7 @@ import type { UserProfileResponse } from '../../../../types/profile.types';
 import UserProfileBanner from '../../components/UserProfileBanner/Userprofilebanner.tsx';
 import UserProfileSidebar from '../../components/UserProfileSidebar/Userprofilesidebar.tsx';
 import UserProfileContent from '../../components/UserProfileContent/Userprofilecontent.tsx';
+import ProfileImages from '../../components/ProfileImages/ProfileImages';
 import styles from './UserProfilePage.module.css';
 import { useToast } from '../../../../context/Toastcontext';
 
@@ -16,6 +17,8 @@ export default function UserProfilePage() {
     const [error, setError] = useState(false);
     const [viewerMedia, setViewerMedia] = useState<string | null>(null);
     const [viewerLoading, setViewerLoading] = useState(false);
+
+    const [activeTab, setActiveTab] = useState('Bài viết');
 
     useEffect(() => {
         if (!userId) return;
@@ -48,10 +51,10 @@ export default function UserProfilePage() {
         return (
             <div className={styles.errorWrap}>
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
-                     stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <line x1="23" y1="11" x2="17" y2="11"/>
+                    stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
                 </svg>
                 <p className={styles.errorTitle}>Không tìm thấy người dùng</p>
                 <p className={styles.errorSub}>Hồ sơ này không tồn tại hoặc đã bị ẩn</p>
@@ -102,19 +105,28 @@ export default function UserProfilePage() {
 
     return (
         <div className={styles.page}>
-            <UserProfileBanner profile={profile} onCoverClick={handleCoverClick} />
+            <UserProfileBanner
+                profile={profile}
+                onCoverClick={handleCoverClick}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
             <div className={styles.body}>
                 <aside className={styles.sidebar}>
                     <UserProfileSidebar profile={profile} onAvatarClick={handleAvatarClick} />
                 </aside>
                 <main className={styles.content}>
-                    <UserProfileContent profile={profile} />
+                    {activeTab === 'Ảnh' ? (
+                        <ProfileImages userId={Number(userId)} />
+                    ) : (
+                        <UserProfileContent profile={profile} />
+                    )}
                 </main>
             </div>
 
             {/* Trình xem ảnh (Image Viewer) */}
             {viewerMedia && (
-                <div 
+                <div
                     style={{
                         position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
                         zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -122,7 +134,7 @@ export default function UserProfilePage() {
                     }}
                     onClick={() => setViewerMedia(null)}
                 >
-                    <button 
+                    <button
                         style={{
                             position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)',
                             border: 'none', color: '#fff', fontSize: '24px', width: '40px', height: '40px',
@@ -134,10 +146,10 @@ export default function UserProfilePage() {
                     {viewerMedia === 'loading' || viewerLoading ? (
                         <div style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     ) : (
-                        <img 
-                            src={viewerMedia} 
-                            alt="Full screen" 
-                            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }} 
+                        <img
+                            src={viewerMedia}
+                            alt="Full screen"
+                            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
                             onClick={e => e.stopPropagation()}
                         />
                     )}

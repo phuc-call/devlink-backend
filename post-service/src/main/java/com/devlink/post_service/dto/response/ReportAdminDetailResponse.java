@@ -7,11 +7,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Builder @Getter @AllArgsConstructor @NoArgsConstructor
-public class ReportItemResponse {
+@Builder @Getter @Setter @AllArgsConstructor @NoArgsConstructor
+public class ReportAdminDetailResponse {
     private Long reportId;
     private Long targetId;
     private TargetType targetType;
@@ -28,4 +29,7 @@ public class ReportItemResponse {
     private String description;
     private ReportStatus status;
     private LocalDateTime createdAt;
+    
+    private Object targetContent;
+    private boolean contentDeleted;
 }

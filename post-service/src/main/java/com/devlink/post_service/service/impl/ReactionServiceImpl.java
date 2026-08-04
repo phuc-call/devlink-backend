@@ -7,6 +7,8 @@ import com.devlink.post_service.dto.request.ReactionRequest;
 import com.devlink.post_service.dto.response.ReactionResponse;
 import com.devlink.post_service.entity.Reaction;
 import com.devlink.post_service.entity.enums.ReactionType;
+import com.devlink.post_service.entity.Comment;
+import com.devlink.post_service.entity.CommentReply;
 import com.devlink.post_service.entity.enums.TargetType;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
@@ -114,9 +116,9 @@ public class ReactionServiceImpl implements ReactionService {
         return switch (targetType) {
             case POST -> targetId;
             case COMMENT -> commentRepository.findById(targetId)
-                    .map(com.devlink.post_service.entity.Comment::getPostId).orElse(null);
+                    .map(Comment::getPostId).orElse(null);
             case COMMENT_REPLY -> commentReplyRepository.findById(targetId)
-                    .map(com.devlink.post_service.entity.CommentReply::getPostId).orElse(null);
+                    .map(CommentReply::getPostId).orElse(null);
             default -> null;
         };
     }

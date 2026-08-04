@@ -5,6 +5,7 @@ import com.devlink.post_service.dto.request.AssignTagGroupRequest;
 import com.devlink.post_service.dto.request.TagGroupRequest;
 import com.devlink.post_service.dto.response.ApiResponse;
 import com.devlink.post_service.dto.response.PagedResponse;
+import com.devlink.post_service.dto.response.ProposedGroupResponse;
 import com.devlink.post_service.dto.response.TagGroupResponse;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.TagGroupService;
@@ -15,6 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts/admin/tag-groups")
@@ -55,12 +59,12 @@ public class TagGroupController {
                 .ok(ApiResponse.ok(tagGroupService.createGroupByKeyword(keyword), Constants.MSG_TAG_GROUP_CREATED_KEYWORD));
     }
     @GetMapping("/suggest")
-    public ResponseEntity<ApiResponse<java.util.List<com.devlink.post_service.dto.response.ProposedGroupResponse>>> suggestTagGroups() {
+    public ResponseEntity<ApiResponse<List<ProposedGroupResponse>>> suggestTagGroups() {
         return ResponseEntity.ok(ApiResponse.ok(tagGroupService.suggestTagGroups(), "Tag groups suggested successfully"));
     }
     @PostMapping("/confirm-suggestions")
     public ResponseEntity<ApiResponse<Integer>> confirmSuggestions(
-            @Valid @RequestBody java.util.List<TagGroupRequest> groups) {
+            @Valid @RequestBody List<TagGroupRequest> groups) {
         int total = tagGroupService.confirmAndAssignSuggestions(groups);
         return ResponseEntity.ok(ApiResponse.ok(total, "Groups created and assigned to " + total + " user-group pairs"));
     }
@@ -68,19 +72,19 @@ public class TagGroupController {
     
     /** GET /api/posts/admin/tag-groups/tags/popular */
     @GetMapping("/tags/popular")
-    public ResponseEntity<ApiResponse<java.util.List<String>>> getPopularTags() {
+    public ResponseEntity<ApiResponse<List<String>>> getPopularTags() {
         return ResponseEntity.ok(ApiResponse.ok(tagGroupService.getPopularTags(), Constants.MSG_POPULAR_TAGS_FETCHED));
     }
 
     /** GET /api/posts/admin/tag-groups/tags/popular-with-count — returns [{tag, count}] */
     @GetMapping("/tags/popular-with-count")
-    public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, Object>>>> getPopularTagsWithCount() {
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getPopularTagsWithCount() {
         return ResponseEntity.ok(ApiResponse.ok(tagGroupService.getPopularTagsWithCount(), Constants.MSG_POPULAR_TAGS_FETCHED));
     }
 
     /** GET /api/posts/admin/tag-groups/tags/search?keyword=... */
     @GetMapping("/tags/search")
-    public ResponseEntity<ApiResponse<java.util.List<String>>> searchTagsByKeyword(@RequestParam String keyword) {
+    public ResponseEntity<ApiResponse<List<String>>> searchTagsByKeyword(@RequestParam String keyword) {
         return ResponseEntity.ok(ApiResponse.ok(tagGroupService.searchTagsByKeyword(keyword), Constants.MSG_TAGS_SEARCHED));
     }
 

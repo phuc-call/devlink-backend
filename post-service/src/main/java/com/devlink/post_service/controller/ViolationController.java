@@ -1,7 +1,9 @@
 package com.devlink.post_service.controller;
 
+import com.devlink.post_service.dto.request.CreatePenaltyConfigRequest;
 import com.devlink.post_service.dto.request.UpdatePenaltyConfigRequest;
 import com.devlink.post_service.dto.response.*;
+import com.devlink.post_service.entity.enums.TargetType;
 import com.devlink.post_service.service.ViolationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -23,6 +25,11 @@ public class ViolationController {
     @GetMapping("/admin/overview")
     public ResponseEntity<ApiResponse<ViolationOverviewResponse>> getOverview() {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getOverview(), "OK"));
+    }
+
+    @GetMapping("/admin/overview/detailed")
+    public ResponseEntity<ApiResponse<List<ViolationTypeStatsResponse>>> getDetailedOverview() {
+        return ResponseEntity.ok(ApiResponse.ok(violationService.getDetailedOverview(), "OK"));
     }
 
     @GetMapping("/admin/histories")
@@ -58,6 +65,33 @@ public class ViolationController {
         return ResponseEntity.ok(ApiResponse.ok(
                 violationService.updatePenaltyConfig(configId, request),
                 "Penalty config updated successfully"));
+    }
+
+    @PostMapping("/admin/penalty-configs")
+    public ResponseEntity<ApiResponse<PenaltyConfigResponse>> createPenaltyConfig(
+            @Valid @RequestBody CreatePenaltyConfigRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                violationService.createPenaltyConfig(request),
+                "Penalty config created successfully"));
+    }
+
+    @DeleteMapping("/admin/penalty-configs/{configId}")
+    public ResponseEntity<ApiResponse<Void>> deletePenaltyConfig(@PathVariable Long configId) {
+        violationService.deletePenaltyConfig(configId);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Penalty config deleted successfully"));
+    }
+
+    @GetMapping("/admin/users-by-count")
+    public ResponseEntity<ApiResponse<Page<PenalizedUserResponse>>> getUsersByViolationCount(
+            @RequestParam TargetType targetType,
+            @RequestParam Integer violationCount,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") @Max(50) int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                violationService.getUsersByViolationCount(targetType, violationCount, page, size),
+                "OK"));
     }
 
     @PatchMapping("/admin/reporter-details/{reportId}/note")

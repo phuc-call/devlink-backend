@@ -178,7 +178,7 @@ export default function AdminLayout() {
                                     <NavLink
                                         key={item.path}
                                         to={item.path}
-                                        end={item.path === '/admin'}
+                                        end={item.path === '/admin' || item.path === '/admin/users'}
                                         style={({ isActive }) => ({
                                             display: 'flex',
                                             alignItems: 'center',

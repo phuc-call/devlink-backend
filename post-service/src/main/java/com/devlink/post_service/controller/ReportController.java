@@ -59,6 +59,16 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Report deleted successfully"));
     }
 
+    @GetMapping("/admin/{reportId}")
+    public ResponseEntity<ApiResponse<ReportAdminDetailResponse>> getReportAdminDetail(
+            @PathVariable Long reportId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                reportService.getReportAdminDetail(reportId),
+                "OK"
+        ));
+    }
+
     @GetMapping("/notif-detail")
     public ResponseEntity<ApiResponse<ReportDetailResponse>> getReportDetail(
             @RequestParam Long notificationId

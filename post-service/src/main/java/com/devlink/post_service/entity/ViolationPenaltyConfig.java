@@ -36,6 +36,16 @@ public class ViolationPenaltyConfig {
     @Builder.Default
     private Boolean permanent = false;
 
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
+    @Column(name = "created_by")
+    private Long createdBy;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
     @Column(name = "updated_by")
     private Long updatedBy;
 
@@ -43,8 +53,13 @@ public class ViolationPenaltyConfig {
     private Instant updatedAt;
 
     @PrePersist
+    protected void onCreate() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
     @PreUpdate
-    protected void onSave() {
+    protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
 }

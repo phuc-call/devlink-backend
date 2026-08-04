@@ -1,6 +1,6 @@
 
 import axiosInstance from '../axiosInstance';
-import type { UpdatePostRequest, FeedPostResponse, PageResponse } from '../../types/post.types';
+import type { UpdatePostRequest, FeedPostResponse, PageResponse, MediaResponse } from '../../types/post.types';
 
 export const postApi = {
     updatePost: (id: number, data: UpdatePostRequest) => {
@@ -50,6 +50,27 @@ export const postApi = {
         return axiosInstance.get<{ data: PageResponse<FeedPostResponse> }>(
             `/api/posts/tags`,
             { params: { tag, page, size } }
+        );
+    },
+
+    getImages: (userId: number | null, page: number = 0, size: number = 10) => {
+        return axiosInstance.get<PageResponse<string>>(
+            `/api/posts/images`,
+            { params: { userId, page, size } }
+        );
+    },
+
+    getImagesDetails: (userId: number | null, page: number = 0, size: number = 10) => {
+        return axiosInstance.get<PageResponse<MediaResponse>>(
+            `/api/posts/images/details`,
+            { params: { userId, page, size } }
+        );
+    },
+
+    getImageDetail: (imageId: number, userId?: number | null) => {
+        return axiosInstance.get<{ data: MediaResponse }>(
+            `/api/posts/images/${imageId}`,
+            { params: { userId } }
         );
     },
 };

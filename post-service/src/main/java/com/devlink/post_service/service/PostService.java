@@ -6,6 +6,10 @@ import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.PostResponse;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
+import com.devlink.post_service.dto.response.MediaResponse;
+
 public interface PostService {
     PostResponse createPost(CreatePostRequest request);
 
@@ -16,15 +20,15 @@ public interface PostService {
     Page<FeedPostResponse> getFeed(int page, int size, String postType);
 
     Page<FeedPostResponse> getFollowingFeed(int page, int size);
-    
+
     /**
-     * Retrieves a paginated feed containing posts from the user's friends 
+     * Retrieves a paginated feed containing posts from the user's friends
      * and system-suggested users.
      */
     Page<FeedPostResponse> getFriendsFeed(int page, int size);
-    
+
     /**
-     * Retrieves a paginated feed containing posts from the user's joined groups 
+     * Retrieves a paginated feed containing posts from the user's joined groups
      * and top public groups recommended by the system.
      */
     Page<FeedPostResponse> getGroupsFeed(int page, int size);
@@ -35,12 +39,13 @@ public interface PostService {
 
     /**
      * Retrieves a paginated list of posts authored by a specific user.
-     * Applies visibility filters based on the relationship between the current viewer and the target author.
+     * Applies visibility filters based on the relationship between the current
+     * viewer and the target author.
      * Enriches the posts with author details, tags, and media list.
      *
      * @param targetUserId ID of the user whose posts are to be retrieved
-     * @param page page index (0-based)
-     * @param size number of items per page
+     * @param page         page index (0-based)
+     * @param size         number of items per page
      * @return paginated {@link FeedPostResponse}
      */
     Page<FeedPostResponse> getUserPosts(Long targetUserId, int page, int size);
@@ -48,4 +53,19 @@ public interface PostService {
     Page<FeedPostResponse> getGroupPosts(Long groupId, int page, int size);
 
     Page<FeedPostResponse> getPostsByTag(String tag, int page, int size);
+
+    /**
+     * Return post of user example image of avatar, post...
+     */
+    Page<String> getImages(Long userId, int page, int size);
+
+    /**
+     * Return detailed media/image list of user with post IDs, media IDs, URLs, and metadata.
+     */
+    Page<MediaResponse> getImagesDetails(Long userId, int page, int size);
+
+    /**
+     * Retrieves detail of a single image by imageId and userId after verifying access permissions.
+     */
+    MediaResponse getImageDetail(Long imageId, Long userId);
 }

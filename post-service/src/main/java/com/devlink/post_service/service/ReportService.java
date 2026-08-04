@@ -7,6 +7,7 @@ import com.devlink.post_service.dto.response.MyViolationResponse;
 import com.devlink.post_service.dto.response.ReportDetailResponse;
 import com.devlink.post_service.dto.response.ReportPageResponse;
 import com.devlink.post_service.dto.response.ReportResponse;
+import com.devlink.post_service.dto.response.ReportAdminDetailResponse;
 import com.devlink.post_service.entity.enums.ReportStatus;
 import com.devlink.post_service.entity.enums.TargetType;
 
@@ -83,4 +84,9 @@ public interface ReportService {
      * @param notificationId notification DB id used as Redis key
      */
     ReportDetailResponse getReportDetail(Long notificationId);
+
+    /**
+     * Returns detailed information of a report for admin, including target content (snapshot).
+     */
+    ReportAdminDetailResponse getReportAdminDetail(Long reportId);
 }

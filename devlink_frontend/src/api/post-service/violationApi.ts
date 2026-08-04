@@ -7,6 +7,9 @@ import type {
     ViolationHistoryResponse,
     PenaltyConfigResponse,
     UpdatePenaltyConfigRequest,
+    CreatePenaltyConfigRequest,
+    PenalizedUserPageResponse,
+    ViolationTypeStatsResponse,
 } from '../../types/violation.types';
 
 const BASE = '/api/posts/violations/admin';
@@ -15,6 +18,10 @@ export const violationApi = {
 
     getOverview() {
         return axiosInstance.get<{ data: ViolationOverviewResponse }>(`${BASE}/overview`);
+    },
+
+    getDetailedOverview() {
+        return axiosInstance.get<{ data: ViolationTypeStatsResponse[] }>(`${BASE}/overview/detailed`);
     },
 
     getHistories(violatorId?: number, page = 0, size = 20) {
@@ -40,6 +47,23 @@ export const violationApi = {
             `${BASE}/penalty-configs/${configId}`,
             req
         );
+    },
+
+    createPenaltyConfig(req: CreatePenaltyConfigRequest) {
+        return axiosInstance.post<{ data: PenaltyConfigResponse }>(
+            `${BASE}/penalty-configs`,
+            req
+        );
+    },
+
+    deletePenaltyConfig(configId: number) {
+        return axiosInstance.delete<{ data: null }>(`${BASE}/penalty-configs/${configId}`);
+    },
+
+    getUsersByViolationCount(targetType: string, violationCount: number, page = 0, size = 20) {
+        return axiosInstance.get<{ data: PenalizedUserPageResponse }>(`${BASE}/users-by-count`, {
+            params: { targetType, violationCount, page, size },
+        });
     },
 
     updateAdminNote(reportId: number, adminNote: string) {

@@ -81,7 +81,7 @@ public class PostServiceImpl implements PostService {
         checkPostRestriction(userId);
 
         if (request.getGroupId() != null) {
-            com.devlink.post_service.dto.response.ApiResponse<List<Long>> groupIdsResponse = userServiceClient
+            ApiResponse<List<Long>> groupIdsResponse = userServiceClient
                     .getApprovedGroupIds(userId);
             if (!groupIdsResponse.isSuccess() || groupIdsResponse.getData() == null
                     || !groupIdsResponse.getData().contains(request.getGroupId())) {
@@ -859,6 +859,103 @@ public class PostServiceImpl implements PostService {
             post.setCommentCount(post.getCommentCount() + countNumber);
         }
         postRepository.save(post);
+    }
+
+    @Override
+    public Page<String> getImages(Long userId, int page, int size) {
+        Long currentUser = SecurityUtils.getCurrentUserId();
+        Long targetId = (userId != null) ? userId : currentUser;
+
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!targetId.equals(currentUser)) {
+            List<Long> blockedIds = userRelationCacheClient.getBlockedIds(currentUser);
+            if (blockedIds != null && blockedIds.contains(targetId)) {
+                throw new AppException(ErrorCode.POST_FORBIDDEN);
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        boolean isOwner = targetId.equals(currentUser);
+        return isOwner
+                ? postMediaRepository.findAllImageUrlsByUserId(targetId, pageable)
+                : postMediaRepository.findPublicImageUrlsByUserId(targetId, pageable);
+    }
+
+    @Override
+    public Page<MediaResponse> getImagesDetails(Long userId, int page, int size) {
+        Long currentUser = SecurityUtils.getCurrentUserId();
+        Long targetId = (userId != null) ? userId : currentUser;
+
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (!targetId.equals(currentUser)) {
+            List<Long> blockedIds = userRelationCacheClient.getBlockedIds(currentUser);
+            if (blockedIds != null && blockedIds.contains(targetId)) {
+                throw new AppException(ErrorCode.POST_FORBIDDEN);
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        boolean isOwner = targetId.equals(currentUser);
+        return isOwner
+                ? postMediaRepository.findAllImageDetailsByUserId(targetId, pageable)
+                : postMediaRepository.findPublicImageDetailsByUserId(targetId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MediaResponse getImageDetail(Long imageId, Long userId) {
+        Long currentUser = SecurityUtils.getCurrentUserId();
+        if (currentUser == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        PostMedia media = postMediaRepository.findById(imageId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        Post post = media.getPost();
+        if (post == null || post.getStatus() == PostStatus.DELETED || post.getDeletedAt() != null) {
+            throw new AppException(ErrorCode.POST_NOT_FOUND);
+        }
+
+        Long authorId = post.getAuthorId();
+        Long targetId = (userId != null) ? userId : authorId;
+
+        if (!authorId.equals(targetId)) {
+            throw new AppException(ErrorCode.POST_NOT_FOUND);
+        }
+
+        boolean isOwner = targetId.equals(currentUser);
+
+        if (!isOwner) {
+            List<Long> blockedIds = userRelationCacheClient.getBlockedIds(currentUser);
+            if (blockedIds != null && blockedIds.contains(targetId)) {
+                throw new AppException(ErrorCode.POST_FORBIDDEN);
+            }
+
+            if (post.getVisibility() != Visibility.PUBLIC) {
+                throw new AppException(ErrorCode.POST_FORBIDDEN);
+            }
+        }
+
+        return MediaResponse.builder()
+                .postId(post.getId())
+                .id(media.getId())
+                .mediaType(media.getMediaType())
+                .url(media.getUrl())
+                .thumbnailUrl(media.getThumbnailUrl())
+                .originalName(media.getOriginalName())
+                .fileExtension(media.getFileExtension())
+                .fileSize(media.getFileSize())
+                .orderIndex(media.getOrderIndex())
+                .build();
     }
 
     /**

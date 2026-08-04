@@ -1,0 +1,3 @@
+ALTER TABLE violation_penalty_configs
+ADD COLUMN created_by BIGINT,
+ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;

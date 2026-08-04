@@ -91,8 +91,10 @@ export interface ReportItemResponse {
     targetType:     ReportTargetType;
     violatorUserId: number;
     violatorName:   string | null;
+    violatorAvatar?: string | null;
     reporterId:     number;
     reporterName:   string | null;
+    reporterAvatar?: string | null;
     reason:         ReportReason;
     description:    string | null;
     status:         ReportStatus;
@@ -115,6 +117,8 @@ export interface PostSnapshot {
     authorId: number;
     visibility: string | null;
     createdAt: string | null;
+    viewCount?: number;
+    likeCount?: number;
     tags: string[];
     mediaUrls: string[];
 }
@@ -124,6 +128,7 @@ export interface CommentSnapshot {
     postId: number;
     authorId: number;
     createdAt: string | null;
+    likeCount?: number;
 }
  export interface ReportDetailResponse {
     reportId: number;
@@ -145,4 +150,22 @@ export interface MyViolationResponse {
     targetType: TargetType | null;
     targetId: number | null;
     deletedSnapshot: PostSnapshot | CommentSnapshot | null;
+}
+
+export interface ReportAdminDetailResponse {
+    reportId:       number;
+    targetId:       number;
+    targetType:     ReportTargetType;
+    violatorUserId: number;
+    violatorName:   string | null;
+    violatorAvatar: string | null;
+    reporterId:     number;
+    reporterName:   string | null;
+    reporterAvatar: string | null;
+    reason:         ReportReason;
+    description:    string | null;
+    status:         ReportStatus;
+    createdAt:      string;
+    targetContent:  PostSnapshot | CommentSnapshot | null;
+    contentDeleted: boolean;
 }

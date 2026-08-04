@@ -1,9 +1,13 @@
 package com.devlink.post_service.service;
 
 import com.devlink.post_service.dto.request.UpdatePenaltyConfigRequest;
+import com.devlink.post_service.dto.request.CreatePenaltyConfigRequest;
 import com.devlink.post_service.dto.response.PenaltyConfigResponse;
+import com.devlink.post_service.dto.response.PenalizedUserResponse;
 import com.devlink.post_service.dto.response.ViolationHistoryResponse;
 import com.devlink.post_service.dto.response.ViolationOverviewResponse;
+import com.devlink.post_service.entity.enums.TargetType;
+import com.devlink.post_service.dto.response.ViolationTypeStatsResponse;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -15,6 +19,11 @@ public interface ViolationService {
      * total reports breakdown by status.
      */
     ViolationOverviewResponse getOverview();
+
+    /**
+     * Returns detailed stats by target type (violations, unique users, top violators)
+     */
+    List<ViolationTypeStatsResponse> getDetailedOverview();
 
     /**
      * Returns a paginated list of all violation histories.
@@ -61,4 +70,24 @@ public interface ViolationService {
      * @param adminNote the new admin note text
      */
     void updateAdminNote(Long reportId, String adminNote);
+
+    /**
+     * Creates a new penalty config.
+     */
+    PenaltyConfigResponse createPenaltyConfig(CreatePenaltyConfigRequest request);
+
+    /**
+     * Deletes a penalty config (except offenseNumber 1).
+     */
+    void deletePenaltyConfig(Long configId);
+
+    /**
+     * Returns a paginated list of users whose max violation count for the target type equals the given count.
+     */
+    Page<PenalizedUserResponse> getUsersByViolationCount(
+            TargetType targetType, 
+            Integer violationCount, 
+            int page, 
+            int size
+    );
 }

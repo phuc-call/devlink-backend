@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Award, Sparkles, ShieldCheck, RefreshCw, Upload, Users } from 'lucide-react';
 import { badgeApi } from '../../../api/user-service/badgeApi';
 import type {
@@ -13,6 +13,7 @@ import type {
     BadgeType,
 } from '../../../types/badge.types';
 import { BADGE_LABELS, BADGE_COLORS } from '../../../types/badge.types';
+import { getUserInfoById } from '../../../api/post-service/suggestionApi';
 import UserSearchSelect from '../components/UserSearchSelect';
 import UserMultiSearchSelect from '../components/UserMultiSearchSelect';
 
@@ -28,8 +29,11 @@ function formatDate(dateString: string) {
 const VALID_BADGE_TYPES: BadgeType[] = ['NONE', 'POPULAR', 'BLUE_TICK', 'RED_TICK'];
 
 export default function AdminBadgePage() {
+    const navigate = useNavigate();
+
     const [configs, setConfigs] = useState<BadgeConfigResponse[]>([]);
     const [activeConfig, setActiveConfig] = useState<BadgeConfigResponse | null>(null);
+    const [updatedByUser, setUpdatedByUser] = useState<{ userName: string; avatar: string | null } | null>(null);
     const [videoLimits, setVideoLimits] = useState<BadgeVideoLimitResponse[]>([]);
    
     const [loading, setLoading] = useState(false);
@@ -86,6 +90,22 @@ export default function AdminBadgePage() {
     useEffect(() => {
         if (!filterBadge) return;
     }, [filterBadge]);
+
+    // Lấy avatar + tên của admin đã cập nhật config (updatedBy chỉ là id).
+    useEffect(() => {
+        const adminId = activeConfig?.updatedBy;
+        if (!adminId) {
+            setUpdatedByUser(null);
+            return;
+        }
+        let cancelled = false;
+        getUserInfoById(adminId).then(info => {
+            if (!cancelled) setUpdatedByUser(info);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [activeConfig?.updatedBy]);
 
     const loadData = async () => {
         setLoading(true);
@@ -314,7 +334,26 @@ export default function AdminBadgePage() {
                             </div>
                             <div style={{ padding: 16, borderRadius: 16, background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                                 <div style={{ fontSize: 12, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bởi admin</div>
-                                <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: '#111827' }}>{activeConfig.updatedBy}</div>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(`/profile/${activeConfig.updatedBy}`)}
+                                    title="Xem trang cá nhân"
+                                    style={{
+                                        marginTop: 8, display: 'flex', alignItems: 'center', gap: 10,
+                                        padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                                    }}
+                                >
+                                    {updatedByUser?.avatar ? (
+                                        <img src={updatedByUser.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                    ) : (
+                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E5E7EB', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 700, color: '#374151', flexShrink: 0 }}>
+                                            {(updatedByUser?.userName ?? `#${activeConfig.updatedBy}`).charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1D4ED8' }}>
+                                        {updatedByUser?.userName ?? `#${activeConfig.updatedBy}`}
+                                    </span>
+                                </button>
                                 <div style={{ marginTop: 8, fontSize: 13, color: '#4B5563' }}>Active: {activeConfig.isActive ? 'Có' : 'Không'}</div>
                             </div>
                         </div>
