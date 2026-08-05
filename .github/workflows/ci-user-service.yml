@@ -45,3 +45,7 @@ jobs:
         env:
           EUREKA_CLIENT_ENABLED: 'false'
           SPRING_KAFKA_LISTENER_AUTO_STARTUP: 'false'
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/user_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+          INTERNAL_SECRET: ${{ secrets.INTERNAL_SECRET }}
