@@ -3,7 +3,7 @@ import {
     Eye, GitFork, Download, MessageSquare,
     Sparkles, RefreshCw, BookOpen,
     FileCode, FileText, Film,
-    Table, File, MoreHorizontal, ChevronDown, Check,
+    Table, File, MoreHorizontal, ChevronDown, ChevronUp, Check,
     FolderOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +68,7 @@ interface TemplateCardProps {
 function TemplateCard({ tpl, forkId, onDetail, onFork, onSuggest }: TemplateCardProps) {
     const [forking, setForking] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [isCardCollapsed, setIsCardCollapsed] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
@@ -90,16 +91,78 @@ function TemplateCard({ tpl, forkId, onDetail, onFork, onSuggest }: TemplateCard
         }
     };
 
+    if (isCardCollapsed) {
+        return (
+            <div className={`${styles.card} ${styles.cardCollapsed}`}>
+                <div className={styles.collapsedFolderRow} onClick={() => setIsCardCollapsed(false)}>
+                    <div className={styles.collapsedFolderLeft}>
+                        <div className={styles.folderIconBadge}>
+                            <FolderOpen size={18} />
+                        </div>
+                        <h3 className={styles.cardTitle}>{tpl.title}</h3>
+                        {tpl.isFork && (
+                            <div className={styles.forkBadge} title="Đã fork">
+                                <GitFork size={14} />
+                            </div>
+                        )}
+                        <span className={`${styles.badge} ${styles.badgeLang}`}>
+                            {tpl.language}
+                        </span>
+                        <span className={`${styles.badge} ${getDiffClass(tpl.difficulty)}`}>
+                            {getDifficultyLabel(tpl.difficulty)}
+                        </span>
+                        {tpl.fileName && (
+                            <span className={styles.compactFilePill} title={tpl.fileName}>
+                                {getFileTypeIcon(tpl.fileType)}
+                                <span className={styles.compactFileName}>{tpl.fileName}</span>
+                            </span>
+                        )}
+                    </div>
+
+                    <div className={styles.collapsedFolderRight} onClick={e => e.stopPropagation()}>
+                        <button
+                            className={`${styles.actionBtn} ${styles.outlineBtn} ${styles.smBtn}`}
+                            onClick={() => onDetail(tpl.id)}
+                        >
+                            Chi tiết
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.cardCollapseBtn}
+                            onClick={() => setIsCardCollapsed(false)}
+                            title="Mở rộng tập tài liệu"
+                        >
+                            <ChevronDown size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.card}>
             <div className={styles.cardHeader}>
                 <div className={styles.cardTitleRow}>
-                    <h3 className={styles.cardTitle}>{tpl.title}</h3>
-                    {tpl.isFork && (
-                        <div className={styles.forkBadge} title="Đã fork">
-                            <GitFork size={14} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <div className={styles.folderIconBadgeSm}>
+                            <FolderOpen size={15} />
                         </div>
-                    )}
+                        <h3 className={styles.cardTitle}>{tpl.title}</h3>
+                        {tpl.isFork && (
+                            <div className={styles.forkBadge} title="Đã fork">
+                                <GitFork size={14} />
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        className={styles.cardCollapseBtn}
+                        onClick={() => setIsCardCollapsed(true)}
+                        title="Thu gọn tập tài liệu"
+                    >
+                        <ChevronUp size={18} />
+                    </button>
                 </div>
                 <div className={styles.badgeGroup}>
                     <span className={`${styles.badge} ${styles.badgeLang}`}>
@@ -214,6 +277,7 @@ export default function MyTemplatesPage() {
     const [forkOnly, setForkOnly]       = useState(false);
     const [detailId, setDetailId]       = useState<number | null>(null);
     const [forkMap, setForkMap]         = useState<Record<number, number>>({});
+    const [isMainFolderOpen, setIsMainFolderOpen] = useState(false);
 
     const [suggestionTarget, setSuggestionTarget] = useState<{
         templateId: number;
@@ -281,118 +345,148 @@ export default function MyTemplatesPage() {
     return (
         <div className={styles.page}>
             <div className={styles.topSection}>
-                <div className={styles.headerRow}>
+                <div 
+                    className={styles.headerRow} 
+                    onClick={() => setIsMainFolderOpen(prev => !prev)}
+                    style={{ cursor: 'pointer' }}
+                >
                     <div className={styles.headerLeft}>
                         <div className={styles.titleBadge}>
                             <FolderOpen size={24} />
                         </div>
                         <div className={styles.headerText}>
-                            <h2>Tài liệu của tôi</h2>
+                            <h2>File đề xuất</h2>
                             <p>
                                 {loading ? 'Đang tải dữ liệu...' : (
                                     <>
-                                        Tìm thấy <strong>{total}</strong> tài liệu phù hợp với bạn
+                                        Chứa <strong>{total}</strong> file đề xuất phù hợp với bạn
                                         {hint && ` • ${hint}`}
                                     </>
                                 )}
                             </p>
                         </div>
                     </div>
-                    <button
-                        className={styles.refreshBtn}
-                        onClick={() => { void fetchTemplates(); }}
-                        title="Tải lại"
-                        disabled={loading}
-                    >
-                        <RefreshCw size={16} className={loading ? styles.spinning : ''} />
-                        Làm mới
-                    </button>
-                </div>
-
-                <div className={styles.filterRow}>
-                    <div className={styles.modernSelectWrap}>
-                        <select
-                            className={styles.modernSelect}
-                            value={difficulty}
-                            onChange={e => setDifficulty(e.target.value)}
-                            disabled={loading || !meta}
-                        >
-                            <option value="">Tất cả độ khó</option>
-                            {meta?.difficultly.map(d => (
-                                <option key={d} value={d}>{getDifficultyLabel(d)}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className={styles.selectIcon} size={16} />
-                    </div>
-
-                    <div className={styles.modernSelectWrap}>
-                        <select
-                            className={styles.modernSelect}
-                            value={fileTypeFilter}
-                            onChange={e => setFileType(e.target.value)}
-                            disabled={loading || !meta}
-                        >
-                            <option value="">Tất cả định dạng</option>
-                            {meta?.fileType.map(f => (
-                                <option key={f} value={f}>{f}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className={styles.selectIcon} size={16} />
-                    </div>
-
-                    <label className={styles.modernCheckbox}>
-                        <input 
-                            type="checkbox" 
-                            checked={forkOnly}
-                            onChange={() => setForkOnly(!forkOnly)}
+                    <div className={styles.headerActions} onClick={e => e.stopPropagation()}>
+                        <button
+                            className={styles.refreshBtn}
+                            onClick={() => { void fetchTemplates(); }}
+                            title="Tải lại"
                             disabled={loading}
-                        />
-                        <div className={styles.checkboxBox}>
-                            {forkOnly && <Check size={14} color="#fff" strokeWidth={3} />}
-                        </div>
-                        Chỉ hiện tài liệu đã fork
-                    </label>
+                        >
+                            <RefreshCw size={16} className={loading ? styles.spinning : ''} />
+                            Làm mới
+                        </button>
+
+                        <button
+                            className={styles.toggleCollapseBtn}
+                            onClick={() => setIsMainFolderOpen(prev => !prev)}
+                            title={isMainFolderOpen ? "Thu gọn tập tài liệu" : "Mở tập tài liệu"}
+                        >
+                            {isMainFolderOpen ? (
+                                <>
+                                    <ChevronUp size={18} />
+                                    <span>Thu gọn tập</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ChevronDown size={18} />
+                                    <span>Mở tập</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
+
+                {isMainFolderOpen && (
+                    <div className={styles.filterRow}>
+                        <div className={styles.modernSelectWrap}>
+                            <select
+                                className={styles.modernSelect}
+                                value={difficulty}
+                                onChange={e => setDifficulty(e.target.value)}
+                                disabled={loading || !meta}
+                            >
+                                <option value="">Tất cả độ khó</option>
+                                {meta?.difficultly.map(d => (
+                                    <option key={d} value={d}>{getDifficultyLabel(d)}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className={styles.selectIcon} size={16} />
+                        </div>
+
+                        <div className={styles.modernSelectWrap}>
+                            <select
+                                className={styles.modernSelect}
+                                value={fileTypeFilter}
+                                onChange={e => setFileType(e.target.value)}
+                                disabled={loading || !meta}
+                            >
+                                <option value="">Tất cả định dạng</option>
+                                {meta?.fileType.map(f => (
+                                    <option key={f} value={f}>{f}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className={styles.selectIcon} size={16} />
+                        </div>
+
+                        <label className={styles.modernCheckbox}>
+                            <input 
+                                type="checkbox" 
+                                checked={forkOnly}
+                                onChange={() => setForkOnly(!forkOnly)}
+                                disabled={loading}
+                            />
+                            <div className={styles.checkboxBox}>
+                                {forkOnly && <Check size={14} color="#fff" strokeWidth={3} />}
+                            </div>
+                            Chỉ hiện tài liệu đã fork
+                        </label>
+                    </div>
+                )}
             </div>
 
-            {!loading && error && (
-                <div className={styles.errorBox}>
-                    <span>{error}</span>
-                    <button onClick={() => { void fetchTemplates(); }}>Thử lại</button>
-                </div>
-            )}
+            {isMainFolderOpen && (
+                <>
+                    {!loading && error && (
+                        <div className={styles.errorBox}>
+                            <span>{error}</span>
+                            <button onClick={() => { void fetchTemplates(); }}>Thử lại</button>
+                        </div>
+                    )}
 
-            {loading && (
-                <div className={styles.grid}>
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <SkeletonCard key={i} />
-                    ))}
-                </div>
-            )}
+                    {loading && (
+                        <div className={styles.grid}>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <SkeletonCard key={i} />
+                            ))}
+                        </div>
+                    )}
 
-            {!loading && !error && displayed.length === 0 && (
-                <div className={styles.empty}>
-                    <BookOpen size={48} strokeWidth={1} color="#9CA3AF" />
-                    <p className={styles.emptyTitle}>Không có template nào</p>
-                    <p className={styles.emptySub}>
-                        Thử thay đổi bộ lọc hoặc cập nhật ngôn ngữ lập trình trong profile
-                    </p>
-                </div>
-            )}
+                    {!loading && !error && displayed.length === 0 && (
+                        <div className={styles.empty}>
+                            <BookOpen size={48} strokeWidth={1} color="#9CA3AF" />
+                            <p className={styles.emptyTitle}>Không có template nào</p>
+                            <p className={styles.emptySub}>
+                                Thử thay đổi bộ lọc hoặc cập nhật ngôn ngữ lập trình trong profile
+                            </p>
+                        </div>
+                    )}
 
-            {!loading && !error && displayed.length > 0 && (
-                <div className={styles.grid}>
-                    {displayed.map(tpl => (
-                        <TemplateCard
-                            key={tpl.id}
-                            tpl={tpl}
-                            forkId={forkMap[tpl.id]}
-                            onDetail={setDetailId}
-                            onFork={handleFork}
-                            onSuggest={(templateId, forkId) => setSuggestionTarget({ templateId, forkId })}
-                        />
-                    ))}
-                </div>
+                    {!loading && !error && displayed.length > 0 && (
+                        <div className={styles.grid}>
+                            {displayed.map(tpl => (
+                                <TemplateCard
+                                    key={tpl.id}
+                                    tpl={tpl}
+                                    forkId={forkMap[tpl.id]}
+                                    onDetail={setDetailId}
+                                    onFork={handleFork}
+                                    onSuggest={(templateId, forkId) => setSuggestionTarget({ templateId, forkId })}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
 
             {detailId !== null && (

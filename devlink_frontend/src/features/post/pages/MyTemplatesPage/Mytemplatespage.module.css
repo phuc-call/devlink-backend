@@ -65,6 +65,21 @@
     font-weight: 600;
 }
 
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topSectionCollapsed {
+    padding: 16px 24px;
+    margin-bottom: 16px;
+}
+
+.topSectionCollapsed .headerRow {
+    margin-bottom: 0;
+}
+
 .refreshBtn {
     display: flex;
     align-items: center;
@@ -91,6 +106,27 @@
 .refreshBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.toggleCollapseBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4B5563;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.toggleCollapseBtn:hover {
+    background: #E5E7EB;
+    color: #111827;
 }
 
 .spinning {
@@ -210,6 +246,103 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+}
+
+.cardCollapsed {
+    padding: 12px 16px;
+    grid-column: 1 / -1;
+}
+
+.collapsedFolderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.collapsedFolderLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.collapsedFolderRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.folderIconBadge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #EEF2FF;
+    color: #4F46E5;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.folderIconBadgeSm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: #EEF2FF;
+    color: #4F46E5;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.smBtn {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+.cardCollapseBtn {
+    background: #F3F4F6;
+    border: none;
+    border-radius: 6px;
+    padding: 4px;
+    color: #6B7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.cardCollapseBtn:hover {
+    background: #E5E7EB;
+    color: #111827;
+}
+
+.compactFilePill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #F3F4F6;
+    color: #4B5563;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    max-width: 200px;
+}
+
+.compactFileName {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .card:hover {

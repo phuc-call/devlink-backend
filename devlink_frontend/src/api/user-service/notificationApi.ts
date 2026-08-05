@@ -22,6 +22,11 @@ export const notificationApi = {
         axiosInstance.get<{ data: NotificationPageResponse }>('/api/users/notifications', {
             params: {page, size},
         }),
+        
+    getHiddenNotifications: (page = 0, size = 20) =>
+        axiosInstance.get<{ data: NotificationPageResponse }>('/api/users/notifications/hidden', {
+            params: {page, size},
+        }),
 
     // Bấm vào 1 thông báo đánh dấu đã đọc
     markAsRead: (id: number) =>

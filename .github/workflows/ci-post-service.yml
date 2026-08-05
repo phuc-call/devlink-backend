@@ -1,0 +1,25 @@
+name: CI - post-service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'post-service/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'post-service/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Run tests
+        working-directory: ./post-service
+        run: mvn -B test

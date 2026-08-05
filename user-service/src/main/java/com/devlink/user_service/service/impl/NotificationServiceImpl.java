@@ -235,6 +235,15 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<NotificationResponse> getHiddenNotifications(int page, int size) {
+        Long userId = userHelper.getCurrentUser().getId();
+        return notificationRepository.findHiddenByUserIdOrderByCreatedAtDesc(
+                userId, PageRequest.of(page, size)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public int countUnread(CountNotification count) {
         Long userId = userHelper.getCurrentUser().getId();
         if (count == CountNotification.COUNT_SHOW_NOTIFICATION) {

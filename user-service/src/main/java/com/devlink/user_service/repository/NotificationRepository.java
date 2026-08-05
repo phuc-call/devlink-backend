@@ -34,6 +34,21 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             Pageable pageable
     );
 
+    @Query("""
+            SELECT new com.devlink.user_service.dto.response.NotificationResponse(
+                n.id, n.actorId, p.fullName, p.avatarUrl,
+                n.type, n.content, n.isRead, n.isHidden, n.referenceId, n.referenceType, n.createdAt
+            )
+            FROM Notification n
+            LEFT JOIN UserProfile p ON p.user.id = n.actorId
+            WHERE n.userId = :userId AND n.isHidden=true
+            ORDER BY n.createdAt DESC
+            """)
+    Page<NotificationResponse> findHiddenByUserIdOrderByCreatedAtDesc(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
 
     // Đếm số thông báo chưa đọc và trạng thái được hiển thi
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.isRead = false AND n.isHidden=false")

@@ -21,6 +21,8 @@ public interface NotificationService {
 
     // General
     Page<NotificationResponse> getNotifications(int page, int size);
+    
+    Page<NotificationResponse> getHiddenNotifications(int page, int size);
 
     int countUnread(CountNotification count);
 

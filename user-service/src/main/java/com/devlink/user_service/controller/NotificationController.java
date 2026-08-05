@@ -40,6 +40,16 @@ public class NotificationController {
         ));
     }
 
+    @GetMapping("/hidden")
+    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getHiddenNotifications(
+            @RequestParam(defaultValue = DEFAULT_PAGE) int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                notificationService.getHiddenNotifications(page, size)
+        ));
+    }
+
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<Integer>> countUnread(CountNotification count) {
         return ResponseEntity.ok(ApiResponse.ok(notificationService.countUnread(count)));

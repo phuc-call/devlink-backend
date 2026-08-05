@@ -28,10 +28,8 @@ export default function HiddenContentPage() {
     const fetchHiddenNotifications = async () => {
         setLoading(true);
         try {
-            const res = await notificationApi.getNotifications(0, 50);
-            setNotifications(
-                res.data.data.content.filter((n: NotificationResponse) => n.isHidden)
-            );
+            const res = await notificationApi.getHiddenNotifications(0, 50);
+            setNotifications(res.data.data.content);
         } catch {
             // handle error
         } finally {
