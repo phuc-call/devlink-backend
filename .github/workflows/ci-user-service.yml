@@ -13,6 +13,25 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: user_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,3 +42,6 @@ jobs:
       - name: Run tests
         working-directory: ./user-service
         run: mvn -B test
+        env:
+          EUREKA_CLIENT_ENABLED: 'false'
+          SPRING_KAFKA_LISTENER_AUTO_STARTUP: 'false'
