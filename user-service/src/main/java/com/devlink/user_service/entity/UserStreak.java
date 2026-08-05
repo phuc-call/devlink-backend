@@ -24,9 +24,11 @@ public class UserStreak {
     private User user;
 
     // Streak đăng nhập liên tiếp
+    @Builder.Default
     @Column(name = "login_streak", nullable = false)
     private Integer loginStreak = 0;
 
+    @Builder.Default
     @Column(name = "login_streak_max", nullable = false)
     private Integer loginStreakMax = 0;
 
@@ -34,9 +36,11 @@ public class UserStreak {
     private java.time.LocalDate lastLoginDate;
 
     // Streak đăng bài liên tiếp
+    @Builder.Default
     @Column(name = "post_streak", nullable = false)
     private Integer postStreak = 0;
 
+    @Builder.Default
     @Column(name = "post_streak_max", nullable = false)
     private Integer postStreakMax = 0;
 
