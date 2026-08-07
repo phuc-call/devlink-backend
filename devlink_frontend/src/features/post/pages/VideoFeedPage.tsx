@@ -419,6 +419,8 @@ const VideoDetailItem: React.FC<DetailItemProps> = ({ video, isCommentOpen, onTo
                         if (v) setDuration(v.duration);
                     }}
                     onClick={togglePlay}
+                    onPlay={() => setPlaying(true)}
+                    onPause={() => setPlaying(false)}
                 />
 
                 {/* Controls overlay */}
@@ -611,6 +613,8 @@ const ShortCard: React.FC<ShortCardProps> = ({ video, onOpen }) => {
                     muted={muted}
                     loop
                     playsInline
+                    onPlay={() => setPlaying(true)}
+                    onPause={() => setPlaying(false)}
                 />
             )}
             <div className={styles.shortGradient} />
@@ -728,6 +732,8 @@ const LongCard: React.FC<LongCardProps> = ({ video, onOpen }) => {
                         if (v && v.duration) setProgress(v.currentTime / v.duration * 100);
                     }}
                     onClick={togglePlay}
+                    onPlay={() => setPlaying(true)}
+                    onPause={() => setPlaying(false)}
                 />
 
                 <div className={`${styles.longGlass} ${showCtrl || !playing ? styles.longGlassOn : ''}`}>

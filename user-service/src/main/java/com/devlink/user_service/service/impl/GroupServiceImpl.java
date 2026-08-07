@@ -224,22 +224,12 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public String createNewInviteCode(Long groupId, InviteCodeGroupRequest inviteCode) {
+    public String createNewInviteCode(Long groupId) {
         Long currentUserId = userHelper.getCurrentUser().getId();
         Group group = validateGroupAndPermission(currentUserId, groupId, true);
 
-        if (inviteCode.getCode() != null && !inviteCode.getCode().isBlank()) {
-            if (inviteCode.getCode().equals(group.getInviteCode())) {
-                throw new AppException(ErrorCode.INVITE_CODE_ALREADY_EXISTS);
-            }
-            if (groupRepository.existsByInviteCode(inviteCode.getCode())) {
-                throw new AppException(ErrorCode.INVITE_CODE_ALREADY_EXISTS);
-            }
-            group.setInviteCode(inviteCode.getCode());
-        } else {
-            String newInviteCode = UUID.randomUUID().toString().substring(0, 20);
-            group.setInviteCode(newInviteCode);
-        }
+        String newInviteCode = UUID.randomUUID().toString().substring(0, 10);
+        group.setInviteCode(newInviteCode);
 
         groupRepository.save(group);
         return group.getInviteCode();

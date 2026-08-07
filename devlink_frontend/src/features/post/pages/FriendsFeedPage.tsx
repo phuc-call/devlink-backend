@@ -29,7 +29,10 @@ export default function FriendsFeedPage() {
                 if (reset || pageNum === 0) {
                     setPosts(content);
                 } else {
-                    setPosts(prev => [...prev, ...content]);
+                    setPosts(prev => {
+                        const newPosts = content.filter((p: FeedPostResponse) => !prev.some(existing => existing.id === p.id));
+                        return [...prev, ...newPosts];
+                    });
                 }
                 setHasMore(!data.last);
                 setPage(pageNum);

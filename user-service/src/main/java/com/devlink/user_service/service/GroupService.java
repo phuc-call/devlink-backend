@@ -79,7 +79,7 @@ public interface GroupService {
      * @param inviteCode the request payload containing the invite code information
      * @return the newly generated or updated invite code as a String
      */
-    String createNewInviteCode(Long groupId, InviteCodeGroupRequest inviteCode);
+    String createNewInviteCode(Long groupId);
 
     /**
      * Updates an existing group's basic information (name, description, privacy).

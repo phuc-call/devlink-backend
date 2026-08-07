@@ -91,9 +91,8 @@ public class GroupController {
 
     @PostMapping("/{groupId}/new-invite-code")
     public ResponseEntity<ApiResponse<String>> createNewInviteCode(
-            @PathVariable Long groupId,
-            @Valid @RequestBody InviteCodeGroupRequest request) {
-        String newCode = groupService.createNewInviteCode(groupId, request);
+            @PathVariable Long groupId) {
+        String newCode = groupService.createNewInviteCode(groupId);
         return ResponseEntity.ok(ApiResponse.ok(newCode));
     }
 

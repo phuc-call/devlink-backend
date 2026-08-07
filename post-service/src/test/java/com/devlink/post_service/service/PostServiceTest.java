@@ -13,6 +13,7 @@ import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.AccountRestrictionRepository;
 import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.security.SecurityUtils;
+import com.devlink.post_service.service.impl.PostAsyncService;
 import com.devlink.post_service.service.impl.PostServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,7 +99,7 @@ public class PostServiceTest {
         assertEquals(100L, response.getId());
         assertEquals("This is a test post", response.getContent());
         assertEquals(PostType.TEXT, response.getPostType());
-        
+
         verify(restrictionRepository, times(1)).existsActiveRestriction(eq(1L), anyList(), any());
         verify(postRepository, times(1)).save(any(Post.class));
         verify(postAsyncService, times(1)).moderatePost(100L);
@@ -142,11 +143,11 @@ public class PostServiceTest {
         request.setMediaFiles(new ArrayList<>());
 
         when(restrictionRepository.existsActiveRestriction(eq(1L), anyList(), any())).thenReturn(false);
-        
+
         ApiResponse<List<Long>> mockApiResponse = new ApiResponse<>();
         mockApiResponse.setSuccess(true);
         mockApiResponse.setData(List.of(1L, 2L)); // User is not in group 99L
-        
+
         when(userServiceClient.getApprovedGroupIds(1L)).thenReturn(mockApiResponse);
 
         AppException exception = assertThrows(AppException.class, () -> postService.createPost(request));
