@@ -10,8 +10,8 @@
 .topSection {
     background: #ffffff;
     border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
     border: 1px solid #F3F4F6;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .headerLeft {
@@ -33,11 +33,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     background: #EEF2FF;
     color: #4F46E5;
-    border-radius: 12px;
+    border-radius: 10px;
 }
 
 .headerText {
@@ -140,8 +140,8 @@
 .filterRow {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding-top: 20px;
+    gap: 12px;
+    padding-top: 16px;
     border-top: 1px solid #F3F4F6;
     flex-wrap: wrap;
 }
@@ -155,8 +155,8 @@
     background: #F9FAFB;
     border: 1px solid #E5E7EB;
     border-radius: 8px;
-    padding: 9px 36px 9px 16px;
-    font-size: 14px;
+    padding: 7px 32px 7px 12px;
+    font-size: 13px;
     font-family: inherit;
     color: #374151;
     cursor: pointer;
@@ -194,7 +194,6 @@
     color: #4B5563;
     cursor: pointer;
     user-select: none;
-    margin-left: auto;
 }
 
 .modernCheckbox input {

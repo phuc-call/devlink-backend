@@ -26,6 +26,7 @@ import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofi
 import MyTemplatesPage from '../features/post/pages/MyTemplatesPage/MyTemplatesPage';
 import MyGroupsPage from '../features/post/pages/MyGroupsPage/MyGroupsPage';
 import GroupsFeedPage from '../features/post/pages/GroupsFeedPage';
+import UserDashboardPage from '../features/dashboard/pages/UserDashboardPage/UserDashboardPage';
 
 import AdminLayout from '../components/layout/AdminLayout/AdminLayout';
 import DashboardPage from '../features/admin/pages/DashboardPage';
@@ -78,7 +79,8 @@ const router = createBrowserRouter([
                     { path: '/notifications', element: <NotificationPage /> },
                     { path: '/hidden', element: <HiddenContentPage /> },
                     { path: '/chat', element: <ChatPage /> },
-                    { path: '/feature-1', element: <MyTemplatesPage /> },
+                    { path: '/dashboard/*', element: <UserDashboardPage /> },
+                    { path: '/templates', element: <MyTemplatesPage /> },
                     { path: '/saved', element: <SavedPage /> },
                     { path: '/my-violations', element: <MyViolationsPage /> },
                     { path: '/videos', element: <VideoFeedPage /> },

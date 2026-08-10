@@ -3,7 +3,7 @@ import type {
     UpdateProfileRequest,
     UserProfileResponse,
     UserRecommendationResponse, UserSearchPageResponse, UserSearchParams,
-    VisibilitySettingResponse
+    VisibilitySettingResponse, UserOverviewResponse
 } from '../../types/profile.types';
 
 
@@ -61,4 +61,7 @@ export const userProfileApi = {
 
     getCoverImageUrl: (userId: number) =>
         axiosInstance.get<{data: string}>(`/api/users/${userId}/cover`),
+
+    getUserOverview: () =>
+        axiosInstance.get<{data: UserOverviewResponse}>('/api/users/overview/me'),
 };

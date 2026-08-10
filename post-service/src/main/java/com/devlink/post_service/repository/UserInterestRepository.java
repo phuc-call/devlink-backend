@@ -66,6 +66,21 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, Long
     @Query("SELECT DISTINCT u.userId FROM UserInterest u")
     List<Long> findDistinctUserIds();
 
+    /** Counts the actual number of tags a user currently has used to calculate adaptive topTagsLimit */
+    long countByUserId(Long userId);
+
+    /**
+     * Deletes the N tags with the lowest score for a given user.
+     * Uses Native Query because JPQL does not support ORDER BY and LIMIT in DELETE statements.
+     */
+    @Modifying
+    @Query(value = "DELETE FROM user_interests " +
+                   "WHERE user_id = :userId " +
+                   "ORDER BY score ASC " +
+                   "LIMIT :limit",
+           nativeQuery = true)
+    void deleteExcessTags(@Param("userId") Long userId, @Param("limit") int limit);
+
     @Modifying
     @Query("DELETE FROM UserInterest u WHERE u.userId = :userId")
     void deleteByUserId(@Param("userId") Long userId);

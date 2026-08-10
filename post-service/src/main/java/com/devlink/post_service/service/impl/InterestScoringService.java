@@ -40,6 +40,11 @@ public class InterestScoringService {
                 userInterestRepository.upsertScore(userId, tag, scoreToAdd, decayRate);
             }
 
+            // Sliding window: keep maximum allowed tags per user.
+            // If a user interacts with a new tag and exceeds the limit,
+            // remove the tag with the lowest score (after decay) to make room for the new one.
+            enforceInterestCap(userId);
+
             log.debug("[Interest] userId={} postId={} action={} -> +{} score for {} tags (decayRate={})",
                     userId, postId, action, scoreToAdd, tags.size(), decayRate);
 
@@ -56,5 +61,25 @@ public class InterestScoringService {
             case BOOKMARK -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_BOOKMARK, 8.0);
             case SHARE -> feedConfigService.getConfigValue(Constants.CONFIG_KEY_SCORE_SHARE, 6.0);
         };
+    }
+
+    /**
+     * Sliding Window: ensures user_interests count <= max allowed limit.
+     *
+     * After each upsert, if the number of tags exceeds the threshold,
+     * deletes the tag with the lowest score until the count is within limits.
+     * 
+     * Optimized: executes a single DELETE query instead of multiple round-trips.
+     */
+    private void enforceInterestCap(Long userId) {
+        int maxInterestsPerUser = (int) feedConfigService.getConfigValue(Constants.CONFIG_KEY_INTEREST_MAX_TAGS_PER_USER, 20.0);
+        
+        long count = userInterestRepository.countByUserId(userId);
+        if (count <= maxInterestsPerUser) return;
+
+        int excess = (int) (count - maxInterestsPerUser);
+        // Remove excess tags with the lowest score in a single query
+        userInterestRepository.deleteExcessTags(userId, excess);
+        log.debug("[Interest] userId={} evicted {} low-score tag(s) (cap={})", userId, excess, maxInterestsPerUser);
     }
 }

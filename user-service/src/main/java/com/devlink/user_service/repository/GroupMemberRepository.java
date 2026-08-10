@@ -103,4 +103,9 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
         WHERE gm.userId = :userId AND gm.status = 'APPROVED'
         """)
     List<Long> findApprovedGroupIdsByUserId(@Param("userId") Long userId);
+    @Query("""
+        SELECT COUNT(gm) FROM GroupMember gm
+        WHERE gm.userId = :userId AND gm.status = 'APPROVED'
+        """)
+    int countApprovedGroupsByUserId(@Param("userId") Long userId);
 }

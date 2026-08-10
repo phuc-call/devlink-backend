@@ -72,7 +72,7 @@ export const reportApi = {
         size: number
     ) {
         return axiosInstance.get<{ data: ReportPageResponse }>(
-            `${BASE_URL}/admin`,
+            `/api/posts/admin/reports`,
             {
                 params: {
                     targetType,
@@ -86,7 +86,7 @@ export const reportApi = {
 
     /**
      * Admin xử lý (duyệt / từ chối) một báo cáo.
-     * PUT /api/posts/reports/admin/{reportId}/review
+     * PUT /api/posts/admin/reports/{reportId}/review
      *
      * approved = true  → xóa nội dung + tạo AccountRestriction
      * approved = false → đánh dấu REJECTED + notify người tố cáo
@@ -94,30 +94,30 @@ export const reportApi = {
      */
     reviewReport(reportId: number, req: ReportReviewRequest) {
         return axiosInstance.put<{ data: ReportResponse }>(
-            `${BASE_URL}/admin/${reportId}/review`,
+            `/api/posts/admin/reports/${reportId}/review`,
             req
         );
     },
 
     /**
      * Admin xóa báo cáo đã RESOLVED hoặc REJECTED.
-     * DELETE /api/posts/reports/admin/{reportId}
+     * DELETE /api/posts/admin/reports/{reportId}
      *
      * Lưu ý: báo cáo PENDING không xóa được (backend trả REPORT_CANNOT_DELETE).
      */
     deleteReport(reportId: number) {
         return axiosInstance.delete<{ data: null }>(
-            `${BASE_URL}/admin/${reportId}`
+            `/api/posts/admin/reports/${reportId}`
         );
     },
 
     /**
      * Lấy chi tiết báo cáo dành cho Admin, bao gồm cả nội dung bị báo cáo.
-     * GET /api/posts/reports/admin/{reportId}
+     * GET /api/posts/admin/reports/{reportId}
      */
     getReportAdminDetail(reportId: number) {
         return axiosInstance.get<{ data: ReportAdminDetailResponse }>(
-            `${BASE_URL}/admin/${reportId}`
+            `/api/posts/admin/reports/${reportId}`
         );
     },
 };

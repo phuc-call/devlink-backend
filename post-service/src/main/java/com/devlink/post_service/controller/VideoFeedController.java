@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import static com.devlink.post_service.config.Constants.SUCCESS;
 
 @RestController
-@RequestMapping("/api/videos")
+@RequestMapping("/api/posts/videos")
 @RequiredArgsConstructor
 @Slf4j
 public class VideoFeedController {

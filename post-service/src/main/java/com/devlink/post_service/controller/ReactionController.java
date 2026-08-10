@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/reactions")
+@RequestMapping("/api/posts/reactions")
 @RequiredArgsConstructor
 public class ReactionController {
     private final ReactionService reactionService;

@@ -15,7 +15,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "posts")
+@Table(
+    name = "posts",
+    indexes = {
+        // Dùng cho findGeneralTrendingFeed & findPersonalizedFeed:
+        // WHERE status <> 'DELETED' AND deletedAt IS NULL AND visibility = 'PUBLIC'
+        // → MySQL dùng index này thay vì full scan, sau đó random offset trên id
+        @Index(name = "idx_feed_public",
+               columnList = "status, visibility, deleted_at, id"),
+
+        // Dùng cho findGroupTrendingFeed:
+        // WHERE status <> 'DELETED' AND deletedAt IS NULL AND groupId IN (...)
+        // → Lọc nhanh theo group + status rồi random offset trên id
+        @Index(name = "idx_feed_group",
+               columnList = "group_id, status, deleted_at, id"),
+
+        // Dùng cho getUserPosts / findPostsByAuthorIdAndVisibilityIn:
+        // WHERE authorId = ? AND visibility IN (...)
+        @Index(name = "idx_author_visibility",
+               columnList = "author_id, visibility, deleted_at"),
+
+        // Dùng cho findFollowingPosts / findFriendsFeedPosts:
+        // WHERE authorId IN (...) ORDER BY createdAt DESC
+        @Index(name = "idx_author_created",
+               columnList = "author_id, created_at"),
+    }
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Post {

@@ -5,14 +5,14 @@ import type { ReactionRequest, ReactionResponse, ReactionTargetType } from '../.
 
 export const reactionApi = {
     react(data: ReactionRequest): Promise<AxiosResponse<ApiResponse<ReactionResponse>>> {
-        return axiosInstance.post('/api/reactions', data);
+        return axiosInstance.post('/api/posts/reactions', data);
     },
 
     getSummary(targetId: number, targetType: ReactionTargetType): Promise<AxiosResponse<ApiResponse<ReactionResponse>>> {
-        return axiosInstance.get(`/api/reactions/${targetType}/${targetId}/summary`);
+        return axiosInstance.get(`/api/posts/reactions/${targetType}/${targetId}/summary`);
     },
 
     getHighReact(targetId: number, targetType: ReactionTargetType): Promise<AxiosResponse<ApiResponse<string[]>>> {
-        return axiosInstance.get(`/api/reactions/reactions/${targetType}/${targetId}/top`);
+        return axiosInstance.get(`/api/posts/reactions/reactions/${targetType}/${targetId}/top`);
     }
 };

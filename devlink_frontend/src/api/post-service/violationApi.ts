@@ -12,7 +12,7 @@ import type {
     ViolationTypeStatsResponse,
 } from '../../types/violation.types';
 
-const BASE = '/api/posts/violations/admin';
+const BASE = '/api/posts/admin/violations';
 
 export const violationApi = {
 
@@ -68,7 +68,7 @@ export const violationApi = {
 
     updateAdminNote(reportId: number, adminNote: string) {
         return axiosInstance.patch<{ data: null }>(
-            `/api/posts/violations/admin/reporter-details/${reportId}/note`,
+            `${BASE}/reporter-details/${reportId}/note`,
             { adminNote }
         );
     },

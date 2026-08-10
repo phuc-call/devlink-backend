@@ -4,18 +4,18 @@ import type { VideoFeedPageResponse, VideoFeedResponse } from '../../types/video
 export const videoFeedApi = {
     getShortVideos: (page = 0, size = 10) =>
         axiosInstance.get<{ data: VideoFeedPageResponse }>(
-            '/api/videos/short',
+            '/api/posts/videos/short',
             { params: { page, size } }
         ),
 
     getLongVideos: (page = 0, size = 10) =>
         axiosInstance.get<{ data: VideoFeedPageResponse }>(
-            '/api/videos/long',
+            '/api/posts/videos/long',
             { params: { page, size } }
         ),
 
     getVideoDetail: (id: number) =>
         axiosInstance.get<{ data: VideoFeedResponse }>(
-            `/api/videos/${id}`
+            `/api/posts/videos/${id}`
         ),
 };

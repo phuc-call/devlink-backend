@@ -86,6 +86,9 @@ public final class Constants {
     public static final String CONFIG_KEY_SCORE_BOOKMARK = "score.bookmark";
     public static final String CONFIG_KEY_SCORE_SHARE = "score.share";
     public static final String CONFIG_KEY_INTEREST_DECAY_RATE = "interest.decay_rate";
+    public static final String CONFIG_KEY_INTEREST_MAX_TAGS_PER_USER = "interest.max_tags_per_user";
+    public static final String CONFIG_KEY_FEED_TOP_TAGS_LIMIT = "feed.top_tags_limit";
+    public static final String CONFIG_KEY_FEED_FALLBACK_THRESHOLD = "feed.fallback_threshold";
 
     // Tag Group Messages
     public static final String MSG_TAG_GROUP_CREATED = "Tag group created";

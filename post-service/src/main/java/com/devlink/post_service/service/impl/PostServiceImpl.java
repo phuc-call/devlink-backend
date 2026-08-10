@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -331,13 +332,16 @@ public class PostServiceImpl implements PostService {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
 
-        int topTagsLimit = (int) feedConfigService.getConfigValue("feed.top_tags_limit", 5.0);
-        long minLikeThreshold = 0L; // Force 0 so posts without likes appear in the feed
-        long fallbackThreshold = (long) feedConfigService.getConfigValue("feed.fallback_threshold", 5.0);
+        // maxTagsCap: upper limit configured by admin (default 10)
+        int maxTagsCap = (int) feedConfigService.getConfigValue(Constants.CONFIG_KEY_FEED_TOP_TAGS_LIMIT, 10.0);
 
-        // Fetch a larger pool of tags to shuffle, so F5 gives a different set of
-        // interests
-        List<String> topTagsPool = userInterestRepository.findTopTagsByUserId(currentUserId, topTagsLimit * 4);
+        // Get the actual number of tags the user has in user_interests
+        int userTagCount = (int) userInterestRepository.countByUserId(currentUserId);
+        int topTagsLimit = userTagCount > 0 ? Math.min(userTagCount, maxTagsCap) : maxTagsCap;
+
+        long minLikeThreshold = 0L;
+        // Fetch a pool 3x the limit to shuffle, making F5 yield more diverse results
+        List<String> topTagsPool = userInterestRepository.findTopTagsByUserId(currentUserId, topTagsLimit * 3);
         List<String> topTags = new ArrayList<>();
         if (topTagsPool != null && !topTagsPool.isEmpty()) {
             List<String> mutablePool = new ArrayList<>(topTagsPool);
@@ -362,45 +366,62 @@ public class PostServiceImpl implements PostService {
         int groupSize = (int) (size * 0.1);
         int trendingSize = size - personalizedSize - groupSize;
 
-        if (personalizedSize < 1) personalizedSize = 1;
-        if (groupSize < 1) groupSize = 1;
-        if (trendingSize < 1) trendingSize = 1;
+        if (personalizedSize < 1)
+            personalizedSize = 1;
+        if (groupSize < 1)
+            groupSize = 1;
+        if (trendingSize < 1)
+            trendingSize = 1;
 
         List<FeedPostResponse> combinedPosts = new ArrayList<>();
         Set<Long> seenIds = new HashSet<>();
 
         if (!topTags.isEmpty()) {
-            Page<FeedPostResponse> pPage = postRepository.findPersonalizedFeed(topTags, minLikeThreshold, approvedGroupIds, PageRequest.of(page, personalizedSize));
-            for (FeedPostResponse p : pPage.getContent()) {
-                if (seenIds.add(p.getId())) {
-                    combinedPosts.add(p);
+            // Get [MIN, MAX] id of the personalized set to calculate random offset
+            long personalizedOffset = resolveRandomOffset(
+                    postRepository.findPersonalizedFeedMinMaxId(topTags, minLikeThreshold, approvedGroupIds));
+            Page<FeedPostResponse> pPage = postRepository.findPersonalizedFeed(topTags, minLikeThreshold,
+                    approvedGroupIds, personalizedOffset, PageRequest.of(0, personalizedSize));
+            List<FeedPostResponse> pContent = new ArrayList<>(pPage.getContent());
+            for (FeedPostResponse p : pContent) {
+                if (seenIds.add(p.getId())) combinedPosts.add(p);
+            }
+            // If not enough posts are retrieved (offset near MAX), supplement from the beginning of the list
+            if (pContent.size() < personalizedSize) {
+                int missing = personalizedSize - pContent.size();
+                Page<FeedPostResponse> pExtra = postRepository.findPersonalizedFeed(topTags, minLikeThreshold,
+                        approvedGroupIds, 0L, PageRequest.of(0, missing));
+                for (FeedPostResponse p : pExtra.getContent()) {
+                    if (seenIds.add(p.getId())) combinedPosts.add(p);
                 }
             }
         }
 
         if (approvedGroupIds.size() > 1 || (approvedGroupIds.size() == 1 && !approvedGroupIds.get(0).equals(-1L))) {
-            Page<FeedPostResponse> gPage = postRepository.findGroupTrendingFeed(approvedGroupIds, PageRequest.of(page, groupSize));
+            long groupOffset = resolveRandomOffset(
+                    postRepository.findGroupTrendingMinMaxId(approvedGroupIds));
+            Page<FeedPostResponse> gPage = postRepository.findGroupTrendingFeed(approvedGroupIds,
+                    groupOffset, PageRequest.of(0, groupSize));
             for (FeedPostResponse p : gPage.getContent()) {
-                if (seenIds.add(p.getId())) {
-                    combinedPosts.add(p);
-                }
+                if (seenIds.add(p.getId())) combinedPosts.add(p);
             }
         }
 
-        Page<FeedPostResponse> tPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds, PageRequest.of(page, trendingSize));
+        long trendingOffset = resolveRandomOffset(
+                postRepository.findGeneralTrendingMinMaxId(minLikeThreshold, approvedGroupIds));
+        Page<FeedPostResponse> tPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds,
+                trendingOffset, PageRequest.of(0, trendingSize));
         for (FeedPostResponse p : tPage.getContent()) {
-            if (seenIds.add(p.getId())) {
-                combinedPosts.add(p);
-            }
+            if (seenIds.add(p.getId())) combinedPosts.add(p);
         }
 
         if (combinedPosts.size() < size) {
             int missing = size - combinedPosts.size();
-            Page<FeedPostResponse> extraPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds, PageRequest.of(page + 1, missing));
+            // Call again from offset = 0 to supplement missing posts
+            Page<FeedPostResponse> extraPage = postRepository.findGeneralTrendingFeed(minLikeThreshold,
+                    approvedGroupIds, 0L, PageRequest.of(0, missing));
             for (FeedPostResponse p : extraPage.getContent()) {
-                if (seenIds.add(p.getId())) {
-                    combinedPosts.add(p);
-                }
+                if (seenIds.add(p.getId())) combinedPosts.add(p);
             }
         }
 
@@ -410,8 +431,6 @@ public class PostServiceImpl implements PostService {
 
         List<Long> postIds = combinedPosts.stream().map(FeedPostResponse::getId).toList();
         List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(combinedPosts, postIds);
-        
-        Collections.shuffle(enriched);
 
         return new PageImpl<>(enriched, pageable, 10000L);
     }
@@ -824,7 +843,8 @@ public class PostServiceImpl implements PostService {
             approvedGroupIds.add(-1L);
         }
 
-        Page<FeedPostResponse> postPage = postRepository.findPostsByTag(tag, currentUserId, friendIds, approvedGroupIds, pageable);
+        Page<FeedPostResponse> postPage = postRepository.findPostsByTag(tag, currentUserId, friendIds, approvedGroupIds,
+                pageable);
 
         if (!postPage.hasContent()) {
             return postPage;
@@ -832,7 +852,7 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        
+
         List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
         return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
@@ -964,6 +984,23 @@ public class PostServiceImpl implements PostService {
      */
     private String resolveBadgeType(Long userId) {
         return "NONE";
+    }
+
+    /**
+     * Calculates a random offset in the range [minId, maxId] to implement Random ID Range pagination.
+     * This is an optimized alternative to ORDER BY RAND(), utilizing PK index range scans for better performance.
+     *
+     * @param minMax Object[] from query SELECT MIN(id), MAX(id)
+     * @return a random offset in [minId, maxId], or 0L if empty
+     */
+    private long resolveRandomOffset(Object[] minMax) {
+        if (minMax == null || minMax.length < 2 || minMax[0] == null || minMax[1] == null) {
+            return 0L;
+        }
+        long minId = ((Number) minMax[0]).longValue();
+        long maxId = ((Number) minMax[1]).longValue();
+        if (minId >= maxId) return minId;
+        return ThreadLocalRandom.current().nextLong(minId, maxId + 1);
     }
 
 }

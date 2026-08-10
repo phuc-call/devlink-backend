@@ -102,3 +102,15 @@ export interface UserSearchPageResponse {
         number: number;
     };
 }
+
+export interface UserOverviewResponse {
+    userId: number;
+    fullName: string;
+    avatarUrl?: string;
+    badge: string;
+    followerCount: number;
+    followingCount: number;
+    newFollowersThisWeek: number;
+    groupCount: number;
+    unreadNotificationCount: number;
+}

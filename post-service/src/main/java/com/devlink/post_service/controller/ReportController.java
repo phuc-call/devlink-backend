@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/posts/reports")
+@RequestMapping("/api/posts/reports")
 @RequiredArgsConstructor
 public class ReportController {
 
@@ -27,46 +27,6 @@ public class ReportController {
     ) {
         ReportResponse response = reportService.createOrUpdateReport(request);
         return ResponseEntity.ok(ApiResponse.ok(response, "Report submitted successfully"));
-    }
-
-    @PutMapping("admin/{reportId}/review")
-    public ResponseEntity<ApiResponse<ReportResponse>> review(
-            @PathVariable Long reportId,
-            @Valid @RequestBody ReportReviewRequest request
-    ) {
-        ReportResponse response = reportService.reviewReport(reportId, request);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Report reviewed successfully"));
-    }
-
-    @GetMapping("/admin")
-    public ResponseEntity<ApiResponse<ReportPageResponse>> getReports(
-            @RequestParam TargetType targetType,
-            @RequestParam(required = false) ReportStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") @Max(20) int size
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                reportService.getReports(targetType, status, page, size),
-                "OK"
-        ));
-    }
-
-    @DeleteMapping("/admin/{reportId}")
-    public ResponseEntity<ApiResponse<Void>> deleteReport(
-            @PathVariable Long reportId
-    ) {
-        reportService.deleteReport(reportId);
-        return ResponseEntity.ok(ApiResponse.ok(null, "Report deleted successfully"));
-    }
-
-    @GetMapping("/admin/{reportId}")
-    public ResponseEntity<ApiResponse<ReportAdminDetailResponse>> getReportAdminDetail(
-            @PathVariable Long reportId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                reportService.getReportAdminDetail(reportId),
-                "OK"
-        ));
     }
 
     @GetMapping("/notif-detail")

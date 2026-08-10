@@ -22,17 +22,24 @@ export default function MainLayout() {
     });
 
     const location = useLocation();
+    const isDashboard = location.pathname.startsWith('/dashboard');
+    const isUtilities = ['/notifications', '/templates', '/hidden'].some(p => location.pathname.startsWith(p));
     const isFriends = location.pathname.startsWith('/friends');
     const isGroups = location.pathname.startsWith('/groups');
     const isFeedPage = location.pathname === '/friends/feed' || location.pathname === '/groups/feed';
-    const isWideLayout = (isFriends || isGroups) && !isFeedPage;
+    
+    // isWideLayout makes the main feed area wider (no right sidebar on desktop)
+    const isWideLayout = (isFriends || isGroups || isDashboard) && !isFeedPage;
+    
+    // Check if we need to show the horizontal sub-navigation on mobile
+    const hasMobileSubNav = isFriends || isGroups || isDashboard || isUtilities;
 
     return (
         <div className={styles.root}>
             {showModal && <ProfileSetupModal onClose={closeModal} nudgeSentCount={nudgeSentCount} avatarUrl={avatarUrl} initialFullName={fullName} />}
             <Header />
-            <div className={`${styles.body} ${isWideLayout ? styles.bodyWide : ''}`}>
-                <aside className={isWideLayout ? styles.leftFixed : styles.left}>
+            <div className={`${styles.body} ${isWideLayout ? styles.bodyWide : ''} ${hasMobileSubNav && !isWideLayout ? styles.hasMobileSubNav : ''}`}>
+                <aside className={`${isWideLayout ? styles.leftFixed : styles.left} ${hasMobileSubNav && !isWideLayout ? styles.mobileSubNavVisible : ''}`}>
                     <LeftSidebar />
                 </aside>
                 <main className={`${styles.feed} ${isWideLayout ? styles.feedWide : ''}`}>

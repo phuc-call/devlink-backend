@@ -1,8 +1,10 @@
 package com.devlink.post_service.service;
 
 import com.devlink.post_service.client.UserServiceClient;
+import com.devlink.post_service.config.Constants;
 import com.devlink.post_service.dto.request.CreatePostRequest;
 import com.devlink.post_service.dto.response.ApiResponse;
+import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.PostResponse;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.enums.PostStatus;
@@ -12,7 +14,9 @@ import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.AccountRestrictionRepository;
 import com.devlink.post_service.repository.PostRepository;
+import com.devlink.post_service.repository.UserInterestRepository;
 import com.devlink.post_service.security.SecurityUtils;
+import com.devlink.post_service.service.helper.FeedPriorityHelper;
 import com.devlink.post_service.service.impl.PostAsyncService;
 import com.devlink.post_service.service.impl.PostServiceImpl;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +27,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
@@ -49,6 +56,15 @@ public class PostServiceTest {
 
     @Mock
     private PostAsyncService postAsyncService;
+
+    @Mock
+    private FeedConfigService feedConfigService;
+
+    @Mock
+    private UserInterestRepository userInterestRepository;
+
+    @Mock
+    private FeedPriorityHelper feedPriorityHelper;
 
     private MockedStatic<SecurityUtils> mockedSecurityUtils;
 
@@ -154,5 +170,50 @@ public class PostServiceTest {
 
         assertEquals(ErrorCode.POST_FORBIDDEN, exception.getErrorCode());
         verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    void getFeed() {
+        int page = 0;
+        int size = 10;
+        String postType = "ALL";
+
+        when(feedConfigService.getConfigValue(eq(Constants.CONFIG_KEY_FEED_TOP_TAGS_LIMIT), anyDouble())).thenReturn(10.0);
+        when(userInterestRepository.countByUserId(eq(1L))).thenReturn(5L);
+        when(userInterestRepository.findTopTagsByUserId(eq(1L), eq(15))).thenReturn(List.of("java", "spring"));
+
+        ApiResponse<List<Long>> mockApiResponse = new ApiResponse<>();
+        mockApiResponse.setSuccess(true);
+        mockApiResponse.setData(List.of(1L, 2L));
+        when(userServiceClient.getApprovedGroupIds(1L)).thenReturn(mockApiResponse);
+
+        when(postRepository.findPersonalizedFeedMinMaxId(anyList(), anyLong(), anyList())).thenReturn(new Object[]{1L, 100L});
+        FeedPostResponse personalizedPost = new FeedPostResponse();
+        personalizedPost.setId(1L);
+        when(postRepository.findPersonalizedFeed(anyList(), anyLong(), anyList(), anyLong(), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(personalizedPost)));
+
+        when(postRepository.findGroupTrendingMinMaxId(anyList())).thenReturn(new Object[]{101L, 200L});
+        FeedPostResponse groupPost = new FeedPostResponse();
+        groupPost.setId(2L);
+        when(postRepository.findGroupTrendingFeed(anyList(), anyLong(), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(groupPost)));
+
+        when(postRepository.findGeneralTrendingMinMaxId(anyLong(), anyList())).thenReturn(new Object[]{201L, 300L});
+        FeedPostResponse trendingPost = new FeedPostResponse();
+        trendingPost.setId(3L);
+        when(postRepository.findGeneralTrendingFeed(anyLong(), anyList(), anyLong(), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(trendingPost)));
+        
+        when(postRepository.findGeneralTrendingFeed(anyLong(), anyList(), eq(0L), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of())); // For supplement call
+
+        when(feedPriorityHelper.enrichAndRank(anyList(), anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Page<FeedPostResponse> result = postService.getFeed(page, size, postType);
+
+        assertNotNull(result);
+        assertEquals(3, result.getContent().size());
+        verify(feedPriorityHelper, times(1)).enrichAndRank(anyList(), anyList());
     }
 }

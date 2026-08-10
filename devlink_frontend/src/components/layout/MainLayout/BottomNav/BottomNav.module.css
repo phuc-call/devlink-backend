@@ -15,11 +15,20 @@
         border-bottom: 1px solid #E5E7EB;
         z-index: 1000;
         align-items: stretch;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;  /* IE and Edge */
+    }
+    .bottomNav::-webkit-scrollbar {
+        display: none;
     }
 }
 
 .navItem {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;

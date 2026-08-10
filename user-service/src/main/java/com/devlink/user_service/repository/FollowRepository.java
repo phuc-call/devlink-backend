@@ -304,4 +304,11 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
         JOIN f.follower.profile p
         WHERE f.following.id = :followingId""")
         List<FollowQualifiedResponse> findFollowerListByFollowingId(@Param("followingId") Long followingId);
+    @Query("""
+        SELECT COUNT(f) FROM Follow f 
+        WHERE f.following.id = :userId 
+        AND f.status = 'ACCEPTED' 
+        AND f.createdAt >= :startDate
+    """)
+    int countNewFollowersSince(@Param("userId") Long userId, @Param("startDate") LocalDateTime startDate);
 }

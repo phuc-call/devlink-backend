@@ -16,23 +16,23 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("api/posts/violations")
+@RequestMapping("/api/posts/admin/violations")
 @RequiredArgsConstructor
 public class ViolationController {
 
     private final ViolationService violationService;
 
-    @GetMapping("/admin/overview")
+    @GetMapping("/overview")
     public ResponseEntity<ApiResponse<ViolationOverviewResponse>> getOverview() {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getOverview(), "OK"));
     }
 
-    @GetMapping("/admin/overview/detailed")
+    @GetMapping("/overview/detailed")
     public ResponseEntity<ApiResponse<List<ViolationTypeStatsResponse>>> getDetailedOverview() {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getDetailedOverview(), "OK"));
     }
 
-    @GetMapping("/admin/histories")
+    @GetMapping("/histories")
     public ResponseEntity<ApiResponse<Page<ViolationHistoryResponse>>> getHistories(
             @RequestParam(required = false) Long violatorId,
             @RequestParam(defaultValue = "0") int page,
@@ -42,22 +42,22 @@ public class ViolationController {
                 violationService.getViolationHistories(violatorId, page, size), "OK"));
     }
 
-    @GetMapping("/admin/histories/{id}")
+    @GetMapping("/histories/{id}")
     public ResponseEntity<ApiResponse<ViolationHistoryResponse>> getHistoryById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getViolationById(id), "OK"));
     }
 
-    @GetMapping("/admin/user/{userId}")
+    @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<List<ViolationHistoryResponse>>> getByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getViolationsByUser(userId), "OK"));
     }
 
-    @GetMapping("/admin/penalty-configs")
+    @GetMapping("/penalty-configs")
     public ResponseEntity<ApiResponse<List<PenaltyConfigResponse>>> getPenaltyConfigs() {
         return ResponseEntity.ok(ApiResponse.ok(violationService.getAllPenaltyConfigs(), "OK"));
     }
 
-    @PutMapping("/admin/penalty-configs/{configId}")
+    @PutMapping("/penalty-configs/{configId}")
     public ResponseEntity<ApiResponse<PenaltyConfigResponse>> updatePenaltyConfig(
             @PathVariable Long configId,
             @Valid @RequestBody UpdatePenaltyConfigRequest request
@@ -67,7 +67,7 @@ public class ViolationController {
                 "Penalty config updated successfully"));
     }
 
-    @PostMapping("/admin/penalty-configs")
+    @PostMapping("/penalty-configs")
     public ResponseEntity<ApiResponse<PenaltyConfigResponse>> createPenaltyConfig(
             @Valid @RequestBody CreatePenaltyConfigRequest request
     ) {
@@ -76,13 +76,13 @@ public class ViolationController {
                 "Penalty config created successfully"));
     }
 
-    @DeleteMapping("/admin/penalty-configs/{configId}")
+    @DeleteMapping("/penalty-configs/{configId}")
     public ResponseEntity<ApiResponse<Void>> deletePenaltyConfig(@PathVariable Long configId) {
         violationService.deletePenaltyConfig(configId);
         return ResponseEntity.ok(ApiResponse.ok(null, "Penalty config deleted successfully"));
     }
 
-    @GetMapping("/admin/users-by-count")
+    @GetMapping("/users-by-count")
     public ResponseEntity<ApiResponse<Page<PenalizedUserResponse>>> getUsersByViolationCount(
             @RequestParam TargetType targetType,
             @RequestParam Integer violationCount,
@@ -94,7 +94,7 @@ public class ViolationController {
                 "OK"));
     }
 
-    @PatchMapping("/admin/reporter-details/{reportId}/note")
+    @PatchMapping("/reporter-details/{reportId}/note")
     public ResponseEntity<ApiResponse<Void>> updateAdminNote(
             @PathVariable Long reportId,
             @RequestBody Map<String, String> body

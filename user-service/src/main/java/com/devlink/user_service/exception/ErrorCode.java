@@ -43,7 +43,7 @@ public enum ErrorCode {
     GET_AVATAR_FAILED("Avatar cat not get beaces it save", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_HIDDEN("Notification has not been hidden", HttpStatus.BAD_REQUEST),
     IMAGE_NOT_FOUND("Image not found", HttpStatus.NOT_FOUND),
-    INVALID_INVITE_CODE("Invalid invite code", HttpStatus.BAD_REQUEST),
+    INVALID_INVITE_CODE("Mã mời không tồn tại hoặc đã được thay đổi", HttpStatus.BAD_REQUEST),
     NO_PERMISSION("You do not have permission to view this", HttpStatus.FORBIDDEN),
     GROUP_NOT_FOUND("Group not found", HttpStatus.NOT_FOUND),
     GROUP_MEMBER_NOT_FOUND("Group member not found", HttpStatus.NOT_FOUND),
