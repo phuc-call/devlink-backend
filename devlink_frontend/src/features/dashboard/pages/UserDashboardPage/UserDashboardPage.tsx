@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -7,6 +7,10 @@ import {
 import { userProfileApi } from '../../../../api/user-service/userProfileApi';
 import styles from './UserDashboardPage.module.css';
 import { Users, UserPlus, Shield, Bell, UsersRound, Award } from 'lucide-react';
+import ImagePreviewModal from '../../../../components/common/ImagePreviewModal/ImagePreviewModal';
+import PostCard from '../../../post/components/PostCard';
+import { postApi } from '../../../../api/post-service/postApi';
+import type { FeedPostResponse } from '../../../../types/post.types';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -172,28 +176,40 @@ export default function UserDashboardPage() {
                 <Route path="posts" element={
                     <ReactHistorySection />
                 } />
+
+                <Route path="interests" element={
+                    <UserInterestsSection />
+                } />
             </Routes>
         </div>
     );
 }
 
 function ReactHistorySection() {
+    const [activeTab, setActiveTab] = useState<'my-activity' | 'my-comments' | 'interaction'>('my-activity');
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
+    const loaderRef = useRef<HTMLDivElement | null>(null);
 
-    const fetchHistory = async (pageNumber: number) => {
+    // Overlay states
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    
+    const [viewingPostId, setViewingPostId] = useState<number | null>(null);
+    const [viewingPostData, setViewingPostData] = useState<FeedPostResponse | null>(null);
+
+    const fetchHistory = async (pageNumber: number, reset = false) => {
+        if (loading) return;
         setLoading(true);
         try {
-            // We import overviewPostApi dynamically or assume it's imported at the top
-            // Since this is inside the same file, we need to import it at the top of the file
-            // Let's use the API
             const { overviewPostApi } = await import('../../../../api/post-service/overviewPostApi');
             const res = await overviewPostApi.getReactHistory(pageNumber, 10);
             if (res.data.success) {
-                setHistory(res.data.data.content);
-                setTotalPages(res.data.data.totalPages);
+                const newItems = res.data.data.content;
+                setHistory(prev => reset ? newItems : [...prev, ...newItems]);
+                setHasMore(!res.data.data.last);
             }
         } catch (error) {
             console.error('Failed to fetch react history:', error);
@@ -202,17 +218,32 @@ function ReactHistorySection() {
         }
     };
 
+    // Initial load
     useEffect(() => {
-        fetchHistory(page);
-    }, [page]);
+        setHistory([]);
+        setPage(0);
+        setHasMore(true);
+        fetchHistory(0, true);
+    }, []);
 
-    const handlePrevPage = () => {
-        if (page > 0) setPage(p => p - 1);
-    };
-
-    const handleNextPage = () => {
-        if (page < totalPages - 1) setPage(p => p + 1);
-    };
+    // Infinite scroll observer
+    useEffect(() => {
+        if (!loaderRef.current) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loading) {
+                    setPage(prev => {
+                        const next = prev + 1;
+                        fetchHistory(next);
+                        return next;
+                    });
+                }
+            },
+            { threshold: 0.5 }
+        );
+        observer.observe(loaderRef.current);
+        return () => observer.disconnect();
+    }, [hasMore, loading]);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -224,60 +255,365 @@ function ReactHistorySection() {
     };
 
     return (
-        <div className={styles.section}>
-            
-            {loading ? (
-                <div className={styles.loadingContainer}>Loading history...</div>
-            ) : history.length === 0 ? (
-                <div className={styles.comingSoonBox}>
-                    <p>You haven't reacted to any posts yet.</p>
-                </div>
-            ) : (
-                <>
-                    <div className={styles.historyList}>
-                        {history.map(item => (
-                            <div key={item.reactId} className={styles.historyItem}>
-                                <div className={styles.historyHeader}>
-                                    <span style={{ display: 'flex', alignItems: 'center' }}>
-                                        {REACTION_ICONS[item.reactionType] || item.reactionType}
-                                    </span>
-                                    <span className={styles.historyDate}>{formatDate(item.createdAt)}</span>
-                                </div>
-                                <div className={styles.historyContent}>
-                                    {item.postContent || <span style={{fontStyle: 'italic', color: '#9ca3af'}}>Media only post</span>}
-                                </div>
-                                <button 
-                                    className={styles.viewPostBtn}
-                                    onClick={() => window.open(`/post/${item.postId}`, '_blank')}
-                                >
-                                    View Post
-                                </button>
-                            </div>
-                        ))}
+        <div className={styles.activitySection}>
+            {/* Header */}
+            <div className={styles.activityHeader}>
+                <h2 className={styles.activityTitle}>Activity Management</h2>
+            </div>
+
+            {/* Tabs */}
+            <div className={styles.tabBar}>
+                <button
+                    className={`${styles.tabBtn} ${activeTab === 'my-activity' ? styles.tabBtnActive : ''}`}
+                    onClick={() => setActiveTab('my-activity')}
+                >
+                    My Activity
+                </button>
+                <button
+                    className={`${styles.tabBtn} ${activeTab === 'my-comments' ? styles.tabBtnActive : ''}`}
+                    onClick={() => setActiveTab('my-comments')}
+                >
+                    My Comments
+                </button>
+                <button
+                    className={`${styles.tabBtn} ${activeTab === 'interaction' ? styles.tabBtnActive : ''}`}
+                    onClick={() => setActiveTab('interaction')}
+                >
+                    Interaction Management
+                </button>
+            </div>
+
+            {/* My Activity Tab */}
+            {activeTab === 'my-activity' && (
+                <div className={styles.activityScrollArea}>
+                    <div className={styles.activityColHeader}>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                        Liked Posts
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className={styles.pagination}>
-                            <button 
-                                className={styles.pageBtn} 
-                                onClick={handlePrevPage} 
-                                disabled={page === 0}
-                            >
-                                Previous
-                            </button>
-                            <span className={styles.pageInfo}>
-                                Page {page + 1} of {totalPages}
-                            </span>
-                            <button 
-                                className={styles.pageBtn} 
-                                onClick={handleNextPage} 
-                                disabled={page >= totalPages - 1}
-                            >
-                                Next
-                            </button>
+                    {!loading && history.length === 0 ? (
+                        <div className={styles.colEmpty}>
+                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/></svg>
+                            <p>No activity yet. Start reacting to posts!</p>
+                        </div>
+                    ) : (
+                        <div className={styles.activityGrid}>
+                            {history.map(item => (
+                                <div key={item.reactId} className={styles.activityCard}>
+                                    {/* Header: Avatar Stack + Info */}
+                                    <div className={styles.activityCardHeader}>
+                                        <div className={styles.avatarStack}>
+                                            {item.groupId ? (
+                                                <>
+                                                    <img
+                                                        src={item.groupImage || '/default-group.png'}
+                                                        alt={item.groupName}
+                                                        className={styles.groupAvatarStack}
+                                                        onClick={() => window.open(`/groups/${item.groupId}`, '_blank')}
+                                                        title={item.groupName}
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                    />
+                                                    <img
+                                                        src={item.authorAvatarUrl || '/default-avatar.png'}
+                                                        alt={item.authorName}
+                                                        className={styles.userAvatarStackOverlap}
+                                                        onClick={() => window.open(`/profile/${item.authorId}`, '_blank')}
+                                                        title={item.authorName}
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                    />
+                                                </>
+                                            ) : (
+                                                <img
+                                                    src={item.authorAvatarUrl || '/default-avatar.png'}
+                                                    alt={item.authorName}
+                                                    className={styles.userAvatarStackSingle}
+                                                    onClick={() => window.open(`/profile/${item.authorId}`, '_blank')}
+                                                    title={item.authorName}
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                />
+                                            )}
+                                        </div>
+                                        
+                                        <div className={styles.headerInfo}>
+                                            <div className={styles.headerName}>
+                                                <span 
+                                                    className={styles.headerAuthorName}
+                                                    onClick={() => window.open(`/profile/${item.authorId}`, '_blank')}
+                                                >
+                                                    {item.authorName}
+                                                </span>
+                                                {item.groupId && (
+                                                    <>
+                                                        <span className={styles.headerNameSeparator}> ▶ </span>
+                                                        <span 
+                                                            className={styles.headerGroupName}
+                                                            onClick={() => window.open(`/groups/${item.groupId}`, '_blank')}
+                                                        >
+                                                            {item.groupName}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className={styles.headerDate}>{formatDate(item.createdAt)}</div>
+                                        </div>
+
+                                        <div className={styles.headerActions}>
+                                            <span className={styles.activityReactionIcon}>
+                                                {REACTION_ICONS[item.reactionType] || item.reactionType}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Post Content */}
+                                    <div className={styles.activityCardBody}>
+                                        <p className={styles.activityCardContent}>
+                                            {item.postContent || <span className={styles.activityMediaOnly}>Media post</span>}
+                                        </p>
+                                    </div>
+
+                                    {/* Thumbnail image (Fully Visible) */}
+                                    {item.files && item.files.length > 0 && (
+                                        <div className={styles.activityCardImageFull}>
+                                            <img
+                                                src={item.files[0].url}
+                                                alt="post thumbnail"
+                                                className={styles.activityImageUncropped}
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => {
+                                                    setPreviewImages(item.files.map((f: any) => f.url));
+                                                    setIsPreviewOpen(true);
+                                                }}
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Footer Actions */}
+                                    <div className={styles.activityCardFooter}>
+                                        <button
+                                            className={styles.activityViewBtn}
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await postApi.getPostById(item.postId);
+                                                    if (res.data && res.data.data) {
+                                                        setViewingPostData(res.data.data);
+                                                        setViewingPostId(item.postId);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Failed to fetch post details:', error);
+                                                }
+                                            }}
+                                            title="View post"
+                                        >
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            View Post
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
-                </>
+
+                    {/* Infinite scroll trigger */}
+                    <div ref={loaderRef} className={styles.scrollLoader}>
+                        {loading && (
+                            <span className={styles.scrollLoaderText}>Loading more...</span>
+                        )}
+                        {!hasMore && history.length > 0 && (
+                            <span className={styles.scrollEndText}>You've reached the end</span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* My Comments Tab */}
+            {activeTab === 'my-comments' && (
+                <div className={styles.comingDevelopmentFull}>
+                    <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <p className={styles.comingTitle}>Coming Soon</p>
+                    <p className={styles.comingDesc}>Comment history will be available in the next release.</p>
+                </div>
+            )}
+
+            {/* Interaction Management Tab */}
+            {activeTab === 'interaction' && (
+                <div className={styles.comingDevelopmentFull}>
+                    <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p className={styles.comingTitle}>Coming Soon</p>
+                    <p className={styles.comingDesc}>Interaction management features will be available soon.</p>
+                </div>
+            )}
+
+            {/* Overlays */}
+            {isPreviewOpen && (
+                <ImagePreviewModal
+                    images={previewImages}
+                    currentIndex={0}
+                    isOpen={isPreviewOpen}
+                    onClose={() => setIsPreviewOpen(false)}
+                />
+            )}
+
+            {viewingPostData && (
+                <div className={styles.postOverlayOverlay}>
+                    <div className={styles.postOverlayContent}>
+                        <button className={styles.postOverlayClose} onClick={() => setViewingPostData(null)}>✕</button>
+                        <div className={styles.postOverlayScroll}>
+                            <PostCard 
+                                post={viewingPostData}
+                                onDeleted={() => setViewingPostData(null)}
+                                onUpdated={(updated) => setViewingPostData(updated)}
+                                openCommentPostId={viewingPostData.id}
+                                onToggleComment={() => {}}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+function UserInterestsSection() {
+    const [interests, setInterests] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+
+    const fetchInterests = async (pageNumber: number) => {
+        setLoading(true);
+        try {
+            const { userInterestApi } = await import('../../../../api/post-service/userInterestApi');
+            const res = await userInterestApi.getMyInterests(pageNumber, 12);
+            if (res.data.success) {
+                setInterests(res.data.data.content);
+                setTotalPages(res.data.data.totalPages);
+            }
+        } catch (error) {
+            console.error('Failed to fetch user interests:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchInterests(page);
+    }, [page]);
+
+    const handleDelete = (tag: string) => {
+        setTagToDelete(tag);
+    };
+
+    const confirmDelete = async () => {
+        if (!tagToDelete) return;
+        const tag = tagToDelete;
+        setTagToDelete(null);
+        
+        try {
+            const { userInterestApi } = await import('../../../../api/post-service/userInterestApi');
+            const res = await userInterestApi.deleteMyInterest(tag);
+            if (res.data.success) {
+                // If it's the last item on the page and not the first page, go back
+                if (interests.length === 1 && page > 0) {
+                    setPage(p => p - 1);
+                } else {
+                    fetchInterests(page);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to delete interest:', error);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (page > 0) setPage(p => p - 1);
+    };
+
+    const handleNextPage = () => {
+        if (page < totalPages - 1) setPage(p => p + 1);
+    };
+
+    return (
+        <div className={styles.section}>
+            <div className={styles.infoCard}>
+                {loading ? (
+                    <div className={styles.loadingContainer}>Đang tải chủ đề...</div>
+                ) : interests.length === 0 ? (
+                    <div className={styles.emptyState} style={{ marginTop: '24px' }}>
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <p>Bạn chưa có chủ đề quan tâm nào. Hãy tương tác với các bài viết để thêm chủ đề!</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className={styles.interestsGrid}>
+                            {interests.map(item => (
+                                <div key={item.tag} className={styles.interestCard}>
+                                    <button 
+                                        className={styles.deleteInterestBtn}
+                                        onClick={() => handleDelete(item.tag)}
+                                        title="Bỏ quan tâm"
+                                    >
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                    
+                                    <div className={styles.interestTag}>#{item.tag}</div>
+                                    
+                                    <div className={styles.interestScore}>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                        </svg>
+                                        Độ quan tâm: {Math.round(item.score * 10) / 10}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className={styles.pagination}>
+                                <button 
+                                    className={styles.pageBtn} 
+                                    onClick={handlePrevPage} 
+                                    disabled={page === 0}
+                                >
+                                    Trang trước
+                                </button>
+                                <span className={styles.pageInfo}>
+                                    Trang {page + 1} / {totalPages}
+                                </span>
+                                <button 
+                                    className={styles.pageBtn} 
+                                    onClick={handleNextPage} 
+                                    disabled={page >= totalPages - 1}
+                                >
+                                    Trang sau
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {tagToDelete && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <h4>Xác nhận xóa</h4>
+                        <p>Bạn có chắc chắn muốn bỏ quan tâm chủ đề "{tagToDelete}"?</p>
+                        <div className={styles.modalActions}>
+                            <button onClick={() => setTagToDelete(null)} className={styles.cancelBtn}>Hủy</button>
+                            <button onClick={confirmDelete} className={styles.confirmBtn}>Xóa</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

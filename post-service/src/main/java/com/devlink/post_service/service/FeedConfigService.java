@@ -43,5 +43,7 @@ public interface FeedConfigService {
      * @param adminId ID of the admin performing the update
      * @return the updated config entry
      */
-    FeedScoringConfigResponse updateConfig(FeedScoringConfigRequest request, Long adminId);
+    FeedScoringConfigResponse updateConfig(FeedScoringConfigRequest request);
+
+
 }

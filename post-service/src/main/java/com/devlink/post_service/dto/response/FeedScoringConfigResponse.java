@@ -13,20 +13,22 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class FeedScoringConfigResponse {
-
     private Long id;
-
-    /** Machine-readable key, e.g. "score.like" */
+    /**
+     * Machine-readable key, e.g. "score.like"
+     */
     private String configKey;
-
-    /** Current numeric value */
+    /**
+     * Current numeric value
+     */
     private Double configValue;
-
-    /** Human-readable description shown in the admin panel */
+    /**
+     * Human-readable description shown in the admin panel
+     */
     private String description;
-
     private Instant updatedAt;
-
-    /** ID of the admin who last changed this entry */
+    /**
+     * ID of the admin who last changed this entry
+     */
     private Long updatedBy;
 }

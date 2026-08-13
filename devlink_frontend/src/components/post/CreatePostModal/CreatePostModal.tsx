@@ -4,6 +4,7 @@ import type { AxiosError } from 'axios';
 import { Globe, Users, Lock, ChevronDown, X, FileText, FileSpreadsheet, Presentation, File } from 'lucide-react';
 import { createPostApi } from '../../../api/post-service/createPostApi';
 import type { CreatePostRequest, Visibility } from '../../../types/post.types';
+import { useToast } from '../../../context/Toastcontext';
 import styles from './CreatePostModal.module.css';
 
 interface CreatePostModalProps {
@@ -65,6 +66,7 @@ function formatFileSize(bytes: number): string {
 export default function CreatePostModal({
                                             onClose, onSuccess, avatarUrl, displayName, groupId
                                         }: CreatePostModalProps) {
+    const { showToast } = useToast();
     const [content, setContent]             = useState('');
     const [visibility, setVisibility]       = useState<Visibility>('PUBLIC');
     const [visibilityOpen, setVisibilityOpen] = useState(false);
@@ -145,7 +147,7 @@ export default function CreatePostModal({
     const allFiles = [...mediaFiles, ...docFiles];
     const canSubmit = (content.trim().length > 0 || allFiles.length > 0) && !loading;
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (!canSubmit) return;
         setLoading(true);
         setError(null);
@@ -158,16 +160,19 @@ export default function CreatePostModal({
             groupId:    groupId,
         };
 
-        try {
-            await createPostApi.createPost(request);
-            onSuccess?.();
-            onClose();
-        } catch (err) {
-            const axiosErr = err as AxiosError<{ message?: string }>;
-            setError(axiosErr?.response?.data?.message ?? 'Đã có lỗi xảy ra, vui lòng thử lại.');
-        } finally {
-            setLoading(false);
-        }
+        showToast('Bài viết đang được xử lý và sẽ sớm hiển thị...', 'info');
+        onClose();
+
+        createPostApi.createPost(request)
+            .then(() => {
+                showToast('Đăng bài thành công!', 'success');
+                onSuccess?.();
+            })
+            .catch((err) => {
+                const axiosErr = err as AxiosError<{ message?: string }>;
+                const msg = axiosErr?.response?.data?.message ?? 'Đã có lỗi xảy ra, vui lòng thử lại.';
+                showToast(`Lỗi đăng bài: ${msg}`, 'error');
+            });
     };
 
     const currentVisibility = VISIBILITY_OPTIONS.find((o) => o.value === visibility)!;

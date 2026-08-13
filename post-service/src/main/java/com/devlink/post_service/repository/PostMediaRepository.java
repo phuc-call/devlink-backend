@@ -1,6 +1,7 @@
 package com.devlink.post_service.repository;
 
 import com.devlink.post_service.dto.response.MediaResponse;
+import com.devlink.post_service.dto.response.PostImageUrlResponse;
 import com.devlink.post_service.entity.PostMedia;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,17 @@ public interface PostMediaRepository extends JpaRepository<PostMedia, Long> {
                 ORDER BY m.orderIndex ASC
             """)
     List<MediaResponse> findMediaByPostIds(@Param("postIds") List<Long> postIds);
+
+    @Query("""
+                SELECT new com.devlink.post_service.dto.response.PostImageUrlResponse(
+                    m.post.id, m.url
+                )
+                FROM PostMedia m
+                WHERE m.post.id IN :postIds
+                  AND m.mediaType = 'IMAGE'
+                ORDER BY m.orderIndex ASC
+            """)
+    List<PostImageUrlResponse> findImageUrlsByPostIds(@Param("postIds") List<Long> postIds);
 
     @Query("""
                 SELECT new com.devlink.post_service.dto.response.MediaResponse(

@@ -6,6 +6,7 @@ import com.devlink.post_service.entity.FeedScoringConfig;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.FeedScoringConfigRepository;
+import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FeedConfigService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,7 +62,8 @@ public class FeedConfigServiceImpl implements FeedConfigService {
 
     @Override
     @Transactional
-    public FeedScoringConfigResponse updateConfig(FeedScoringConfigRequest request, Long adminId) {
+    public FeedScoringConfigResponse updateConfig(FeedScoringConfigRequest request) {
+        Long adminId = SecurityUtils.getCurrentUserId();
         FeedScoringConfig config = configRepository.findByConfigKey(request.getConfigKey())
                 .orElseThrow(() -> new AppException(ErrorCode.FEED_CONFIG_NOT_FOUND));
 

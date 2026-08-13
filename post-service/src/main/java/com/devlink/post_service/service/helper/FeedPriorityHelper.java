@@ -134,7 +134,10 @@ public class FeedPriorityHelper {
 
         List<Scored> scored = posts.stream().map(p -> {
             long likeCount = p.getLikeCount() != null ? p.getLikeCount() : 0L;
-            double score = likeCount * LIKE_WEIGHT;
+            // Add a small random noise (0.0 to 0.1) to break ties randomly.
+            // This ensures that posts with the same number of likes (e.g., 0 likes)
+            // don't always appear in the exact same database ID order on every refresh.
+            double score = (likeCount * LIKE_WEIGHT) + (Math.random() * 0.1);
             return new Scored(p, score);
         }).toList();
 
@@ -166,7 +169,7 @@ public class FeedPriorityHelper {
      * Reusable by any feed service that needs to rank posts.
      */
     public double computeScore(long likeCount) {
-        return likeCount * LIKE_WEIGHT;
+        return (likeCount * LIKE_WEIGHT) + (Math.random() * 0.1);
     }
 
     public Map<Long, UserProfileRepository.UserBasicInfo> safeGetProfiles(List<Long> authorIds) {

@@ -72,6 +72,7 @@ public class PostServiceImpl implements PostService {
     private final UserInterestRepository userInterestRepository;
     private final InterestScoringService interestScoringService;
     private final FeedConfigService feedConfigService;
+    private final FeedScoringConfigRepository feedScoringConfigRepository;
 
     @Override
     @Transactional
@@ -339,7 +340,9 @@ public class PostServiceImpl implements PostService {
         int userTagCount = (int) userInterestRepository.countByUserId(currentUserId);
         int topTagsLimit = userTagCount > 0 ? Math.min(userTagCount, maxTagsCap) : maxTagsCap;
 
-        long minLikeThreshold = 0L;
+        long minLikeThreshold = feedScoringConfigRepository.findConfigValueByKey(Constants.CONFIG_KEY_FEED_MIN_LIKE_THRESHOLD)
+                .map(Double::longValue)
+                .orElse(0L);
         // Fetch a pool 3x the limit to shuffle, making F5 yield more diverse results
         List<String> topTagsPool = userInterestRepository.findTopTagsByUserId(currentUserId, topTagsLimit * 3);
         List<String> topTags = new ArrayList<>();
@@ -381,7 +384,7 @@ public class PostServiceImpl implements PostService {
             long personalizedOffset = resolveRandomOffset(
                     postRepository.findPersonalizedFeedMinMaxId(topTags, minLikeThreshold, approvedGroupIds));
             Page<FeedPostResponse> pPage = postRepository.findPersonalizedFeed(topTags, minLikeThreshold,
-                    approvedGroupIds, personalizedOffset, PageRequest.of(0, personalizedSize));
+                    approvedGroupIds, personalizedOffset, PageRequest.of(page, personalizedSize));
             List<FeedPostResponse> pContent = new ArrayList<>(pPage.getContent());
             for (FeedPostResponse p : pContent) {
                 if (seenIds.add(p.getId())) combinedPosts.add(p);
@@ -390,7 +393,7 @@ public class PostServiceImpl implements PostService {
             if (pContent.size() < personalizedSize) {
                 int missing = personalizedSize - pContent.size();
                 Page<FeedPostResponse> pExtra = postRepository.findPersonalizedFeed(topTags, minLikeThreshold,
-                        approvedGroupIds, 0L, PageRequest.of(0, missing));
+                        approvedGroupIds, 0L, PageRequest.of(page, missing));
                 for (FeedPostResponse p : pExtra.getContent()) {
                     if (seenIds.add(p.getId())) combinedPosts.add(p);
                 }
@@ -401,7 +404,7 @@ public class PostServiceImpl implements PostService {
             long groupOffset = resolveRandomOffset(
                     postRepository.findGroupTrendingMinMaxId(approvedGroupIds));
             Page<FeedPostResponse> gPage = postRepository.findGroupTrendingFeed(approvedGroupIds,
-                    groupOffset, PageRequest.of(0, groupSize));
+                    groupOffset, PageRequest.of(page, groupSize));
             for (FeedPostResponse p : gPage.getContent()) {
                 if (seenIds.add(p.getId())) combinedPosts.add(p);
             }
@@ -410,7 +413,7 @@ public class PostServiceImpl implements PostService {
         long trendingOffset = resolveRandomOffset(
                 postRepository.findGeneralTrendingMinMaxId(minLikeThreshold, approvedGroupIds));
         Page<FeedPostResponse> tPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds,
-                trendingOffset, PageRequest.of(0, trendingSize));
+                trendingOffset, PageRequest.of(page, trendingSize));
         for (FeedPostResponse p : tPage.getContent()) {
             if (seenIds.add(p.getId())) combinedPosts.add(p);
         }
@@ -419,7 +422,7 @@ public class PostServiceImpl implements PostService {
             int missing = size - combinedPosts.size();
             // Call again from offset = 0 to supplement missing posts
             Page<FeedPostResponse> extraPage = postRepository.findGeneralTrendingFeed(minLikeThreshold,
-                    approvedGroupIds, 0L, PageRequest.of(0, missing));
+                    approvedGroupIds, 0L, PageRequest.of(page, missing));
             for (FeedPostResponse p : extraPage.getContent()) {
                 if (seenIds.add(p.getId())) combinedPosts.add(p);
             }

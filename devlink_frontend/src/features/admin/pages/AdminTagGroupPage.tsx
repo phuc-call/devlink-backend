@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, Users, Sparkles, RefreshCw, ChevronLeft, ChevronRight, X, Check, TrendingUp, Tag, Search, Eye, AlertCircle, Layers, ScanSearch, Minus } from 'lucide-react';
 import { tagGroupApi, adminUserApi } from '../../../api/post-service/adminApi';
 import type { TagGroupResponse, TagWithCount, AdminUserResponse, ProposedGroupResponse, TagGroupRequest } from '../../../api/post-service/adminApi';
+import AdminFeedConfigPage from './AdminFeedConfigPage';
 
 // ─── Shared Styles ────────────────────────────────────────────────────────────
 const S = {
@@ -16,6 +17,8 @@ const S = {
 interface PreviewGroup { name:string; description:string; tags:string[]; matchKeyword:string; autoAssignable:boolean }
 
 export default function AdminTagGroupPage() {
+  const [activeTab, setActiveTab] = useState<'tags'|'feed'>('tags');
+
   // ── Tag Pool (Left) ──
   const [tagPool, setTagPool] = useState<TagWithCount[]>([]);
   const [tagSearch, setTagSearch] = useState('');
@@ -266,24 +269,39 @@ export default function AdminTagGroupPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}}>
         <div>
-          <h1 style={{margin:0,fontSize:22,fontWeight:700,color:'#111827',display:'flex',alignItems:'center',gap:8}}><Layers size={22} color='#3B82F6'/> Tag Group Management</h1>
-          <p style={{margin:'2px 0 0',fontSize:13,color:'#6B7280'}}>{total} groups <Minus size={10} style={{display:'inline',verticalAlign:'middle'}}/> Manage tags, groups &amp; user interests</p>
+          <h1 style={{margin:0,fontSize:22,fontWeight:700,color:'#111827',display:'flex',alignItems:'center',gap:8}}><Layers size={22} color='#111827'/> Tags & Feed Config</h1>
+          <p style={{margin:'2px 0 0',fontSize:13,color:'#6B7280'}}>Manage tag groups, user interests, and feed scoring logic.</p>
         </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <button onClick={handleSuggestGroups} disabled={suggestLoading}
-            style={{...S.btn('#F59E0B'), opacity: suggestLoading ? 0.7 : 1, cursor: suggestLoading ? 'not-allowed' : 'pointer'}}>
-            {suggestLoading
-              ? <RefreshCw size={14} style={{animation:'spin 1s linear infinite'}}/>
-              : <Sparkles size={14}/>}
-            {suggestLoading ? 'Analyzing Tags...' : 'Suggest Groups'}
-          </button>
-          <button onClick={()=>openForm(null)} style={S.btn()}>
-            <Plus size={14}/> New Group
-          </button>
+        <div style={{display:'flex',gap:16,alignItems:'center'}}>
+          <div style={{display:'flex',background:'#E5E7EB',padding:4,borderRadius:10,gap:4}}>
+            <button onClick={()=>setActiveTab('tags')} style={{padding:'6px 16px',border:'none',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer',background:activeTab==='tags'?'#fff':'transparent',color:activeTab==='tags'?'#111827':'#6B7280',boxShadow:activeTab==='tags'?'0 2px 6px rgba(0,0,0,0.05)':'none',transition:'all .2s'}}>
+              Tag Groups
+            </button>
+            <button onClick={()=>setActiveTab('feed')} style={{padding:'6px 16px',border:'none',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer',background:activeTab==='feed'?'#fff':'transparent',color:activeTab==='feed'?'#111827':'#6B7280',boxShadow:activeTab==='feed'?'0 2px 6px rgba(0,0,0,0.05)':'none',transition:'all .2s'}}>
+              Feed Config
+            </button>
+          </div>
+          {activeTab === 'tags' && (
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button onClick={handleSuggestGroups} disabled={suggestLoading}
+                style={{...S.btn('#F3F4F6', '#111827'), border: '1px solid #E5E7EB', opacity: suggestLoading ? 0.7 : 1, cursor: suggestLoading ? 'not-allowed' : 'pointer'}}>
+                {suggestLoading
+                  ? <RefreshCw size={14} style={{animation:'spin 1s linear infinite'}}/>
+                  : <Sparkles size={14}/>}
+                {suggestLoading ? 'Analyzing...' : 'Suggest'}
+              </button>
+              <button onClick={()=>openForm(null)} style={{...S.btn('#111827','#fff')}}>
+                <Plus size={14}/> New Group
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── 3-Panel Layout ── */}
+      {/* ── Content ── */}
+      {activeTab === 'feed' ? (
+        <AdminFeedConfigPage />
+      ) : (
       <div className="three-panel-grid">
 
         {/* ══ LEFT: Tag Pool ══ */}
@@ -515,6 +533,7 @@ export default function AdminTagGroupPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ══ Assign Modal ══ */}
       {assignModal && (

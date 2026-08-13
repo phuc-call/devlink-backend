@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { Award } from 'lucide-react';
 import { badgeApi } from '../../../api/user-service/badgeApi';
 import type { BadgeStatsResponse, BadgeType } from '../../../types/badge.types';
@@ -17,6 +17,7 @@ interface SliceDatum {
     name: string;
     value: number;
     badge: BadgeType;
+    fill: string;
 }
 
 export default function BadgeOverviewChart() {
@@ -44,7 +45,8 @@ export default function BadgeOverviewChart() {
             name: BADGE_LABELS[badge],
             value: stats[key],
             badge,
-        })).filter(d => d.value > 0)
+            fill: BADGE_COLORS[badge].color
+        }))
         : [];
 
     return (
@@ -87,57 +89,43 @@ export default function BadgeOverviewChart() {
             )}
 
             {!loading && !error && stats && data.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-                    <div style={{ width: 200, height: 200, position: 'relative', flexShrink: 0 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={data}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    innerRadius={55}
-                                    outerRadius={90}
-                                    paddingAngle={2}
-                                    cursor="pointer"
-                                    onClick={(entry: SliceDatum) => goToBadge(entry.badge)}
-                                >
-                                    {data.map(entry => (
-                                        <Cell key={entry.badge} fill={BADGE_COLORS[entry.badge].color} stroke="#fff" strokeWidth={2} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value: number, name: string) => [`${value.toLocaleString()} user`, name]} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tổng</div>
-                                <div style={{ fontSize: 22, fontWeight: 700, color: '#111827' }}>{stats.total.toLocaleString()}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gap: 8, flex: 1, minWidth: 180 }}>
-                        {SLICES.map(({ key, badge }) => (
-                            <button
-                                key={badge}
-                                type="button"
-                                onClick={() => goToBadge(badge)}
-                                style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    gap: 10, padding: '8px 12px', borderRadius: 10,
-                                    background: BADGE_COLORS[badge].bg,
-                                    border: `1px solid ${BADGE_COLORS[badge].border}`,
-                                    cursor: 'pointer', textAlign: 'left',
-                                }}
+                <div style={{ width: '100%', height: 240, marginTop: 16 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 50, left: 0, bottom: 0 }}>
+                            <XAxis type="number" hide />
+                            <YAxis 
+                                type="category" 
+                                dataKey="name" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#4B5563', fontSize: 13, fontWeight: 600 }} 
+                                width={120} 
+                            />
+                            <Tooltip 
+                                cursor={{ fill: '#F3F4F6', opacity: 0.6 }} 
+                                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} 
+                                formatter={(value: number) => [`${value.toLocaleString()} người`, 'Số lượng']} 
+                            />
+                            <Bar 
+                                dataKey="value" 
+                                radius={[0, 8, 8, 0]} 
+                                barSize={28}
+                                onClick={(entry: SliceDatum) => goToBadge(entry.badge)} 
+                                cursor="pointer"
+                                background={{ fill: '#F3F4F6', radius: [0, 8, 8, 0] }}
                             >
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: BADGE_COLORS[badge].color, display: 'inline-block' }} />
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{BADGE_LABELS[badge]}</span>
-                                </span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{stats[key].toLocaleString()}</span>
-                            </button>
-                        ))}
-                    </div>
+                                {data.map(entry => (
+                                    <Cell key={entry.badge} fill={entry.fill} />
+                                ))}
+                                <LabelList 
+                                    dataKey="value" 
+                                    position="right" 
+                                    formatter={(val: number) => val.toLocaleString()}
+                                    style={{ fill: '#111827', fontSize: 14, fontWeight: 700 }} 
+                                />
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             )}
         </div>

@@ -28,10 +28,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("""
                 SELECT new com.devlink.post_service.dto.response.ReactHistoryResponse(
-                    r.id, r.createdAt, p.id, p.content, p.authorId, r.reactionType
+                    r.id, r.createdAt, p.id, p.content, p.authorId,
+                    up.userName, up.avatarUrl, r.reactionType, p.groupId
                 )
                 FROM Post p
                 JOIN Reaction r ON r.targetId = p.id AND r.targetType = com.devlink.post_service.entity.enums.TargetType.POST
+                LEFT JOIN UserProfile up ON up.userId = p.authorId
                 WHERE r.userId = :userId
                   AND p.status NOT IN (PostStatus.DELETED)
                   AND p.deletedAt IS NULL
@@ -53,6 +55,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("blockedIds") List<Long> blockedIds,
             @Param("approvedGroupIds") List<Long> approvedGroupIds,
             Pageable pageable);
+
 
     @Query(FEED_SELECT + """
                 FROM Post p

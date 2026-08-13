@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.devlink.post_service.dto.response.UserInterestResponse;
+import com.devlink.post_service.security.SecurityUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -42,7 +46,8 @@ public class InterestScoringService {
 
             // Sliding window: keep maximum allowed tags per user.
             // If a user interacts with a new tag and exceeds the limit,
-            // remove the tag with the lowest score (after decay) to make room for the new one.
+            // remove the tag with the lowest score (after decay) to make room for the new
+            // one.
             enforceInterestCap(userId);
 
             log.debug("[Interest] userId={} postId={} action={} -> +{} score for {} tags (decayRate={})",
@@ -72,14 +77,33 @@ public class InterestScoringService {
      * Optimized: executes a single DELETE query instead of multiple round-trips.
      */
     private void enforceInterestCap(Long userId) {
-        int maxInterestsPerUser = (int) feedConfigService.getConfigValue(Constants.CONFIG_KEY_INTEREST_MAX_TAGS_PER_USER, 20.0);
-        
+        int maxInterestsPerUser = (int) feedConfigService
+                .getConfigValue(Constants.CONFIG_KEY_INTEREST_MAX_TAGS_PER_USER, 20.0);
+
         long count = userInterestRepository.countByUserId(userId);
-        if (count <= maxInterestsPerUser) return;
+        if (count <= maxInterestsPerUser)
+            return;
 
         int excess = (int) (count - maxInterestsPerUser);
         // Remove excess tags with the lowest score in a single query
         userInterestRepository.deleteExcessTags(userId, excess);
         log.debug("[Interest] userId={} evicted {} low-score tag(s) (cap={})", userId, excess, maxInterestsPerUser);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserInterestResponse> getMyInterests(Pageable pageable) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return userInterestRepository.findByUserIdOrderByScoreDesc(userId, pageable)
+                .map(ui -> UserInterestResponse.builder()
+                        .tag(ui.getTag())
+                        .score(ui.getScore())
+                        .lastInteractedAt(ui.getLastInteractedAt())
+                        .build());
+    }
+
+    @Transactional
+    public void removeInterest(String tag) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        userInterestRepository.deleteByUserIdAndTag(userId, tag);
     }
 }

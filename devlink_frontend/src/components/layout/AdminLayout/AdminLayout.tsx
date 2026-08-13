@@ -58,8 +58,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     {
         title: 'Hệ thống',
         items: [
-            { label: 'Tag Groups', path: '/admin/tag-groups', icon: <Tag size={16} /> },
-            { label: 'Feed Config', path: '/admin/feed-config', icon: <Sliders size={16} /> },
+            { label: 'Tham số hệ thống', path: '/admin/tag-groups', icon: <Tag size={16} /> },
             { label: 'Cài đặt', path: '/admin/settings', icon: <Settings size={16} /> },
         ],
     },

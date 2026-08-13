@@ -60,6 +60,7 @@ public class ReactionServiceImpl implements ReactionService {
 
             if (reaction.getReactionType() == request.getReactionType()) {
                 reactionRepository.delete(reaction);
+                updateTargetLikeCount(request.getTargetId(), request.getTargetType(), -1);
             } else {
                 // Đổi sang type another
                 reaction.setReactionType(request.getReactionType());
@@ -76,6 +77,7 @@ public class ReactionServiceImpl implements ReactionService {
                     .reactionType(request.getReactionType())
                     .build();
             reactionRepository.save(newReaction);
+            updateTargetLikeCount(request.getTargetId(), request.getTargetType(), 1);
             currentUserReaction = request.getReactionType();
             shouldNotify=true;
         }
@@ -86,9 +88,30 @@ public class ReactionServiceImpl implements ReactionService {
             }
         }
 
-        webSocketEventPublisher.publishPostEvent(request.getTargetId(), WsEventConstants.NEW_REACTION, null);
+        Long postId = resolvePostId(request.getTargetId(), request.getTargetType());
+        if (postId != null) {
+            webSocketEventPublisher.publishPostEvent(postId, WsEventConstants.NEW_REACTION, null);
+        }
 
         return buildResponse(request.getTargetId(), request.getTargetType(), currentUserReaction);
+    }
+
+    private void updateTargetLikeCount(Long targetId, TargetType targetType, int delta) {
+        if (delta == 0) return;
+        switch (targetType) {
+            case POST -> postRepository.findById(targetId).ifPresent(p -> {
+                p.setLikeCount(Math.max(0, (p.getLikeCount() == null ? 0 : p.getLikeCount()) + delta));
+                postRepository.save(p);
+            });
+            case COMMENT -> commentRepository.findById(targetId).ifPresent(c -> {
+                c.setLikeCount(Math.max(0, (c.getLikeCount() == null ? 0 : c.getLikeCount()) + delta));
+                commentRepository.save(c);
+            });
+            case COMMENT_REPLY -> commentReplyRepository.findById(targetId).ifPresent(r -> {
+                r.setLikeCount(Math.max(0, (r.getLikeCount() == null ? 0 : r.getLikeCount()) + delta));
+                commentReplyRepository.save(r);
+            });
+        }
     }
 
     private void publishReactionCreatedEvent(ReactionRequest request, Long actorId) {

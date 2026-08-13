@@ -21,6 +21,7 @@ export default function Header() {
     const location = useLocation();
 
     const [user, setUser] = useState<UserProfileResponse | null>(null);
+    const isAdmin = localStorage.getItem('role') === 'ADMIN';
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -206,6 +207,15 @@ export default function Header() {
                                     </svg>
                                     Thư viện của tôi
                                 </button>
+                                {isAdmin && (
+                                    <button type="button" className={styles.dropItem}
+                                        onClick={() => { navigate('/admin'); setDropdownOpen(false); }}>
+                                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+                                            <path d="M10 2l1.6 3.2L15 6l-2.4 2.4L13.2 12 10 10.4 6.8 12l.6-3.6L5 6l3.4-.8L10 2z" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                        Trang Admin
+                                    </button>
+                                )}
                                 <div className={styles.dropDivider} />
                                 <button
                                     type="button"
