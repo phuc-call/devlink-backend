@@ -301,8 +301,12 @@ public class PostServiceImpl implements PostService {
     }
 
     private void validateFiles(List<MultipartFile> files) {
-        if (files.size() > Constants.MAX_FILE_COUNT)
+        int maxFileCount = (int) feedConfigService.getConfigValue(Constants.CONFIG_KEY_POST_MAX_FILE_COUNT, (double) Constants.MAX_FILE_COUNT);
+        if (files.size() > maxFileCount)
             throw new AppException(ErrorCode.POST_TOO_MANY_FILES);
+
+        long maxSizeBytes = (long) feedConfigService.getConfigValue(Constants.CONFIG_KEY_POST_MAX_FILE_SIZE, (double) Constants.MAX_SIZE_BYTES);
+        long maxTotalSizeBytes = (long) feedConfigService.getConfigValue(Constants.CONFIG_KEY_POST_MAX_TOTAL_SIZE, (double) Constants.MAX_TOTAL_SIZE_BYTES);
 
         long totalSize = 0;
         for (MultipartFile file : files) {
@@ -310,8 +314,8 @@ public class PostServiceImpl implements PostService {
             if (file.isEmpty())
                 throw new AppException(ErrorCode.POST_FILE_EMPTY);
 
-            // 50MB
-            if (file.getSize() > Constants.MAX_SIZE_BYTES)
+            // Size limit
+            if (file.getSize() > maxSizeBytes)
                 throw new AppException(ErrorCode.POST_FILE_TOO_LARGE);
 
             // Extension hợp lệ
@@ -322,8 +326,8 @@ public class PostServiceImpl implements PostService {
             totalSize += file.getSize();
         }
 
-        // sum quality not more than 200MB
-        if (totalSize > Constants.MAX_TOTAL_SIZE_BYTES)
+        // sum quality
+        if (totalSize > maxTotalSizeBytes)
             throw new AppException(ErrorCode.POST_FILE_TOTAL_SIZE_EXCEEDED);
     }
 
@@ -340,7 +344,8 @@ public class PostServiceImpl implements PostService {
         int userTagCount = (int) userInterestRepository.countByUserId(currentUserId);
         int topTagsLimit = userTagCount > 0 ? Math.min(userTagCount, maxTagsCap) : maxTagsCap;
 
-        long minLikeThreshold = feedScoringConfigRepository.findConfigValueByKey(Constants.CONFIG_KEY_FEED_MIN_LIKE_THRESHOLD)
+        long minLikeThreshold = feedScoringConfigRepository
+                .findConfigValueByKey(Constants.CONFIG_KEY_FEED_MIN_LIKE_THRESHOLD)
                 .map(Double::longValue)
                 .orElse(0L);
         // Fetch a pool 3x the limit to shuffle, making F5 yield more diverse results
@@ -365,7 +370,7 @@ public class PostServiceImpl implements PostService {
             approvedGroupIds.add(-1L);
         }
 
-        int personalizedSize = (int) (size * 0.8);
+        int personalizedSize = (int) (size * 0.6);
         int groupSize = (int) (size * 0.1);
         int trendingSize = size - personalizedSize - groupSize;
 
@@ -387,15 +392,18 @@ public class PostServiceImpl implements PostService {
                     approvedGroupIds, personalizedOffset, PageRequest.of(page, personalizedSize));
             List<FeedPostResponse> pContent = new ArrayList<>(pPage.getContent());
             for (FeedPostResponse p : pContent) {
-                if (seenIds.add(p.getId())) combinedPosts.add(p);
+                if (seenIds.add(p.getId()))
+                    combinedPosts.add(p);
             }
-            // If not enough posts are retrieved (offset near MAX), supplement from the beginning of the list
+            // If not enough posts are retrieved (offset near MAX), supplement from the
+            // beginning of the list
             if (pContent.size() < personalizedSize) {
                 int missing = personalizedSize - pContent.size();
                 Page<FeedPostResponse> pExtra = postRepository.findPersonalizedFeed(topTags, minLikeThreshold,
                         approvedGroupIds, 0L, PageRequest.of(page, missing));
                 for (FeedPostResponse p : pExtra.getContent()) {
-                    if (seenIds.add(p.getId())) combinedPosts.add(p);
+                    if (seenIds.add(p.getId()))
+                        combinedPosts.add(p);
                 }
             }
         }
@@ -406,7 +414,8 @@ public class PostServiceImpl implements PostService {
             Page<FeedPostResponse> gPage = postRepository.findGroupTrendingFeed(approvedGroupIds,
                     groupOffset, PageRequest.of(page, groupSize));
             for (FeedPostResponse p : gPage.getContent()) {
-                if (seenIds.add(p.getId())) combinedPosts.add(p);
+                if (seenIds.add(p.getId()))
+                    combinedPosts.add(p);
             }
         }
 
@@ -415,7 +424,8 @@ public class PostServiceImpl implements PostService {
         Page<FeedPostResponse> tPage = postRepository.findGeneralTrendingFeed(minLikeThreshold, approvedGroupIds,
                 trendingOffset, PageRequest.of(page, trendingSize));
         for (FeedPostResponse p : tPage.getContent()) {
-            if (seenIds.add(p.getId())) combinedPosts.add(p);
+            if (seenIds.add(p.getId()))
+                combinedPosts.add(p);
         }
 
         if (combinedPosts.size() < size) {
@@ -424,7 +434,8 @@ public class PostServiceImpl implements PostService {
             Page<FeedPostResponse> extraPage = postRepository.findGeneralTrendingFeed(minLikeThreshold,
                     approvedGroupIds, 0L, PageRequest.of(page, missing));
             for (FeedPostResponse p : extraPage.getContent()) {
-                if (seenIds.add(p.getId())) combinedPosts.add(p);
+                if (seenIds.add(p.getId()))
+                    combinedPosts.add(p);
             }
         }
 
@@ -458,9 +469,9 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        // Apply 80/20 priority-discovery ranking
-        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
-        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
+        // Keep chronological order (createdAt DESC) — no shuffling
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichOnly(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
     @Override
@@ -499,8 +510,9 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
-        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
+        // Keep chronological order (createdAt DESC) — no shuffling
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichOnly(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
     @Override
@@ -540,7 +552,8 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
+        // Keep chronological order (createdAt DESC) — no shuffling
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichOnly(posts, postIds);
         return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
@@ -740,9 +753,9 @@ public class PostServiceImpl implements PostService {
 
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
-        // Apply 80/20 priority-discovery ranking
-        List<FeedPostResponse> ranked = feedPriorityHelper.enrichAndRank(posts, postIds);
-        return new PageImpl<>(ranked, postPage.getPageable(), postPage.getTotalElements());
+        // Keep chronological order (createdAt DESC) — no shuffling
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichOnly(posts, postIds);
+        return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
     @Override
@@ -778,8 +791,8 @@ public class PostServiceImpl implements PostService {
         List<FeedPostResponse> posts = new ArrayList<>(postPage.getContent());
         List<Long> postIds = posts.stream().map(FeedPostResponse::getId).toList();
 
-        // Enrich the posts (author info, media, tags, etc.)
-        List<FeedPostResponse> enriched = feedPriorityHelper.enrichAndRank(posts, postIds);
+        // Enrich posts (author info, media, tags) — keep createdAt DESC order
+        List<FeedPostResponse> enriched = feedPriorityHelper.enrichOnly(posts, postIds);
         return new PageImpl<>(enriched, postPage.getPageable(), postPage.getTotalElements());
     }
 
@@ -864,10 +877,17 @@ public class PostServiceImpl implements PostService {
         String ext = getExt(file.getOriginalFilename());
         MediaType mType = resolveMediaType(ext);
         String url = fileStorageService.upload(file, "posts/" + mType.name().toLowerCase());
+        
+        Integer durationSeconds = null;
+        if (mType == MediaType.VIDEO) {
+            durationSeconds = (int) ((file.getSize() / Constants.BYTES_PER_MB) * Constants.SECONDS_PER_MB_VIDEO);
+        }
+        
         return PostMedia.builder()
                 .post(post).mediaType(mType).url(url)
                 .originalName(file.getOriginalFilename())
                 .fileExtension(ext).fileSize(file.getSize())
+                .durationSeconds(durationSeconds)
                 .orderIndex(orderIndex)
                 .build();
     }
@@ -990,8 +1010,10 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
-     * Calculates a random offset in the range [minId, maxId] to implement Random ID Range pagination.
-     * This is an optimized alternative to ORDER BY RAND(), utilizing PK index range scans for better performance.
+     * Calculates a random offset in the range [minId, maxId] to implement Random ID
+     * Range pagination.
+     * This is an optimized alternative to ORDER BY RAND(), utilizing PK index range
+     * scans for better performance.
      *
      * @param minMax Object[] from query SELECT MIN(id), MAX(id)
      * @return a random offset in [minId, maxId], or 0L if empty
@@ -1002,7 +1024,8 @@ public class PostServiceImpl implements PostService {
         }
         long minId = ((Number) minMax[0]).longValue();
         long maxId = ((Number) minMax[1]).longValue();
-        if (minId >= maxId) return minId;
+        if (minId >= maxId)
+            return minId;
         return ThreadLocalRandom.current().nextLong(minId, maxId + 1);
     }
 

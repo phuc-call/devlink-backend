@@ -57,8 +57,6 @@ public class VideoLimitChecker {
 
         int dailyCap = limit.getMaxCount() != null ? limit.getMaxCount() : 0;
         validateAndIncrementDailyCount(userId, videoFiles.size(), dailyCap);
-
-        validateAndIncrementDailyCount(userId, videoFiles.size(), dailyCap);
     }
 
     private List<MultipartFile> filterVideoFiles(List<MultipartFile> files) {

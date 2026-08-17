@@ -164,27 +164,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable);
 
     /**
-     * Fetches active VIDEO posts filtered by file size (bytes) of their video
-     * attachment.
-     *
-     * FIX: Replaced bare enum class references (PostType.VIDEO, PostStatus.ACTIVE,
-     * etc.)
-     * with string literals ('VIDEO', 'ACTIVE', 'APPROVED', 'PUBLIC',
-     * 'FOLLOWERS_ONLY', 'VIDEO')
-     * because JPQL does not automatically resolve unqualified enum class names
-     * unless they
-     * are registered as static imports in the persistence unit. String literals are
-     * safer
-     * and work consistently across JPA providers.
-     *
-     * Also replaced MediaType.VIDEO with string 'VIDEO' for the same reason.
+     * Fetches a personalized VIDEO feed using duration, tags, and random offset.
      */
     @Query("""
                 SELECT new com.devlink.post_service.dto.response.VideoPostResponse(
                     p.id, p.authorId, p.content,
                     p.viewCount, p.createdAt, p.updatedAt,
                     p.commentCount, p.likeCount,
-                    MIN(m.fileSize)
+                    MIN(m.durationSeconds)
                 )
                 FROM Post p
                 JOIN p.mediaList m
@@ -192,26 +179,104 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
                   AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
-                  AND (
-                      p.visibility = 'PUBLIC'
-                      OR (p.visibility = 'FOLLOWERS_ONLY' AND p.authorId IN :friendIds)
-                  )
-                  AND p.authorId NOT IN :blockedIds
+                  AND p.visibility = 'PUBLIC'
+                  AND p.likeCount >= :minLike
                   AND m.mediaType = 'VIDEO'
-                  AND m.fileSize IS NOT NULL
-                  AND m.fileSize >= :minBytes
-                  AND m.fileSize <= :maxBytes
+                  AND (COALESCE(m.durationSeconds, 0) >= :minSeconds OR :minSeconds = 0)
+                  AND (COALESCE(m.durationSeconds, 0) <= :maxSeconds OR :maxSeconds = 0)
+                  AND p.id >= :randomOffset
+                  AND EXISTS (
+                      SELECT 1 FROM PostTag pt
+                      WHERE pt.post = p
+                      AND pt.tag IN :tags
+                  )
                 GROUP BY p.id, p.authorId, p.content,
                          p.viewCount, p.createdAt, p.updatedAt,
                          p.commentCount, p.likeCount
-                ORDER BY p.createdAt DESC
+                ORDER BY p.id ASC
             """)
-    Page<VideoPostResponse> findVideoFeedByFileSize(
-            @Param("blockedIds") List<Long> blockedIds,
-            @Param("friendIds") List<Long> friendIds,
-            @Param("minBytes") long minBytes,
-            @Param("maxBytes") long maxBytes,
+    Page<VideoPostResponse> findPersonalizedVideoFeed(
+            @Param("tags") List<String> tags,
+            @Param("minLike") long minLike,
+            @Param("randomOffset") long randomOffset,
+            @Param("minSeconds") int minSeconds,
+            @Param("maxSeconds") int maxSeconds,
             Pageable pageable);
+
+    @Query("""
+                SELECT MIN(p.id), MAX(p.id)
+                FROM Post p
+                JOIN p.mediaList m
+                WHERE p.postType = 'VIDEO'
+                  AND p.status NOT IN ('DELETED', 'SUSPENDED')
+                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
+                  AND p.deletedAt IS NULL
+                  AND p.visibility = 'PUBLIC'
+                  AND p.likeCount >= :minLike
+                  AND m.mediaType = 'VIDEO'
+                  AND (COALESCE(m.durationSeconds, 0) >= :minSeconds OR :minSeconds = 0)
+                  AND (COALESCE(m.durationSeconds, 0) <= :maxSeconds OR :maxSeconds = 0)
+                  AND EXISTS (
+                      SELECT 1 FROM PostTag pt
+                      WHERE pt.post = p
+                      AND pt.tag IN :tags
+                  )
+            """)
+    Object[] findPersonalizedVideoFeedMinMaxId(
+            @Param("tags") List<String> tags,
+            @Param("minLike") long minLike,
+            @Param("minSeconds") int minSeconds,
+            @Param("maxSeconds") int maxSeconds);
+
+    @Query("""
+                SELECT new com.devlink.post_service.dto.response.VideoPostResponse(
+                    p.id, p.authorId, p.content,
+                    p.viewCount, p.createdAt, p.updatedAt,
+                    p.commentCount, p.likeCount,
+                    MIN(m.durationSeconds)
+                )
+                FROM Post p
+                JOIN p.mediaList m
+                WHERE p.postType = 'VIDEO'
+                  AND p.status NOT IN ('DELETED', 'SUSPENDED')
+                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
+                  AND p.deletedAt IS NULL
+                  AND p.visibility = 'PUBLIC'
+                  AND p.likeCount >= :minLike
+                  AND m.mediaType = 'VIDEO'
+                  AND (COALESCE(m.durationSeconds, 0) >= :minSeconds OR :minSeconds = 0)
+                  AND (COALESCE(m.durationSeconds, 0) <= :maxSeconds OR :maxSeconds = 0)
+                  AND p.id >= :randomOffset
+                GROUP BY p.id, p.authorId, p.content,
+                         p.viewCount, p.createdAt, p.updatedAt,
+                         p.commentCount, p.likeCount
+                ORDER BY p.id ASC
+            """)
+    Page<VideoPostResponse> findGeneralTrendingVideoFeed(
+            @Param("minLike") long minLike,
+            @Param("randomOffset") long randomOffset,
+            @Param("minSeconds") int minSeconds,
+            @Param("maxSeconds") int maxSeconds,
+            Pageable pageable);
+
+    @Query("""
+                SELECT MIN(p.id), MAX(p.id)
+                FROM Post p
+                JOIN p.mediaList m
+                WHERE p.postType = 'VIDEO'
+                  AND p.status NOT IN ('DELETED', 'SUSPENDED')
+                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
+                  AND p.deletedAt IS NULL
+                  AND p.visibility = 'PUBLIC'
+                  AND p.likeCount >= :minLike
+                  AND m.mediaType = 'VIDEO'
+                  AND (COALESCE(m.durationSeconds, 0) >= :minSeconds OR :minSeconds = 0)
+                  AND (COALESCE(m.durationSeconds, 0) <= :maxSeconds OR :maxSeconds = 0)
+            """)
+    Object[] findGeneralTrendingVideoFeedMinMaxId(
+            @Param("minLike") long minLike,
+            @Param("minSeconds") int minSeconds,
+            @Param("maxSeconds") int maxSeconds);
 
     /**
      * Fetches a single VIDEO post by ID for the detail view.
@@ -222,7 +287,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                     p.id, p.authorId, p.content,
                     p.viewCount, p.createdAt, p.updatedAt,
                     p.commentCount, p.likeCount,
-                    MIN(m.fileSize)
+                    MIN(m.durationSeconds)
                 )
                 FROM Post p
                 JOIN p.mediaList m

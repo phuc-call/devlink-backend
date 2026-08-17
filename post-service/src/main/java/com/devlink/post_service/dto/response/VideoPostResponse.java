@@ -30,5 +30,5 @@ public class VideoPostResponse {
     /**
      * Used internally to distinguish short vs long videos (not sent to client).
      */
-    private Long videoFileSize;
+    private Integer durationSeconds;
 }

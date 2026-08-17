@@ -10,7 +10,7 @@ public enum ErrorCode {
 
     POST_FILE_REQUIRED("FILE type post must have at least one attachment", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_TOO_LARGE("File exceeds the 80MB limit", HttpStatus.BAD_REQUEST),
+    POST_FILE_TOO_LARGE("File exceeds the maximum allowed size (1024MB)", HttpStatus.BAD_REQUEST),
 
     FILE_UPLOAD_FAILED("File is invalid, please try again", HttpStatus.BAD_REQUEST),
 
@@ -64,7 +64,7 @@ public enum ErrorCode {
 
     TEMPLATE_SUGGESTION_ALREADY_REVIEWED("This suggestion has already been reviewed", HttpStatus.BAD_REQUEST),
 
-    POST_FILE_TOTAL_SIZE_EXCEEDED("Total file size must not exceed 200MB", HttpStatus.BAD_REQUEST),
+    POST_FILE_TOTAL_SIZE_EXCEEDED("Total file size must not exceed 2048MB", HttpStatus.BAD_REQUEST),
 
     PARENT_COMMENT_NOT_FOUND("Parent comment does not exist in this post", HttpStatus.BAD_REQUEST),
 

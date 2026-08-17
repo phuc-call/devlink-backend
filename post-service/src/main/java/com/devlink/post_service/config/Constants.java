@@ -28,8 +28,10 @@ public final class Constants {
 
     public static final String USER_COMMENT = "user:comment:";
     public static final String USER_NAME = "user:name:";
-    public static final long MAX_SIZE_BYTES = 80L * 1024 * 1024;  // 50MB each file
-    public static final long MAX_TOTAL_SIZE_BYTES = 200L * 1024 * 1024; // 200MB sum
+    public static final long MAX_SIZE_BYTES = 1024L * 1024 * 1024;  // 1024MB each file
+    public static final long MAX_TOTAL_SIZE_BYTES = 2048L * 1024 * 1024; // 2048MB sum
+    public static final long BYTES_PER_MB = 1048576L;
+    public static final long SECONDS_PER_MB_VIDEO = 8L;
     public static final int MAX_FILE_COUNT = 10; // tối đa 10 file
     public static final int MAX_CHARS = 50_000;
     public static final Set<String> ALLOWED_EXT = Set.of(
@@ -91,6 +93,16 @@ public final class Constants {
     public static final String CONFIG_KEY_FEED_FALLBACK_THRESHOLD = "feed.fallback_threshold";
     public static final String CONFIG_KEY_FEED_MIN_LIKE_THRESHOLD = "feed.min_like_threshold";
 
+    // Video Feed Config Keys
+    public static final String CONFIG_KEY_VIDEO_SHORT_MAX_SECONDS = "video.short_max_seconds";
+    public static final String CONFIG_KEY_VIDEO_LONG_MIN_SECONDS = "video.long_min_seconds";
+    public static final String CONFIG_KEY_VIDEO_LONG_MAX_SECONDS = "video.long_max_seconds";
+    public static final String CONFIG_KEY_VIDEO_DISCOVERY_RATIO = "video.discovery_ratio";
+
+    // Post File Limit Config Keys
+    public static final String CONFIG_KEY_POST_MAX_FILE_SIZE = "post.max_file_size";
+    public static final String CONFIG_KEY_POST_MAX_TOTAL_SIZE = "post.max_total_size";
+    public static final String CONFIG_KEY_POST_MAX_FILE_COUNT = "post.max_file_count";
     // Tag Group Messages
     public static final String MSG_TAG_GROUP_CREATED = "Tag group created";
     public static final String MSG_TAG_GROUP_CREATED_KEYWORD = "Group created from keyword";

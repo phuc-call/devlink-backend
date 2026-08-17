@@ -1,8 +1,8 @@
 spring:
   servlet:
     multipart:
-      max-file-size: 200MB
-      max-request-size: 500MB
+      max-file-size: 1024MB
+      max-request-size: 1024MB
   application:
     name: post-service
 
@@ -177,12 +177,12 @@ minio:
 internal:
   secret: ${INTERNAL_SECRET}
 
-# File-size based classification (bytes). Admin can tune these via env override.
-# Short video: 0 B  – short-max-bytes   (default ≤ 50 MB)
-# Long  video: long-min-bytes – long-max-bytes (default > 50 MB, admin-set upper limit)
+# Duration-based classification (seconds). Admin can tune these via env override.
+# Short video: 0s - short-max-seconds (default <= 120s)
+# Long video: long-min-seconds - long-max-seconds (default >= 121s)
 video:
   feed:
-    short-max-bytes: ${VIDEO_SHORT_MAX_BYTES:52428800}
-    long-min-bytes:  ${VIDEO_LONG_MIN_BYTES:52428800}
-    long-max-bytes:  ${VIDEO_LONG_MAX_BYTES:10737418240}
+    short-max-seconds: ${VIDEO_SHORT_MAX_SECONDS:120}
+    long-min-seconds:  ${VIDEO_LONG_MIN_SECONDS:121}
+    long-max-seconds:  ${VIDEO_LONG_MAX_SECONDS:86400}
     discovery-ratio: ${VIDEO_DISCOVERY_RATIO:0.20}

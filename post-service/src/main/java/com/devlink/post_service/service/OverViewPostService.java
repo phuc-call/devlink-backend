@@ -1,5 +1,6 @@
 package com.devlink.post_service.service;
 
+import com.devlink.post_service.dto.response.CommentReplyNotificationResponse;
 import com.devlink.post_service.dto.response.ReactHistoryResponse;
 import org.springframework.data.domain.Page;
 
@@ -14,5 +15,7 @@ public interface OverViewPostService {
      * @return Page<ReactHistoryResponse> A paginated list of posts that have been reacted to.
      */
     Page<ReactHistoryResponse> getReactHistory(int page, int size);
+
+    Page<CommentReplyNotificationResponse>getCommentReplyHistory(int page, int size);
 }
 

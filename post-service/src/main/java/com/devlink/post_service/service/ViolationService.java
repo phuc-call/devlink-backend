@@ -21,7 +21,8 @@ public interface ViolationService {
     ViolationOverviewResponse getOverview();
 
     /**
-     * Returns detailed stats by target type (violations, unique users, top violators)
+     * Returns detailed stats by target type (violations, unique users, top
+     * violators)
      */
     List<ViolationTypeStatsResponse> getDetailedOverview();
 
@@ -82,12 +83,12 @@ public interface ViolationService {
     void deletePenaltyConfig(Long configId);
 
     /**
-     * Returns a paginated list of users whose max violation count for the target type equals the given count.
+     * Returns a paginated list of users whose max violation count for the target
+     * type equals the given count.
      */
     Page<PenalizedUserResponse> getUsersByViolationCount(
-            TargetType targetType, 
-            Integer violationCount, 
-            int page, 
-            int size
-    );
+            TargetType targetType,
+            Integer violationCount,
+            int page,
+            int size);
 }

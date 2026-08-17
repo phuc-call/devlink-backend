@@ -21,16 +21,14 @@ public class ReactHistoryResponse {
     private String authorName;
     private String authorAvatarUrl;
     private ReactionType reactionType;
-    // Group info (null nếu bài viết không thuộc group nào)
     private Long groupId;
     private String groupName;
     private String groupImage;
 
-    // Constructor used by JPQL projection (includes author info + groupId)
     public ReactHistoryResponse(Long reactId, LocalDateTime createdAt, Long postId,
-                                String postContent, Long authorId,
-                                String authorName, String authorAvatarUrl,
-                                ReactionType reactionType, Long groupId) {
+            String postContent, Long authorId,
+            String authorName, String authorAvatarUrl,
+            ReactionType reactionType, Long groupId) {
         this.reactId = reactId;
         this.createdAt = createdAt;
         this.postId = postId;

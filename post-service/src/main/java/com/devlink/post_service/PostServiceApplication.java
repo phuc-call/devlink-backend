@@ -8,16 +8,12 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import com.devlink.post_service.config.VideoFeedProperties;
-
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
 @EnableScheduling
 @EnableJpaAuditing
 @EnableFeignClients
-@EnableConfigurationProperties(VideoFeedProperties.class)
 public class PostServiceApplication {
 
 	public static void main(String[] args) {
