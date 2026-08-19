@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { userProfileApi } from '../../../api/user-service/userProfileApi';
+import { universityApi } from '../../../api/user-service/universityApi';
 import type { UserProfileResponse } from '../../../types/profile.types';
+import type { UniversityResponse } from '../../../api/user-service/universityApi';
 import ProfileBanner from '../components/ProfileBanner/ProfileBanner.tsx';
 import ProfileSidebar from '../components/ProfileSidebar/ProfileSidebar.tsx';
 import ProfileContent from '../components/ProfileContent/ProfileContent.tsx';
@@ -9,6 +11,8 @@ import FollowListPanel from '../components/FollowListPanel/Followlistpanel.tsx';
 import EditProfilePanel from '../components/EditProfilePanel/EditProfilePanel';
 import ImageViewer from '../components/ImageViewer/ImageViewer';
 import ProfileImages from '../components/ProfileImages/ProfileImages';
+import UniversitySidebar from '../../university/components/UniversitySidebar/UniversitySidebar';
+import UniversityContent from '../../university/components/UniversityContent/UniversityContent';
 import styles from './ProfilePage.module.css';
 
 type FollowListType = 'FOLLOWING' | 'FOLLOWERS' | 'FRIENDS';
@@ -21,12 +25,26 @@ export default function ProfilePage() {
     const [followTab, setFollowTab] = useState<FollowListType>('FOLLOWING');
     const [viewImage, setViewImage] = useState<{ type: 'avatar' | 'cover', userId: number } | null>(null);
 
+    // University state
+    const [universityData, setUniversityData] = useState<UniversityResponse | null>(null);
+    const [uniLoading, setUniLoading] = useState(false);
+
     useEffect(() => {
         userProfileApi.getProfile()
             .then(res => setProfile(res.data.data))
             .catch(() => setProfile(null))
             .finally(() => setLoading(false));
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'School' && profile?.school && !universityData && !uniLoading) {
+            setUniLoading(true);
+            universityApi.getByName(profile.school)
+                .then(res => setUniversityData(res.data.data))
+                .catch(console.error)
+                .finally(() => setUniLoading(false));
+        }
+    }, [activeTab, profile?.school, universityData, uniLoading]);
 
     const handleEditDone = (updated: UserProfileResponse) => {
         setProfile(updated);
@@ -69,7 +87,7 @@ export default function ProfilePage() {
         <div className={styles.page}>
             <ProfileBanner
                 profile={profile}
-                activeTab={activeTab}
+                activeTab={activeTab === 'School' ? '' : activeTab}
                 onTabChange={setActiveTab}
                 onCoverUpdate={handleCoverUpdate}
                 onCoverClick={() => {
@@ -87,16 +105,22 @@ export default function ProfilePage() {
             ) : (
                 <div className={styles.body}>
                     <aside className={styles.sidebar}>
-                        <ProfileSidebar
-                            profile={profile}
-                            onEdit={() => setIsEditing(true)}
-                            onFollowerClick={handleFollowerClick}
-                            onFollowingClick={handleFollowingClick}
-                            onAvatarUpdate={handleAvatarUpdate}
-                            onAvatarClick={() => {
-                                if (profile?.userId) setViewImage({ type: 'avatar', userId: profile.userId });
-                            }}
-                        />
+                        {activeTab === 'School' ? (
+                            uniLoading ? <div className={styles.loadingWrap}><div className={styles.spinner} /></div> :
+                            <UniversitySidebar university={universityData} />
+                        ) : (
+                            <ProfileSidebar
+                                profile={profile}
+                                onEdit={() => setIsEditing(true)}
+                                onFollowerClick={handleFollowerClick}
+                                onFollowingClick={handleFollowingClick}
+                                onAvatarUpdate={handleAvatarUpdate}
+                                onAvatarClick={() => {
+                                    if (profile?.userId) setViewImage({ type: 'avatar', userId: profile.userId });
+                                }}
+                                onSchoolClick={() => setActiveTab('School')}
+                            />
+                        )}
                     </aside>
                     <main className={styles.content}>
                         {isEditing ? (
@@ -107,6 +131,9 @@ export default function ProfilePage() {
                             />
                         ) : activeTab === 'Ảnh' ? (
                             <ProfileImages userId={null} />
+                        ) : activeTab === 'School' ? (
+                            uniLoading ? <div className={styles.loadingWrap}><div className={styles.spinner} /></div> :
+                            <UniversityContent university={universityData} />
                         ) : (
                             <>
                                 <ProfileContent />

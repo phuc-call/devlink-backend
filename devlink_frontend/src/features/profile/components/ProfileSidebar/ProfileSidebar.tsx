@@ -15,7 +15,6 @@ const LANG_COLORS: Record<string, string> = {
 };
 
 import { userProfileApi } from '../../../../api/user-service/userProfileApi';
-
 interface Props {
     profile: UserProfileResponse | null;
     onEdit: () => void;
@@ -23,6 +22,7 @@ interface Props {
     onFollowingClick: () => void;
     onAvatarUpdate?: (newAvatarUrl: string) => void;
     onAvatarClick?: () => void;
+    onSchoolClick?: () => void;
 }
 
 function formatCount(n: number): string {
@@ -31,7 +31,7 @@ function formatCount(n: number): string {
     return String(n);
 }
 
-export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFollowingClick, onAvatarUpdate, onAvatarClick }: Props) {
+export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFollowingClick, onAvatarUpdate, onAvatarClick, onSchoolClick }: Props) {
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -41,8 +41,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
             const res = await userProfileApi.updateAvatar(formData);
             if (onAvatarUpdate) onAvatarUpdate(res.data.data);
         } catch (err) {
-            console.error('Failed to update avatar', err);
-            alert('Cập nhật ảnh đại diện thất bại!');
+            alert('Failed to update avatar!');
         }
     };
     const initials = profile?.fullName
@@ -71,7 +70,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                         id="avatar-upload" 
                         onChange={handleAvatarUpload} 
                     />
-                    <button className={styles.avatarEditBtn} title="Đổi ảnh đại diện" onClick={(e) => {
+                    <button className={styles.avatarEditBtn} title="Change avatar" onClick={(e) => {
                         e.stopPropagation();
                         document.getElementById('avatar-upload')?.click();
                     }}>
@@ -83,7 +82,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                     </button>
                 </div>
 
-                <h1 className={styles.name}>{profile?.fullName || 'Người dùng'}</h1>
+                <h1 className={styles.name}>{profile?.fullName || 'User'}</h1>
                 {profile?.bio && <p className={styles.bio}>{profile.bio}</p>}
 
                 <div className={styles.statsRow}>
@@ -103,7 +102,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
-                        Chỉnh sửa hồ sơ
+                        Edit Profile
                     </button>
                 </div>
             </div>
@@ -112,14 +111,18 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
 
             <div className={styles.infoList}>
                 {profile?.school && (
-                    <div className={styles.infoRow}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                        </svg>
-                        <span>{profile.school}</span>
-                    </div>
+                        <div onClick={onSchoolClick} style={{ cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            {profile.schoolLogoUrl ? (
+                                <img src={profile.schoolLogoUrl} alt="School logo" width="16" height="16" style={{ borderRadius: '2px', objectFit: 'cover' }} />
+                            ) : (
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                </svg>
+                            )}
+                            <span style={{ color: '#374151' }}>{profile.school}</span>
+                        </div>
                 )}
                 {profile?.major && (
                     <div className={styles.infoRow}>
@@ -132,7 +135,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                     </div>
                 )}
                 {!profile?.school && !profile?.major && (
-                    <button className={styles.addInfoBtn}>+ Thêm trường học & ngành học</button>
+                    <button className={styles.addInfoBtn}>+ Add Education</button>
                 )}
             </div>
 
@@ -140,7 +143,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                 <>
                     <div className={styles.divider} />
                     <div className={styles.langSection}>
-                        <p className={styles.langTitle}>Ngôn ngữ yêu thích</p>
+                        <p className={styles.langTitle}>Favorite Languages</p>
                         <div className={styles.langList}>
                             {profile.favoriteLanguage.map(lang => (
                                 <div key={lang} className={styles.langRow}>
@@ -158,13 +161,13 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                     <div className={styles.divider} />
                     <div className={styles.completion}>
                         <div className={styles.completionHeader}>
-                            <span className={styles.completionLabel}>Hoàn thiện hồ sơ</span>
+                            <span className={styles.completionLabel}>Profile Completion</span>
                             <span className={styles.completionPct}>{profile?.completionPercent ?? 0}%</span>
                         </div>
                         <div className={styles.progressTrack}>
                             <div className={styles.progressFill} style={{ width: `${profile?.completionPercent ?? 0}%` }} />
                         </div>
-                        <p className={styles.completionHint}>Bổ sung thêm thông tin để được gợi ý phù hợp hơn</p>
+                        <p className={styles.completionHint}>Add more info to get better suggestions</p>
                     </div>
                 </>
             )}

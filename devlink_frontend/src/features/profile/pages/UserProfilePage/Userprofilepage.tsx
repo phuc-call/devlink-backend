@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi';
+import { universityApi } from '../../../../api/user-service/universityApi';
 import type { UserProfileResponse } from '../../../../types/profile.types';
+import type { UniversityResponse } from '../../../../api/user-service/universityApi';
 import UserProfileBanner from '../../components/UserProfileBanner/Userprofilebanner.tsx';
 import UserProfileSidebar from '../../components/UserProfileSidebar/Userprofilesidebar.tsx';
 import UserProfileContent from '../../components/UserProfileContent/Userprofilecontent.tsx';
 import ProfileImages from '../../components/ProfileImages/ProfileImages';
+import UniversitySidebar from '../../../university/components/UniversitySidebar/UniversitySidebar';
+import UniversityContent from '../../../university/components/UniversityContent/UniversityContent';
 import styles from './UserProfilePage.module.css';
 import { useToast } from '../../../../context/Toastcontext';
 
@@ -19,6 +23,10 @@ export default function UserProfilePage() {
     const [viewerLoading, setViewerLoading] = useState(false);
 
     const [activeTab, setActiveTab] = useState('Bài viết');
+    
+    // University state
+    const [universityData, setUniversityData] = useState<UniversityResponse | null>(null);
+    const [uniLoading, setUniLoading] = useState(false);
 
     useEffect(() => {
         if (!userId) return;
@@ -38,6 +46,16 @@ export default function UserProfilePage() {
                 setLoading(false);
             });
     }, [userId]);
+
+    useEffect(() => {
+        if (activeTab === 'School' && profile?.school && !universityData && !uniLoading) {
+            setUniLoading(true);
+            universityApi.getByName(profile.school)
+                .then(res => setUniversityData(res.data.data))
+                .catch(console.error)
+                .finally(() => setUniLoading(false));
+        }
+    }, [activeTab, profile?.school, universityData, uniLoading]);
 
     if (loading) {
         return (
@@ -108,16 +126,24 @@ export default function UserProfilePage() {
             <UserProfileBanner
                 profile={profile}
                 onCoverClick={handleCoverClick}
-                activeTab={activeTab}
+                activeTab={activeTab === 'School' ? '' : activeTab}
                 onTabChange={setActiveTab}
             />
             <div className={styles.body}>
                 <aside className={styles.sidebar}>
-                    <UserProfileSidebar profile={profile} onAvatarClick={handleAvatarClick} />
+                    {activeTab === 'School' ? (
+                        uniLoading ? <div className={styles.loadingWrap}><div className={styles.spinner} /></div> :
+                        <UniversitySidebar university={universityData} />
+                    ) : (
+                        <UserProfileSidebar profile={profile} onAvatarClick={handleAvatarClick} onSchoolClick={() => setActiveTab('School')} />
+                    )}
                 </aside>
                 <main className={styles.content}>
                     {activeTab === 'Ảnh' ? (
                         <ProfileImages userId={Number(userId)} />
+                    ) : activeTab === 'School' ? (
+                        uniLoading ? <div className={styles.loadingWrap}><div className={styles.spinner} /></div> :
+                        <UniversityContent university={universityData} />
                     ) : (
                         <UserProfileContent profile={profile} />
                     )}

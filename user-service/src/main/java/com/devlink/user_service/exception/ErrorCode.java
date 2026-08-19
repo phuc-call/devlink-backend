@@ -13,6 +13,7 @@ public enum ErrorCode {
     CANNOT_BLOCK_YOURSELF("You cannot block yourself", HttpStatus.BAD_REQUEST),
     USERNAME_ALREADY_EXISTS("Username already exists", HttpStatus.CONFLICT),
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
+    RESOURCE_NOT_FOUND("Resource not found", HttpStatus.NOT_FOUND),
     NOTIFICATION_NOT_FOUND("Notification not found", HttpStatus.NOT_FOUND),
     EMAIL_TEMPLATE_NOT_FOUND("Email template not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_FOUND("Role configuration error", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -50,7 +51,8 @@ public enum ErrorCode {
     GROUP_NAME_ALREADY_EXISTS("Group name already exists", HttpStatus.CONFLICT),
     USER_ALREADY_IN_GROUP("User is already a member of this group", HttpStatus.CONFLICT),
     INVITE_CODE_ALREADY_EXISTS("Invite code is already taken", HttpStatus.CONFLICT),
-    MEMBER_NOT_PENDING("Member is not pending approval", HttpStatus.BAD_REQUEST);
+    MEMBER_NOT_PENDING("Member is not pending approval", HttpStatus.BAD_REQUEST),
+    UNIVERSITY_NOT_FOUND("University not found", HttpStatus.NOT_FOUND);
 
     private final String message;
     private final HttpStatus httpStatus;

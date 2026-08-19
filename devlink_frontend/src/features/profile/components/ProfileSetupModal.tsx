@@ -1,7 +1,9 @@
 import {useState} from 'react';
 import '../../../../public/css/ProfileSetupModal.css';
 import {userProfileApi} from '../../../api/user-service/userProfileApi';
+import { universityApi, type UniversityDto } from '../../../api/user-service/universityApi';
 import type {ProgrammingLanguage, UpdateProfileRequest} from '../../../types/profile.types';
+import { useEffect } from 'react';
 
 const LANGUAGES: ProgrammingLanguage[] = [
     'JAVASCRIPT', 'TYPESCRIPT', 'PYTHON', 'JAVA', 'GO', 'CSHARP', 'PHP'
@@ -33,6 +35,33 @@ export default function ProfileSetupModal({onClose, nudgeSentCount = 0, avatarUr
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    
+    const [uniResults, setUniResults] = useState<UniversityDto[]>([]);
+    const [showUniDropdown, setShowUniDropdown] = useState(false);
+
+    useEffect(() => {
+        if (!school) {
+             setUniResults([]);
+             return;
+        }
+        const timer = setTimeout(async () => {
+             try {
+                 const res = await universityApi.search(school);
+                 setUniResults(res.data.data);
+             } catch (e) { console.error(e); }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [school]);
+
+    const handleSelectUni = (uni: UniversityDto) => {
+        setSchool(uni.name);
+        setShowUniDropdown(false);
+    };
+
+    const handleUniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSchool(e.target.value);
+        setShowUniDropdown(true);
+    };
 
     const toggleLang = (lang: ProgrammingLanguage) => {
         setSelectedLangs(prev =>
@@ -162,13 +191,42 @@ export default function ProfileSetupModal({onClose, nudgeSentCount = 0, avatarUr
                             <div className="psu-row">
                                 <div className="psu-field">
                                     <label htmlFor="psu-school">Trường / Tổ chức</label>
-                                    <input
-                                        id="psu-school"
-                                        type="text"
-                                        value={school}
-                                        onChange={e => setSchool(e.target.value)}
-                                        placeholder="Đại học Bách Khoa TP.HCM"
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            id="psu-school"
+                                            type="text"
+                                            value={school}
+                                            onChange={handleUniChange}
+                                            onFocus={() => setShowUniDropdown(true)}
+                                            onBlur={() => setTimeout(() => setShowUniDropdown(false), 200)}
+                                            placeholder="Đại học Bách Khoa TP.HCM"
+                                        />
+                                        {showUniDropdown && uniResults.length > 0 && (
+                                            <div className="psu-dropdown" style={{
+                                                position: 'absolute', top: '100%', left: 0, right: 0,
+                                                background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px',
+                                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', maxHeight: '150px',
+                                                overflowY: 'auto', zIndex: 50, marginTop: '4px'
+                                            }}>
+                                                {uniResults.map(u => (
+                                                    <div key={u.name} onMouseDown={() => handleSelectUni(u)}
+                                                         style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #F3F4F6', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        {u.logo ? (
+                                                            <img src={u.logo} alt="logo" style={{width: 24, height: 24, objectFit: 'contain', borderRadius: '4px'}} />
+                                                        ) : (
+                                                            <div style={{width: 24, height: 24, backgroundColor: '#E5E7EB', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#6B7280'}}>
+                                                                🏫
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <strong style={{ color: '#111827' }}>{u.name}</strong>
+                                                            {u.country && <span style={{ color: '#6B7280', fontSize: '12px' }}> - {u.country}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="psu-field">
                                     <label htmlFor="psu-major">Chuyên ngành</label>

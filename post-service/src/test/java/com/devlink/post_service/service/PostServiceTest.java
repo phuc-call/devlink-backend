@@ -14,6 +14,7 @@ import com.devlink.post_service.entity.enums.Visibility;
 import com.devlink.post_service.exception.AppException;
 import com.devlink.post_service.exception.ErrorCode;
 import com.devlink.post_service.repository.AccountRestrictionRepository;
+import com.devlink.post_service.repository.FeedScoringConfigRepository;
 import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.UserInterestRepository;
 import com.devlink.post_service.security.SecurityUtils;
@@ -48,6 +49,9 @@ public class PostServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private FeedScoringConfigRepository feedScoringConfigRepository;
 
     @Mock
     private AccountRestrictionRepository restrictionRepository;
@@ -182,7 +186,10 @@ public class PostServiceTest {
         int size = 10;
         String postType = "ALL";
 
-        when(feedConfigService.getConfigValue(eq(Constants.CONFIG_KEY_FEED_TOP_TAGS_LIMIT), anyDouble())).thenReturn(10.0);
+        when(feedScoringConfigRepository.findConfigValueByKey(Constants.CONFIG_KEY_FEED_MIN_LIKE_THRESHOLD))
+                .thenReturn(java.util.Optional.of(0.0));
+        when(feedConfigService.getConfigValue(eq(Constants.CONFIG_KEY_FEED_TOP_TAGS_LIMIT), anyDouble()))
+                .thenReturn(10.0);
         when(userInterestRepository.countByUserId(eq(1L))).thenReturn(5L);
         when(userInterestRepository.findTopTagsByUserId(eq(1L), eq(15))).thenReturn(List.of("java", "spring"));
 
@@ -191,28 +198,30 @@ public class PostServiceTest {
         mockApiResponse.setData(List.of(1L, 2L));
         when(userServiceClient.getApprovedGroupIds(1L)).thenReturn(mockApiResponse);
 
-        when(postRepository.findPersonalizedFeedMinMaxId(anyList(), anyLong(), anyList())).thenReturn(new Object[]{1L, 100L});
+        when(postRepository.findPersonalizedFeedMinMaxId(anyList(), anyLong(), anyList()))
+                .thenReturn(new Object[] { 1L, 100L });
         FeedPostResponse personalizedPost = new FeedPostResponse();
         personalizedPost.setId(1L);
         when(postRepository.findPersonalizedFeed(anyList(), anyLong(), anyList(), anyLong(), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(personalizedPost)));
 
-        when(postRepository.findGroupTrendingMinMaxId(anyList())).thenReturn(new Object[]{101L, 200L});
+        when(postRepository.findGroupTrendingMinMaxId(anyList())).thenReturn(new Object[] { 101L, 200L });
         FeedPostResponse groupPost = new FeedPostResponse();
         groupPost.setId(2L);
         when(postRepository.findGroupTrendingFeed(anyList(), anyLong(), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(groupPost)));
 
-        when(postRepository.findGeneralTrendingMinMaxId(anyLong(), anyList())).thenReturn(new Object[]{201L, 300L});
+        when(postRepository.findGeneralTrendingMinMaxId(anyLong(), anyList())).thenReturn(new Object[] { 201L, 300L });
         FeedPostResponse trendingPost = new FeedPostResponse();
         trendingPost.setId(3L);
         when(postRepository.findGeneralTrendingFeed(anyLong(), anyList(), anyLong(), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(trendingPost)));
-        
+
         when(postRepository.findGeneralTrendingFeed(anyLong(), anyList(), eq(0L), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of())); // For supplement call
 
-        when(feedPriorityHelper.enrichAndRank(anyList(), anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(feedPriorityHelper.enrichAndRank(anyList(), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Page<FeedPostResponse> result = postService.getFeed(page, size, postType);
 
@@ -220,10 +229,6 @@ public class PostServiceTest {
         assertEquals(3, result.getContent().size());
         verify(feedPriorityHelper, times(1)).enrichAndRank(anyList(), anyList());
     }
-
-    // =====================================================================
-    // getFriendsFeed – lấy feed bài viết bạn bè
-    // =====================================================================
 
     /**
      * TC1 – Happy path: có bạn bè + bài đề xuất, trả về đúng số bài viết
@@ -249,9 +254,9 @@ public class PostServiceTest {
         post2.setAuthorId(3L);
         post2.setCreatedAt(java.time.Instant.parse("2025-08-15T09:00:00Z"));
 
-        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage =
-                new org.springframework.data.domain.PageImpl<>(List.of(post1, post2),
-                        PageRequest.of(0, 20), 2);
+        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage = new org.springframework.data.domain.PageImpl<>(
+                List.of(post1, post2),
+                PageRequest.of(0, 20), 2);
 
         when(postRepository.findFriendsFeedPosts(anyList(), any())).thenReturn(dbPage);
 
@@ -291,9 +296,9 @@ public class PostServiceTest {
         post.setId(99L);
         post.setAuthorId(10L);
 
-        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage =
-                new org.springframework.data.domain.PageImpl<>(List.of(post),
-                        PageRequest.of(0, 20), 1);
+        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage = new org.springframework.data.domain.PageImpl<>(
+                List.of(post),
+                PageRequest.of(0, 20), 1);
 
         when(postRepository.findFriendsFeedPosts(eq(List.of(10L)), any())).thenReturn(dbPage);
         when(feedPriorityHelper.enrichOnly(anyList(), anyList()))
@@ -311,7 +316,7 @@ public class PostServiceTest {
 
     /**
      * TC3 – Không có bạn bè VÀ không có người đề xuất → trả về Page rỗng,
-     *         không gọi DB và không gọi enrichOnly.
+     * không gọi DB và không gọi enrichOnly.
      */
     @Test
     void getFriendsFeed_EmptyAuthors_ReturnsEmptyPage() {
@@ -334,8 +339,9 @@ public class PostServiceTest {
     }
 
     /**
-     * TC4 – API lấy người đề xuất ném exception → fallback về danh sách bạn bè hiện có,
-     *         feed vẫn hoạt động bình thường.
+     * TC4 – API lấy người đề xuất ném exception fallback về danh sách bạn bè hiện
+     * có,
+     * feed vẫn hoạt động bình thường.
      */
     @Test
     void getFriendsFeed_SuggestedApiThrows_FallsBackToFriendsOnly() {
@@ -348,9 +354,9 @@ public class PostServiceTest {
         post.setId(20L);
         post.setAuthorId(2L);
 
-        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage =
-                new org.springframework.data.domain.PageImpl<>(List.of(post),
-                        PageRequest.of(0, 20), 1);
+        org.springframework.data.domain.PageImpl<FeedPostResponse> dbPage = new org.springframework.data.domain.PageImpl<>(
+                List.of(post),
+                PageRequest.of(0, 20), 1);
 
         // authorIds chỉ chứa bạn bè thực sự (2L, 3L), không có người đề xuất
         when(postRepository.findFriendsFeedPosts(eq(List.of(2L, 3L)), any())).thenReturn(dbPage);
@@ -368,8 +374,9 @@ public class PostServiceTest {
     }
 
     /**
-     * TC5 – DB trả về bài viết nhưng page rỗng (không có content) → trả thẳng page rỗng,
-     *         không gọi enrichOnly.
+     * TC5 – DB trả về bài viết nhưng page rỗng (không có content) → trả thẳng page
+     * rỗng,
+     * không gọi enrichOnly.
      */
     @Test
     void getFriendsFeed_DbReturnsEmptyPage_SkipsEnrich() {
@@ -380,9 +387,9 @@ public class PostServiceTest {
         suggestedRes.setSuccess(false); // response không thành công
         when(userServiceClient.getSuggestedFriendIds()).thenReturn(suggestedRes);
 
-        org.springframework.data.domain.PageImpl<FeedPostResponse> emptyPage =
-                new org.springframework.data.domain.PageImpl<>(List.of(),
-                        PageRequest.of(0, 20), 0);
+        org.springframework.data.domain.PageImpl<FeedPostResponse> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                List.of(),
+                PageRequest.of(0, 20), 0);
 
         when(postRepository.findFriendsFeedPosts(anyList(), any())).thenReturn(emptyPage);
 

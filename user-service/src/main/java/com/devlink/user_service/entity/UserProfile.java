@@ -42,6 +42,10 @@ public class UserProfile {
     private String bio;
     @Column(name = "school", length = 200)
     private String school;
+    
+    @Column(name = "university_id")
+    private Long universityId;
+    
     @Column(name = "major", length = 150)
     private String major;
     @Column(name = "language")

@@ -35,6 +35,33 @@ public final class Constants {
     public static final String MSG_LOGOUT_NO_SESSION = "No devices are logged in";
 
     public static final String REPORT_NOTIFICATION_KEY = "report:notification:%d";
+
+    public static final String HIPO_UNIVERSITIES_URL = "https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json";
+    public static final String WIKIPEDIA_API_VI_URL = "https://vi.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
+    public static final String WIKIPEDIA_API_EN_URL = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
+
+    public static final String WIKIPEDIA_IMAGES_API_VI_URL = "https://vi.wikipedia.org/w/api.php?action=query&generator=images&gimlimit=10&prop=imageinfo&iiprop=url&format=json&titles=%s";
+    public static final String WIKIPEDIA_IMAGES_API_EN_URL = "https://en.wikipedia.org/w/api.php?action=query&generator=images&gimlimit=10&prop=imageinfo&iiprop=url&format=json&titles=%s";
+
+    // Http Headers
+    public static final String HEADER_USER_AGENT = "User-Agent";
+
+    public static final String UNIVERSITY_NO_INFO = "No information available about this university.";
+
+    // Wikipedia JSON Parsing Constants
+    public static final String WIKIPEDIA_JSON_NODE_QUERY = "query";
+    public static final String WIKIPEDIA_JSON_NODE_PAGES = "pages";
+    public static final String WIKIPEDIA_JSON_NODE_TITLE = "title";
+    public static final String WIKIPEDIA_JSON_NODE_EXTRACT = "extract";
+    public static final String WIKIPEDIA_JSON_NODE_THUMBNAIL = "thumbnail";
+    public static final String WIKIPEDIA_JSON_NODE_SOURCE = "source";
+    public static final String WIKIPEDIA_JSON_NODE_IMAGEINFO = "imageinfo";
+    public static final String WIKIPEDIA_JSON_NODE_URL = "url";
+    public static final String VIETNAMESE_CHARACTERS_REGEX = ".*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ].*";
+
+    public static final String GOOGLE_FAVICON_URL_TEMPLATE = "https://www.google.com/s2/favicons?domain=%s&sz=128";
+    public static final String FALLBACK_UNIVERSITY_DOMAIN_SUFFIX = ".edu";
+    public static final String WHITESPACE_REGEX = "\\s+";
     public static final Long REPORT_NOTIFICATION_TTL_DAYS = 30L;
 
     public static final int NORMAL_LIMIT = 20;

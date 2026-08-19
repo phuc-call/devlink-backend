@@ -155,6 +155,7 @@ app:
   frontend-url: http://localhost:5173
   refresh-token-expiry-days: 30
   default-role-id: 1
+  wikipedia-user-agent: ${WIKIPEDIA_USER_AGENT:DevLinkApp (devlink.vietnam@gmail.com)}
 springdoc:
   api-docs:
     path: /v3/api-docs

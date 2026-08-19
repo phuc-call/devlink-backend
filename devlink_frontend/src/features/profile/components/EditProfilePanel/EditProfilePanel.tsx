@@ -6,6 +6,7 @@ import {
     CheckCircle, XCircle
 } from 'lucide-react';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi';
+import { universityApi, type UniversityDto } from '../../../../api/user-service/universityApi';
 import type {
     UserProfileResponse,
     UpdateProfileRequest,
@@ -59,11 +60,46 @@ export default function EditProfilePanel({ profile, onDone, onCancel }: Props) {
         fullName: profile?.fullName ?? '',
         bio: profile?.bio ?? '',
         school: profile?.school ?? '',
+        universityId: profile?.universityId,
         major: profile?.major ?? '',
         city: profile?.city ?? '',
         countryCode: profile?.country ?? '',
         timezone: profile?.timezone ?? '',
     });
+
+    const [uniQuery, setUniQuery] = useState(profile?.school ?? '');
+    const [uniResults, setUniResults] = useState<UniversityDto[]>([]);
+    const [showUniDropdown, setShowUniDropdown] = useState(false);
+
+    useEffect(() => {
+        if (!uniQuery || (basic.universityId && uniQuery === profile?.school)) {
+             setUniResults([]);
+             return;
+        }
+        const timer = setTimeout(async () => {
+             try {
+                 const res = await universityApi.search(uniQuery);
+                 setUniResults(res.data.data);
+             } catch (e) { console.error(e); }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [uniQuery, basic.universityId, profile?.school]);
+
+    const handleSelectUni = async (uni: UniversityDto) => {
+        setUniQuery(uni.name);
+        setShowUniDropdown(false);
+        try {
+            const res = await universityApi.select(uni.name);
+            setBasic(b => ({ ...b, universityId: res.data.data.id, school: undefined }));
+        } catch (e) { console.error(e); }
+    };
+
+    const handleUniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setUniQuery(val);
+        setBasic(b => ({ ...b, school: val, universityId: undefined }));
+        setShowUniDropdown(true);
+    };
 
     const [followLoading, setFollowLoading] = useState(false);
     const [followMode, setFollowMode] = useState<boolean | null>(null);
@@ -119,9 +155,10 @@ export default function EditProfilePanel({ profile, onDone, onCancel }: Props) {
         try {
             const payload: UpdateProfileRequest = {};
             if (basic.fullName) payload.fullName = basic.fullName;
-            if (basic.bio) payload.bio = basic.bio;
-            if (basic.school) payload.school = basic.school;
-            if (basic.major) payload.major = basic.major;
+            if (basic.bio !== undefined) payload.bio = basic.bio;
+            if (basic.school !== undefined) payload.school = basic.school;
+            if (basic.universityId !== undefined) payload.universityId = basic.universityId;
+            if (basic.major !== undefined) payload.major = basic.major;
             if (basic.city) payload.city = basic.city;
             if (basic.countryCode) payload.countryCode = basic.countryCode;
             if (basic.timezone) payload.timezone = basic.timezone;
@@ -197,11 +234,6 @@ export default function EditProfilePanel({ profile, onDone, onCancel }: Props) {
             {([
                 { key: 'fullName', label: 'Họ và tên', placeholder: 'Nguyễn Văn A' },
                 { key: 'bio', label: 'Giới thiệu', placeholder: 'Một vài câu về bạn...' },
-                { key: 'school', label: 'Trường học', placeholder: 'Đại học Bách Khoa' },
-                { key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin' },
-                { key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh' },
-                { key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN' },
-                { key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh' },
             ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({
                 key,
                 label,
@@ -223,9 +255,61 @@ export default function EditProfilePanel({ profile, onDone, onCancel }: Props) {
                             placeholder={placeholder}
                             value={(basic[key] as string) ?? ''}
                             onChange={e => setBasicField(key, e.target.value)}
-                            maxLength={key === 'countryCode' ? 5 : undefined}
                         />
                     )}
+                </div>
+            ))}
+
+            <div className={styles.field} style={{ position: 'relative' }}>
+                <label className={styles.label}>Trường học</label>
+                <input
+                    className={styles.input}
+                    placeholder="Đại học Bách Khoa"
+                    value={uniQuery}
+                    onChange={handleUniChange}
+                    onFocus={() => setShowUniDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowUniDropdown(false), 200)}
+                />
+                {showUniDropdown && uniResults.length > 0 && (
+                    <div className={styles.dropdown}>
+                        {uniResults.map(u => (
+                            <div key={u.name} className={styles.dropdownItem} onClick={() => handleSelectUni(u)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {u.logo ? (
+                                    <img src={u.logo} alt="logo" style={{width: 24, height: 24, objectFit: 'contain', borderRadius: '4px'}} />
+                                ) : (
+                                    <div style={{width: 24, height: 24, backgroundColor: '#E5E7EB', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#6B7280'}}>
+                                        🏫
+                                    </div>
+                                )}
+                                <div>
+                                    <strong>{u.name}</strong>
+                                    {u.country && <span style={{ color: '#6B7280', fontSize: '12px', marginLeft: '4px', fontWeight: 'normal' }}> - {u.country}</span>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {([
+                { key: 'major', label: 'Chuyên ngành', placeholder: 'Công nghệ thông tin' },
+                { key: 'city', label: 'Thành phố', placeholder: 'Hồ Chí Minh' },
+                { key: 'countryCode', label: 'Mã quốc gia', placeholder: 'VN' },
+                { key: 'timezone', label: 'Múi giờ', placeholder: 'Asia/Ho_Chi_Minh' },
+            ] as { key: keyof UpdateProfileRequest; label: string; placeholder: string }[]).map(({
+                key,
+                label,
+                placeholder
+            }) => (
+                <div key={key} className={styles.field}>
+                    <label className={styles.label}>{label}</label>
+                    <input
+                        className={styles.input}
+                        placeholder={placeholder}
+                        value={(basic[key] as string) ?? ''}
+                        onChange={e => setBasicField(key, e.target.value)}
+                        maxLength={key === 'countryCode' ? 5 : undefined}
+                    />
                 </div>
             ))}
 

@@ -6,6 +6,7 @@ import com.devlink.user_service.dto.request.UpdateNudgeConfigRequest;
 import com.devlink.user_service.dto.request.UpdateProfileRequest;
 import com.devlink.user_service.dto.response.*;
 import com.devlink.user_service.entity.ProfileNudgeConfig;
+import com.devlink.user_service.entity.University;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import com.devlink.user_service.entity.enums.FollowStatus;
@@ -16,6 +17,7 @@ import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.*;
 import com.devlink.user_service.security.SecurityUtils;
 import com.devlink.user_service.service.FileStorageService;
+import com.devlink.user_service.service.UniversityService;
 import com.devlink.user_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +45,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -59,6 +60,8 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final RestTemplate restTemplate;
     private final ModelMapper modelMapper;
+    private final UniversityRepository universityRepository;
+    private final UniversityService universityService;
 
     private ModelMapper skipNullMapper;
     private RetryLoadBalancerInterceptor retryLoadBalancerInterceptor;
@@ -80,8 +83,19 @@ public class UserProfileServiceImpl implements UserProfileService {
             userProfile.setFullName(request.getFullName());
         if (request.getBio() != null)
             userProfile.setBio(request.getBio());
-        if (request.getSchool() != null)
-            userProfile.setSchool(request.getSchool());
+        if (request.getUniversityId() != null) {
+            userProfile.setUniversityId(request.getUniversityId());
+            userProfile.setSchool(null);
+        } else if (request.getSchool() != null) {
+            University resolvedUni = universityService.resolveAndSaveUniversity(request.getSchool());
+            if (resolvedUni != null) {
+                userProfile.setUniversityId(resolvedUni.getId());
+                userProfile.setSchool(null);
+            } else {
+                userProfile.setSchool(request.getSchool());
+                userProfile.setUniversityId(null);
+            }
+        }
         if (request.getMajor() != null)
             userProfile.setMajor(request.getMajor());
         if (request.getCity() != null)
@@ -110,18 +124,18 @@ public class UserProfileServiceImpl implements UserProfileService {
         // Bắn event để post-service đồng bộ UserProfile cục bộ
         publishProfileUpdatedEvent(user.getId(), savedProfile);
 
-        return modelMapper.map(savedProfile, UserProfileResponse.class);
+        return buildProfileResponse(savedProfile, config);
     }
 
     @Override
     public String updateAvatar(MultipartFile file) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = getOrCreateProfile(user);
-        
+
         if (userProfile.getAvatarUrl() != null && !userProfile.getAvatarUrl().isEmpty()) {
             fileStorageService.delete(userProfile.getAvatarUrl());
         }
-        
+
         String avatarUrl = fileStorageService.upload(file, "avatars");
         userProfile.setAvatarUrl(avatarUrl);
         userProfileRepository.save(userProfile);
@@ -136,11 +150,11 @@ public class UserProfileServiceImpl implements UserProfileService {
     public String updateCoverImage(MultipartFile file) {
         User user = userHelper.getCurrentUser();
         UserProfile userProfile = getOrCreateProfile(user);
-        
+
         if (userProfile.getCoverImageUrl() != null && !userProfile.getCoverImageUrl().isEmpty()) {
             fileStorageService.delete(userProfile.getCoverImageUrl());
         }
-        
+
         String coverUrl = fileStorageService.upload(file, "covers");
         userProfile.setCoverImageUrl(coverUrl);
         userProfileRepository.save(userProfile);
@@ -222,8 +236,23 @@ public class UserProfileServiceImpl implements UserProfileService {
         User user = userHelper.getCurrentUser();
         UserProfile profile = getOrCreateProfile(user);
         ProfileNudgeConfig config = getNudgeConfig();
+        return buildProfileResponse(profile, config);
+    }
+
+    private UserProfileResponse buildProfileResponse(UserProfile profile, ProfileNudgeConfig config) {
         UserProfileResponse response = modelMapper.map(profile, UserProfileResponse.class);
         response.setShouldShowNudge(shouldShowNudge(profile, config));
+
+        if (profile.getUniversityId() != null) {
+            universityRepository.findById(profile.getUniversityId()).ifPresent(uni -> {
+                response.setSchool(uni.getName());
+                if (uni.getDomain() != null && !uni.getDomain().isBlank()) {
+                    response.setSchoolLogoUrl(String.format(
+                            com.devlink.user_service.config.Constants.GOOGLE_FAVICON_URL_TEMPLATE, uni.getDomain()));
+                }
+            });
+        }
+
         return response;
     }
 
@@ -267,7 +296,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 if (!isMutual)
                     return buildLimitedResponse(owner.getProfile(), owner);
 
-                return modelMapper.map(owner.getProfile(), UserProfileResponse.class);
+                return buildProfileResponse(owner.getProfile(), getNudgeConfig());
             }
             case PRIVATE -> {
                 return buildLimitedResponse(owner.getProfile(), owner);
@@ -277,8 +306,6 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         return toFullResponse(owner);
     }
-
-
 
     @Override
     @Transactional(readOnly = true)
@@ -317,7 +344,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     private UserProfileResponse toFullResponse(User owner) {
-        UserProfileResponse res = modelMapper.map(owner.getProfile(), UserProfileResponse.class);
+        UserProfileResponse res = buildProfileResponse(owner.getProfile(), getNudgeConfig());
         res.setUserId(owner.getId());
         if (owner.getProfileVisibility() != null) {
             res.setProfileVisibility(owner.getProfileVisibility().name());
@@ -397,7 +424,8 @@ public class UserProfileServiceImpl implements UserProfileService {
             kafkaTemplate.send(USER_PROFILE_UPDATED_TOPIC, String.valueOf(userId), event);
             log.info("[UserProfileService] Fired UserProfileUpdatedEvent for userId={}", userId);
         } catch (Exception e) {
-            log.error("[UserProfileService] Failed to fire UserProfileUpdatedEvent userId={}: {}", userId, e.getMessage());
+            log.error("[UserProfileService] Failed to fire UserProfileUpdatedEvent userId={}: {}", userId,
+                    e.getMessage());
         }
     }
 
@@ -443,7 +471,8 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
-    public UserSearchPageResponse search(String name, String city, String address, Boolean friendsOnly, Boolean followersOnly,
+    public UserSearchPageResponse search(String name, String city, String address, Boolean friendsOnly,
+            Boolean followersOnly,
             Boolean followingOnly, int page, int size) {
         User currentUser = userHelper.getCurrentUser();
         Long currentUserId = currentUser.getId();
@@ -468,7 +497,6 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .users(users)
                 .build();
     }
-
 
     private String getProfileImageUrl(Long userId, Function<UserProfile, String> imageExtractor) {
         User user = userHelper.getUser(userId);
@@ -507,8 +535,9 @@ public class UserProfileServiceImpl implements UserProfileService {
     public String getCoverImageUrl(Long userId) {
         return getProfileImageUrl(userId, UserProfile::getCoverImageUrl);
     }
+
     private void checkNullAvatar(String avatarUrl) {
-        if(avatarUrl == null || avatarUrl.isBlank()) {
+        if (avatarUrl == null || avatarUrl.isBlank()) {
             throw new AppException(ErrorCode.IMAGE_NOT_FOUND);
         }
     }

@@ -22,9 +22,10 @@ const LANG_COLORS: Record<string, string> = {
 interface Props { 
     profile: UserProfileResponse | null;
     onAvatarClick?: () => void;
+    onSchoolClick?: () => void;
 }
 
-export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
+export default function UserProfileSidebar({ profile, onAvatarClick, onSchoolClick }: Props) {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [followStatus, setFollowStatus] = useState<FollowActionResult | null>(null);
@@ -87,20 +88,20 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
         try {
             await followApi.followUser(profile.userId);
             setFollowStatus('FOLLOWING');
-            showToast('Đã gửi yêu cầu theo dõi!', 'success');
+            showToast('Follow request sent!', 'success');
         } catch (err: any) {
-            showToast(err?.response?.data?.message || 'Có lỗi xảy ra!', 'error');
+            showToast(err?.response?.data?.message || 'An error occurred!', 'error');
         } finally { setActionLoading(false); }
     };
 
-    const handleUnfollow = async (msg = 'Đã huỷ theo dõi!') => {
+    const handleUnfollow = async (msg = 'Unfollowed!') => {
         if (!profile?.userId) return;
         setActionLoading(true);
         try {
             await followApi.unFollowUser(profile.userId);
             setFollowStatus('NOT_FOLLOWING');
             showToast(msg, 'success');
-        } catch { showToast('Có lỗi xảy ra!', 'error'); }
+        } catch { showToast('An error occurred!', 'error'); }
         finally { setActionLoading(false); }
     };
 
@@ -112,13 +113,13 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
             const { blocked, message } = res.data.data;
             setIsBlocked(blocked);
             showToast(message ?? '', 'success');
-        } catch { showToast('Có lỗi xảy ra!', 'error'); }
+        } catch { showToast('An error occurred!', 'error'); }
         finally { setActionLoading(false); }
     };
 
     const handleReport = async () => {
         setShowReportModal(false); setReportReason('');
-        showToast('Chức năng tố cáo đang được phát triển!', 'error');
+        showToast('Report feature is in development!', 'error');
     };
 
     // ── Render action buttons ─────────────────────────────────────
@@ -130,7 +131,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                 {actionLoading ? <span className={styles.spinnerWhite} /> : (
                     <>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                        Theo dõi
+                        Follow
                     </>
                 )}
             </button>
@@ -138,34 +139,34 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
 
         if (followStatus === 'FOLLOWING') return (
             <div className={styles.btnRow}>
-                <button type="button" className={styles.btnSecondary} onClick={() => handleUnfollow('Đã huỷ yêu cầu!')} disabled={actionLoading}>
+                <button type="button" className={styles.btnSecondary} onClick={() => handleUnfollow('Request cancelled!')} disabled={actionLoading}>
                     {actionLoading ? <span className={styles.spinnerDark} /> : (
                         <>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                            Huỷ yêu cầu
+                            Cancel request
                         </>
                     )}
                 </button>
                 <button type="button" className={styles.btnOutline} onClick={() => navigate('/chat')} disabled={actionLoading}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Nhắn tin
+                    Message
                 </button>
             </div>
         );
 
         if (followStatus === 'FRIEND') return (
             <div className={styles.btnRow}>
-                <button type="button" className={styles.btnFriend} onClick={() => handleUnfollow()} disabled={actionLoading} title="Bấm để huỷ theo dõi">
+                <button type="button" className={styles.btnFriend} onClick={() => handleUnfollow()} disabled={actionLoading} title="Click to unfollow">
                     {actionLoading ? <span className={styles.spinnerDark} /> : (
                         <>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            Bạn bè
+                            Friends
                         </>
                     )}
                 </button>
                 <button type="button" className={styles.btnOutline} onClick={() => navigate('/chat')} disabled={actionLoading}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Nhắn tin
+                    Message
                 </button>
             </div>
         );
@@ -173,7 +174,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
         return null;
     };
 
-    const blockLabel = loadingBlock ? 'Đang tải...' : isBlocked ? 'Bỏ chặn người dùng' : 'Chặn người dùng';
+    const blockLabel = loadingBlock ? 'Loading...' : isBlocked ? 'Unblock user' : 'Block user';
 
     return (
         <div className={styles.card}>
@@ -183,7 +184,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                 {/* Settings button — top right */}
                 <div className={styles.settingsWrap} ref={settingsRef}>
                     <button type="button" className={styles.settingsBtn}
-                        onClick={() => setShowSettings(p => !p)} title="Tùy chọn" aria-label="Tùy chọn">
+                        onClick={() => setShowSettings(p => !p)} title="Options" aria-label="Options">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                     </button>
                     {showSettings && (
@@ -196,7 +197,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                             <button type="button" className={`${styles.ddItem} ${styles.ddDanger}`}
                                 onClick={() => { setShowSettings(false); setShowReportModal(true); }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                                Tố cáo
+                                Report
                             </button>
                         </div>
                     )}
@@ -215,7 +216,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                 </div>
 
                 {/* Name + bio + stats */}
-                <h1 className={styles.name}>{profile?.fullName || 'Người dùng'}</h1>
+                <h1 className={styles.name}>{profile?.fullName || 'User'}</h1>
                 {!isLimited && profile?.bio && <p className={styles.bio}>{profile.bio}</p>}
 
                 {!isLimited && (
@@ -251,12 +252,12 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                     )}
                     <div>
                         <p className={`${styles.shieldTitle} ${isPrivate ? styles.shieldTitleRed : styles.shieldTitleGreen}`}>
-                            {isPrivate ? 'Hồ sơ riêng tư' : 'Hồ sơ được bảo vệ'}
+                            {isPrivate ? 'Private Profile' : 'Protected Profile'}
                         </p>
                         <p className={styles.shieldSub}>
                             {isPrivate
-                                ? 'Người dùng này đã ẩn hồ sơ với tất cả mọi người'
-                                : 'Chỉ bạn bè mới có thể xem nội dung'}
+                                ? 'This user has hidden their profile'
+                                : 'Only friends can view this content'}
                         </p>
                     </div>
                 </div>
@@ -269,8 +270,14 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                     <div className={styles.infoList}>
                         {profile?.school && (
                             <div className={styles.infoRow}>
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-                                <span>{profile.school}</span>
+                                <div onClick={onSchoolClick} style={{ cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    {profile.schoolLogoUrl ? (
+                                        <img src={profile.schoolLogoUrl} alt="School logo" width="16" height="16" style={{ borderRadius: '2px', objectFit: 'cover' }} />
+                                    ) : (
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                                    )}
+                                    <span style={{ color: '#374151' }}>{profile.school}</span>
+                                </div>
                             </div>
                         )}
                         {profile?.major && (
@@ -286,7 +293,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                             </div>
                         )}
                         {!profile?.school && !profile?.major && !profile?.city && (
-                            <p className={styles.noInfo}>Chưa có thông tin</p>
+                            <p className={styles.noInfo}>No information</p>
                         )}
                     </div>
 
@@ -294,7 +301,7 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                         <>
                             <div className={styles.divider} />
                             <div className={styles.langSection}>
-                                <p className={styles.langTitle}>NGÔN NGỮ YÊU THÍCH</p>
+                                <p className={styles.langTitle}>FAVORITE LANGUAGES</p>
                                 <div className={styles.langList}>
                                     {profile.favoriteLanguage.map(lang => (
                                         <div key={lang} className={styles.langRow}>
@@ -314,21 +321,21 @@ export default function UserProfileSidebar({ profile, onAvatarClick }: Props) {
                 <div className={styles.modalOverlay} onClick={() => setShowReportModal(false)} role="dialog" aria-modal="true">
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3 className={styles.modalTitle}>Tố cáo người dùng</h3>
+                            <h3 className={styles.modalTitle}>Report user</h3>
                             <button type="button" className={styles.modalClose} onClick={() => setShowReportModal(false)}>✕</button>
                         </div>
-                        <p className={styles.modalSub}>Lý do bạn tố cáo <strong>{profile?.fullName}</strong></p>
+                        <p className={styles.modalSub}>Reason for reporting <strong>{profile?.fullName}</strong></p>
                         <div className={styles.reportReasons}>
-                            {['Nội dung không phù hợp','Spam hoặc quảng cáo','Giả mạo danh tính','Quấy rối hoặc bắt nạt','Ngôn từ thù địch','Lý do khác'].map(r => (
+                            {['Inappropriate content','Spam or advertising','Impersonation','Harassment or bullying','Hate speech','Other reason'].map(r => (
                                 <button key={r} type="button"
                                     className={`${styles.chip} ${reportReason === r ? styles.chipActive : ''}`}
                                     onClick={() => setReportReason(r)}>{r}</button>
                             ))}
                         </div>
                         <div className={styles.modalActions}>
-                            <button type="button" className={styles.modalBtnCancel} onClick={() => setShowReportModal(false)}>Huỷ</button>
+                            <button type="button" className={styles.modalBtnCancel} onClick={() => setShowReportModal(false)}>Cancel</button>
                             <button type="button" className={styles.modalBtnSubmit} onClick={handleReport} disabled={!reportReason || actionLoading}>
-                                {actionLoading ? <span className={styles.spinnerWhite} /> : 'Gửi tố cáo'}
+                                {actionLoading ? <span className={styles.spinnerWhite} /> : 'Submit report'}
                             </button>
                         </div>
                     </div>

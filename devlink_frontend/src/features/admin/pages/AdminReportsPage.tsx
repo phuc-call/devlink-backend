@@ -925,7 +925,7 @@ function PenaltyConfigTab() {
         } catch { /* ignore */ } finally { setSaving(false); }
     };
 
-    const toggleActive = async (e: React.MouseEvent, c: PenaltyConfigResponse) => {
+    const _toggleActive = async (e: React.MouseEvent, c: PenaltyConfigResponse) => {
         e.stopPropagation();
         if (c.offenseNumber === 1) {
             alert('Không thể tắt mức Nhắc nhở đầu tiên!');

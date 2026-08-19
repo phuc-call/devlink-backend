@@ -23,7 +23,10 @@ public class UpdateProfileRequest {
     private String bio;
 
     @Size(max = 200, message = "SCHOOL_TOO_LONG")
+    @Size(max = 200, message = "SCHOOL_TOO_LONG")
     private String school;
+    
+    private Long universityId;
 
     @Size(max = 150, message = "MAJOR_TOO_LONG")
     private String major;

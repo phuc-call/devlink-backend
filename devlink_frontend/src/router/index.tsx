@@ -45,6 +45,7 @@ import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkedito
 import SavedPage from '../features/saved/pages/SavedPage';
 import VideoFeedPage from '../features/post/pages/VideoFeedPage';
 import VideoDetailPage from '../features/post/pages/VideoDetailPage';
+import UniversityPage from '../features/university/pages/UniversityPage/UniversityPage';
 
 const router = createBrowserRouter([
 
@@ -92,6 +93,7 @@ const router = createBrowserRouter([
                 children: [
                     { path: '/profile/me', element: <ProfilePage /> },
                     { path: '/profile/:userId', element: <UserProfilePage /> },
+                    { path: '/university/:name', element: <UniversityPage /> },
                 ],
             },
             { path: '/forks/:forkId/edit', element: <ForkEditorPage /> },

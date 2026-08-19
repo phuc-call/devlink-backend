@@ -15,6 +15,8 @@ public class UserProfileResponse {
     private String fullName;
     private String bio;
     private String school;
+    private Long universityId;
+    private String schoolLogoUrl;
     private String major;
     private List<ProgrammingLanguage> favoriteLanguage;
     private String avatarUrl;

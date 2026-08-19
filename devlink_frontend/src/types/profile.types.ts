@@ -9,6 +9,7 @@ export interface UpdateProfileRequest {
     coverImageUrl?: string;
     bio?: string;
     school?: string;
+    universityId?: number;
     major?: string;
     favoriteLanguage?: ProgrammingLanguage[];
     city?: string;
@@ -35,6 +36,8 @@ export interface UserProfileResponse {
     bio?: string;
     coverAvatar?: string;
     school?: string;
+    universityId?: number;
+    schoolLogoUrl?: string;
     major?: string;
     favoriteLanguage?: ProgrammingLanguage[];
     completionPercent: number;

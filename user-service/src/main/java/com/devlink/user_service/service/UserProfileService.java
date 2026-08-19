@@ -14,7 +14,7 @@ public interface UserProfileService {
     UserProfileResponse updateUserProfile(UpdateProfileRequest request);
 
     String updateAvatar(MultipartFile file);
-    
+
     String updateCoverImage(MultipartFile file);
 
     UserProfileResponse getProfile();
@@ -34,16 +34,17 @@ public interface UserProfileService {
     FollowRequestModeResponse getFollowRequestMode();
 
     /**
-     * Search users by name, city, and address with optional friend/follower/following filters.
+     * Search users by name, city, and address with optional
+     * friend/follower/following filters.
      *
-     * @param name           the keyword to match against full names
-     * @param city           optional city keyword
-     * @param address        optional address keyword
-     * @param friendsOnly    filter to search only friends
-     * @param followersOnly  filter to search only followers
-     * @param followingOnly  filter to search only following
-     * @param page           page number (0-indexed)
-     * @param size           page size
+     * @param name          the keyword to match against full names
+     * @param city          optional city keyword
+     * @param address       optional address keyword
+     * @param friendsOnly   filter to search only friends
+     * @param followersOnly filter to search only followers
+     * @param followingOnly filter to search only following
+     * @param page          page number (0-indexed)
+     * @param size          page size
      * @return UserSearchPageResponse containing page of matched user profiles
      */
     UserSearchPageResponse search(
@@ -54,8 +55,7 @@ public interface UserProfileService {
             Boolean followersOnly,
             Boolean followingOnly,
             int page,
-            int size
-    );
+            int size);
 
     List<String> getProvinces();
 
