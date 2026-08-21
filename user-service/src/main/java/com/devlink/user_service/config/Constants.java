@@ -37,8 +37,8 @@ public final class Constants {
     public static final String REPORT_NOTIFICATION_KEY = "report:notification:%d";
 
     public static final String HIPO_UNIVERSITIES_URL = "https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json";
-    public static final String WIKIPEDIA_API_VI_URL = "https://vi.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
-    public static final String WIKIPEDIA_API_EN_URL = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
+    public static final String WIKIPEDIA_API_VI_URL = "https://vi.wikipedia.org/w/api.php?action=query&prop=extracts%%7Cpageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
+    public static final String WIKIPEDIA_API_EN_URL = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts%%7Cpageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=500&format=json&titles=%s";
 
     public static final String WIKIPEDIA_IMAGES_API_VI_URL = "https://vi.wikipedia.org/w/api.php?action=query&generator=images&gimlimit=10&prop=imageinfo&iiprop=url&format=json&titles=%s";
     public static final String WIKIPEDIA_IMAGES_API_EN_URL = "https://en.wikipedia.org/w/api.php?action=query&generator=images&gimlimit=10&prop=imageinfo&iiprop=url&format=json&titles=%s";

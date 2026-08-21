@@ -8,12 +8,7 @@ interface Props {
 export default function UniversitySidebar({ university }: Props) {
     if (!university) return null;
 
-    const initials = university.name
-        .split(' ')
-        .map(w => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
+    const decodedName = decodeURIComponent(university.name);
 
     const displayDomain = university.domains && university.domains.length > 0 
         ? university.domains[0] 
@@ -22,14 +17,12 @@ export default function UniversitySidebar({ university }: Props) {
     return (
         <div className={styles.card}>
             <div className={styles.header}>
-                <div className={styles.avatarWrap}>
-                    {university.logo ? (
-                        <img src={university.logo} alt={`${university.name} logo`} className={styles.avatar} />
-                    ) : (
-                        <span className={styles.avatarInitials}>{initials}</span>
-                    )}
-                </div>
-                <h1 className={styles.name}>{university.name}</h1>
+                {university.logo && (
+                    <div className={styles.avatarWrap}>
+                        <img src={university.logo} alt={`${decodedName} logo`} className={styles.avatar} />
+                    </div>
+                )}
+                <h1 className={styles.name}>{decodedName}</h1>
                 <p className={styles.bio}>Educational Institution</p>
             </div>
 

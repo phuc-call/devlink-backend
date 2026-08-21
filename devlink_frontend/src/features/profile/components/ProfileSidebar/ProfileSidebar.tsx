@@ -121,7 +121,7 @@ export default function ProfileSidebar({ profile, onEdit, onFollowerClick, onFol
                                     <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                                 </svg>
                             )}
-                            <span style={{ color: '#374151' }}>{profile.school}</span>
+                            <span style={{ color: '#374151', fontWeight: 500 }}>{decodeURIComponent(profile.school)}</span>
                         </div>
                 )}
                 {profile?.major && (

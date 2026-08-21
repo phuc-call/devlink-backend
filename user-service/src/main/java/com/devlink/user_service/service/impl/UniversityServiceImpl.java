@@ -232,14 +232,16 @@ public class UniversityServiceImpl implements UniversityService {
         String urlTemplate = isVietnamese ? Constants.WIKIPEDIA_API_VI_URL : Constants.WIKIPEDIA_API_EN_URL;
 
         try {
-            String url = String.format(urlTemplate, URLEncoder.encode(university.getName(), StandardCharsets.UTF_8));
+            String encodedName = URLEncoder.encode(university.getName(), StandardCharsets.UTF_8).replace("+", "%20");
+            String urlStr = String.format(urlTemplate, encodedName);
+            java.net.URI uri = java.net.URI.create(urlStr);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set(Constants.HEADER_USER_AGENT, wikipediaUserAgent);
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<String> responseEntity = restTemplate.exchange(
-                    url,
+                    uri,
                     HttpMethod.GET,
                     entity,
                     String.class);
@@ -283,9 +285,11 @@ public class UniversityServiceImpl implements UniversityService {
         String urlTemplate = isVietnamese ? Constants.WIKIPEDIA_IMAGES_API_VI_URL
                 : Constants.WIKIPEDIA_IMAGES_API_EN_URL;
         try {
-            String url = String.format(urlTemplate, URLEncoder.encode(university.getName(), StandardCharsets.UTF_8));
+            String encodedName = URLEncoder.encode(university.getName(), StandardCharsets.UTF_8).replace("+", "%20");
+            String urlStr = String.format(urlTemplate, encodedName);
+            java.net.URI uri = java.net.URI.create(urlStr);
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
 
             JsonNode root = objectMapper.readTree(responseEntity.getBody());
             JsonNode pages = root.path(Constants.WIKIPEDIA_JSON_NODE_QUERY).path(Constants.WIKIPEDIA_JSON_NODE_PAGES);
