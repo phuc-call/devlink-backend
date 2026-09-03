@@ -44,7 +44,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final AppProperties appProperties;
 
-    private String buildCookie(String name, String value, int maxAge){
+    private String buildCookie(String name, String value, int maxAge) {
         return name + "=" + value
                 + "; Max-Age=" + maxAge
                 + "; Path=/"
@@ -56,8 +56,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Transactional
     @CircuitBreaker(name = "googleOAuthCB")
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+            HttpServletResponse response,
+            Authentication authentication) throws IOException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
@@ -85,7 +85,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             response.addHeader(SET_COOKIE, buildCookie("accessToken", result.accessToken(), 900));
             response.addHeader(SET_COOKIE, buildCookie("refreshToken", result.refreshToken(), 2592000));
 
-
             // Redirect frontend
             String redirectUrl = String.format("%s/oauth-success?userId=%d&username=%s&role=%s",
                     appProperties.getFrontendUrl(), result.userId(), result.username(), result.roleName());
@@ -98,8 +97,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     }
 
     private AuthResult handleRegister(String email, String name,
-                                      String avatarUrl,
-                                      HttpServletRequest request) {
+            String avatarUrl,
+            HttpServletRequest request) {
 
         if (userRepository.existsByEmail(email))
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -150,30 +149,29 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         return buildTokens(user, roleName, request);
     }
 
-
-    //Generate token
+    // Generate token
     private AuthResult buildTokens(User user, String roleName,
-                                   HttpServletRequest request) {
+            HttpServletRequest request) {
 
         String accessToken = jwtUtil.generateToken(
                 user.getEmail(), user.getId(), roleName);
 
         String rawRefreshToken = UUID.randomUUID().toString().replace("-", "");
-        String hashedRefreshToken =  TokenHashUtil.hash(rawRefreshToken);
+        String hashedRefreshToken = TokenHashUtil.hash(rawRefreshToken);
 
         AuthToken refreshToken = buildRefreshToken(user, request, hashedRefreshToken);
         authTokeRepository.save(refreshToken);
-
 
         return new AuthResult(accessToken, rawRefreshToken, user.getId(), user.getUsername(), roleName);
     }
 
     // build AuthToken
     private AuthToken buildRefreshToken(User user,
-                                        HttpServletRequest request,
-                                        String hashedToken) {
+            HttpServletRequest request,
+            String hashedToken) {
         String rawUA = request.getHeader("User-Agent");
-        if (rawUA == null) rawUA = "Unknown";
+        if (rawUA == null)
+            rawUA = "Unknown";
         ua_parser.Client client = uaParser.parse(rawUA);
 
         String deviceName = client.userAgent.family
@@ -201,7 +199,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     }
 
     private DeviceType resolveDeviceType(String deviceFamily) {
-        if (deviceFamily == null) return DeviceType.UNKNOW;
+        if (deviceFamily == null)
+            return DeviceType.UNKNOW;
         return switch (deviceFamily.toLowerCase()) {
             case "ipad", "tablet" -> DeviceType.TABLET;
             case "other" -> DeviceType.DESKTOP;
@@ -211,15 +210,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private String extractIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isBlank()) return request.getRemoteAddr();
+        if (ip == null || ip.isBlank())
+            return request.getRemoteAddr();
         return ip.split(",")[0].trim();
     }
 
     @SuppressWarnings("SameParameterValue")
     private String extractCookie(HttpServletRequest request, String name) {
-        if (request.getCookies() == null) return null;
+        if (request.getCookies() == null)
+            return null;
         for (var cookie : request.getCookies())
-            if (name.equals(cookie.getName())) return cookie.getValue();
+            if (name.equals(cookie.getName()))
+                return cookie.getValue();
         return null;
     }
 

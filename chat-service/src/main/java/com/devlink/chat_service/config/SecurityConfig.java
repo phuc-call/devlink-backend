@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(Constants.PUBLIC_ENDPOINT).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("api/chat/**").hasRole("USER")
+                        .requestMatchers("/api/chat/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 );
 

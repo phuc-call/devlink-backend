@@ -11,7 +11,7 @@ public interface FeedPostProcedureResult {
     String getPostType();
     Long getViewCount();
     Boolean getIsPinned();
-    String getAiModerationStatus();
+
     Instant getCreatedAt();
     Instant getUpdatedAt();
     Long getCommentCount();

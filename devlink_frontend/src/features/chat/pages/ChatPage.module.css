@@ -1,0 +1,57 @@
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ── Desktop ── */
+.sidebarWrapper {
+    width: 280px;
+    max-width: 30%;
+    flex-shrink: 0;
+    height: 100%;
+    background-color: #FDFBF7;
+    border-right: 1px solid #E5E7EB;
+}
+
+.chatAreaWrapper {
+    flex: 1;
+    height: 100%;
+    background-color: #ffffff;
+    min-width: 0;
+}
+
+/* ── Mobile: một panel tại một thời điểm, slide transition ── */
+@media (max-width: 639px) {
+    .sidebarWrapper {
+        width: 100%;
+        max-width: 100%;
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        transition: transform 0.25s ease;
+        transform: translateX(0);
+    }
+
+    /* Sidebar slide sang trái khi đang xem chat */
+    .sidebarHidden {
+        transform: translateX(-100%);
+        pointer-events: none;
+    }
+
+    .chatAreaWrapper {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        transition: transform 0.25s ease;
+        transform: translateX(0);
+    }
+
+    /* Chat area ẩn khi chưa chọn user (nằm bên phải) */
+    .chatHidden {
+        transform: translateX(100%);
+        pointer-events: none;
+    }
+}

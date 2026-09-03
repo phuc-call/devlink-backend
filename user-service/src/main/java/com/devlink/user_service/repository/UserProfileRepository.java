@@ -1,6 +1,7 @@
 package com.devlink.user_service.repository;
 
 import com.devlink.user_service.dto.internal.CandidateProfileInternal;
+import com.devlink.user_service.dto.internal.UserInfoForCommentInternal;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserProfile;
 import feign.Param;
@@ -130,4 +131,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     @Query("SELECT p.fullName FROM UserProfile p WHERE p.user.id = :userId")
     Optional<String> findFullNameByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT new com.devlink.user_service.dto.internal.UserInfoForCommentInternal(" +
+           "up.user.id, up.fullName, up.avatarUrl) " +
+           "FROM UserProfile up")
+    List<UserInfoForCommentInternal> findAllUsersBasicInfo();
 }

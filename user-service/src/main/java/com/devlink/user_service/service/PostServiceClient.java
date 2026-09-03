@@ -170,4 +170,9 @@ public interface PostServiceClient {
 
     Map<Long, BadgeType> getUserBadge(Long userId);
 
+    /**
+     * Retrieves basic info (ID, name, avatar) for all users in the system.
+     * Used for full data synchronization with other services.
+     */
+    List<UserInfoForCommentInternal> getAllUsersBasicInfo();
 }

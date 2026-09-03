@@ -228,7 +228,6 @@ public class PostServiceImpl implements PostService {
                 .visibility(request.getVisibility())
                 .postType(request.getPostType())
                 .status(PostStatus.PENDING_REVIEW)
-                .aiModerationStatus(AiModerationStatus.PENDING)
                 .build();
         return postRepository.save(post);
     }
@@ -288,7 +287,6 @@ public class PostServiceImpl implements PostService {
                 .status(post.getStatus())
                 .visibility(post.getVisibility())
                 .postType(post.getPostType())
-                .aiModerationStatus(post.getAiModerationStatus())
                 .tags(post.getTags().stream().map(PostTag::getTag).toList())
                 .mediaList(mediaList.stream().map(m -> MediaResponse.builder()
                         .id(m.getId()).mediaType(m.getMediaType())

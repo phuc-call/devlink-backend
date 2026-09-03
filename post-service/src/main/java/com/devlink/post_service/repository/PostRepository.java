@@ -22,7 +22,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     String FEED_SELECT = """
             SELECT new com.devlink.post_service.dto.response.FeedPostResponse(
                    p.id, p.authorId, p.groupId, p.content, p.status, p.visibility,
-                   p.postType, p.viewCount, p.isPinned, p.aiModerationStatus,
+                   p.postType, p.viewCount, p.isPinned,
                    p.createdAt, p.updatedAt, p.commentCount, p.likeCount, p.sharedPostId)
             """;
 
@@ -177,7 +177,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 JOIN p.mediaList m
                 WHERE p.postType = 'VIDEO'
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
-                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
                   AND p.visibility = 'PUBLIC'
                   AND p.likeCount >= :minLike
@@ -209,7 +208,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 JOIN p.mediaList m
                 WHERE p.postType = 'VIDEO'
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
-                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
                   AND p.visibility = 'PUBLIC'
                   AND p.likeCount >= :minLike
@@ -239,7 +237,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 JOIN p.mediaList m
                 WHERE p.postType = 'VIDEO'
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
-                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
                   AND p.visibility = 'PUBLIC'
                   AND p.likeCount >= :minLike
@@ -265,7 +262,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 JOIN p.mediaList m
                 WHERE p.postType = 'VIDEO'
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
-                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
                   AND p.visibility = 'PUBLIC'
                   AND p.likeCount >= :minLike
@@ -294,7 +290,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 WHERE p.id = :postId
                   AND p.postType = 'VIDEO'
                   AND p.status NOT IN ('DELETED', 'SUSPENDED')
-                  AND p.aiModerationStatus IN ('APPROVED', 'PENDING')
                   AND p.deletedAt IS NULL
                   AND (
                       p.visibility = 'PUBLIC'

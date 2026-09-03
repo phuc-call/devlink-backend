@@ -34,8 +34,6 @@ public class PostFile {
     @Column(name = "extracted_text", columnDefinition = "LONGTEXT")
     private String extractedText;
 
-    @Column(name = "ai_summary", columnDefinition = "TEXT")
-    private String aiSummary;
 
     @Column(name = "page_count")
     private Integer pageCount;

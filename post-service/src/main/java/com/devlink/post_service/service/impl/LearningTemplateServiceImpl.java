@@ -18,7 +18,7 @@ import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.repository.UserTemplateForkRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.FileStorageService;
-import com.devlink.post_service.service.GeminiModerationService;
+
 import com.devlink.post_service.service.LearningTemplateService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +49,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
 
     private final LearningTemplateRepository templateRepository;
     private final FileStorageService fileStorageService;
-    private final GeminiModerationService geminiService;
+
     private final UserLanguageCacheClient userLanguageCacheClient;
     private final ObjectMapper objectMapper;
     private final UserTemplateForkRepository forkRepository;
@@ -116,13 +116,10 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
         try {
             String extractedText = extractText(fileUrl, fileType);
 
-            final String aiSummary = (extractedText != null && !extractedText.isBlank()) ? geminiService.summarizeFileContent(extractedText) : null;
-
             templateRepository.findById(templateId).ifPresent(t -> {
                 t.setExtractedText(extractedText);
-                t.setAiSummary(aiSummary);
                 templateRepository.save(t);
-                log.info("[LearningTemplate] Async done id={} summaryLen={}", templateId, aiSummary != null ? aiSummary.length() : 0);
+                log.info("[LearningTemplate] Async done id={}", templateId);
             });
         } catch (Exception e) {
             log.error("[LearningTemplate] Async extract failed id={}", templateId, e);
@@ -161,7 +158,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
     }
 
     private TemplateResponse toResponse(LearningTemplate t, List<String> tags, List<String> topics) {
-        return TemplateResponse.builder().id(t.getId()).title(t.getTitle()).description(t.getDescription()).language(t.getLanguage()).difficulty(t.getDifficulty()).fileType(t.getFileType()).fileUrl(t.getFileUrl()).fileName(t.getFileName()).fileSize(t.getFileSize()).aiSummary(t.getAiSummary()).tags(tags != null ? tags : fromJson(t.getTags())).topics(topics != null ? topics : fromJson(t.getTopics())).viewCount(t.getViewCount()).forkCount(t.getForkCount()).status(t.getStatus()).createdBy(t.getCreatedBy()).createdAt(t.getCreatedAt()).build();
+        return TemplateResponse.builder().id(t.getId()).title(t.getTitle()).description(t.getDescription()).language(t.getLanguage()).difficulty(t.getDifficulty()).fileType(t.getFileType()).fileUrl(t.getFileUrl()).fileName(t.getFileName()).fileSize(t.getFileSize()).tags(tags != null ? tags : fromJson(t.getTags())).topics(topics != null ? topics : fromJson(t.getTopics())).viewCount(t.getViewCount()).forkCount(t.getForkCount()).status(t.getStatus()).createdBy(t.getCreatedBy()).createdAt(t.getCreatedAt()).build();
     }
 
 
@@ -230,7 +227,7 @@ public class LearningTemplateServiceImpl implements LearningTemplateService {
 
         ForkInfoResponse forkInfo = forkOpt.map(fork -> ForkInfoResponse.builder().forkId(fork.getId()).isModified(fork.getIsModified()).lastEditedAt(fork.getLastEditedAt()).createdAt(fork.getCreatedAt()).build()).orElse(null);
 
-        return TemplateDetailResponse.builder().id(template.getId()).title(template.getTitle()).description(template.getDescription()).language(template.getLanguage()).difficulty(template.getDifficulty()).fileType(template.getFileType()).fileUrl(template.getFileUrl()).fileName(template.getFileName()).fileSize(template.getFileSize()).content(template.getContent()).aiSummary(template.getAiSummary()).tags(template.getTags()).topics(template.getTopics()).viewCount(template.getViewCount()).forkCount(template.getForkCount()).createdBy(template.getCreatedBy()).createdAt(template.getCreatedAt()).updatedAt(template.getUpdatedAt()).forkInfo(forkInfo).status(template.getStatus()).build();
+        return TemplateDetailResponse.builder().id(template.getId()).title(template.getTitle()).description(template.getDescription()).language(template.getLanguage()).difficulty(template.getDifficulty()).fileType(template.getFileType()).fileUrl(template.getFileUrl()).fileName(template.getFileName()).fileSize(template.getFileSize()).content(template.getContent()).tags(template.getTags()).topics(template.getTopics()).viewCount(template.getViewCount()).forkCount(template.getForkCount()).createdBy(template.getCreatedBy()).createdAt(template.getCreatedAt()).updatedAt(template.getUpdatedAt()).forkInfo(forkInfo).status(template.getStatus()).build();
     }
 
     @Override

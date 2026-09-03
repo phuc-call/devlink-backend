@@ -25,7 +25,7 @@ public class TemplateDetailResponse {
     // have value when fileType = CODE
     private String content;
 
-    private String aiSummary;
+
 
     private String tags;
     private String topics;

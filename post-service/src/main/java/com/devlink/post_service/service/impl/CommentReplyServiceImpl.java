@@ -2,7 +2,7 @@ package com.devlink.post_service.service.impl;
 
 import com.devlink.post_service.dto.procedure.CommentReplyProcedureResult;
 import com.devlink.post_service.dto.request.CreateCommentReplyRequest;
-import com.devlink.post_service.dto.request.ModerationResult;
+
 import com.devlink.post_service.dto.response.CommentReplyResponse;
 import com.devlink.post_service.dto.response.CommentReplySummaryResponse;
 import com.devlink.post_service.entity.Comment;
@@ -17,7 +17,7 @@ import com.devlink.post_service.repository.CommentRepository;
 import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentReplyService;
-import com.devlink.post_service.service.GeminiModerationService;
+
 import com.devlink.post_service.service.WebSocketEventPublisher;
 import com.devlink.post_service.config.WsEventConstants;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
 
     private final CommentRepository commentRepository;
     private final CommentReplyRepository commentReplyRepository;
-    private final GeminiModerationService geminiModerationService;
+
     private final UserProfileRepository userProfileRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
 
@@ -71,15 +71,6 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                     mentionedName, parentReply.getAuthorId());
         }
 
-        //Kiểm duyệt AI
-        ModerationResult moderation = geminiModerationService
-                .moderateContent(request.getContent());
-
-        CommentStatus status = switch (moderation.getStatus()) {
-            case APPROVED, MANUAL_REVIEW, PENDING -> CommentStatus.ACTIVE;
-            case REJECTED -> CommentStatus.HIDDEN;
-        };
-
         // 4. Lưu reply
         CommentReply reply = CommentReply.builder()
                 .postId(request.getPostId())
@@ -87,9 +78,7 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .parentReply(parentReply)   // reply cha trực tiếp (null nếu reply thẳng)
                 .authorId(authorId)
                 .content(request.getContent())
-                .status(status)
-                .aiModerationStatus(moderation.getStatus())
-                .aiModerationScore(moderation.getScore())
+                .status(CommentStatus.ACTIVE)
                 .mentionedName(mentionedName)
                 .likeCount(0L)
                 .build();
@@ -170,7 +159,6 @@ public class CommentReplyServiceImpl implements CommentReplyService {
                 .authorId(r.getAuthorId())
                 .content(r.getContent())
                 .status(r.getStatus())
-                .aiModerationStatus(r.getAiModerationStatus())
                 .likeCount(r.getLikeCount())
                 .createdAt(r.getCreatedAt())
                 .updatedAt(r.getUpdatedAt())

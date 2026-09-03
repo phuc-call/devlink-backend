@@ -15,7 +15,7 @@ public class TemplateCardResponse {
     private TemplateFileType fileType;
     private String fileUrl;
     private String fileName;
-    private String aiSummary;
+
     private Long viewCount;
     private Long forkCount;
     private TemplateStatus status;

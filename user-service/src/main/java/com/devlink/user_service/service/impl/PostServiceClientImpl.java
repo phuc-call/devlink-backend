@@ -12,6 +12,7 @@ import com.devlink.user_service.entity.enums.ProgrammingLanguage;
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
+import com.devlink.user_service.repository.UserProfileRepository;
 import com.devlink.user_service.repository.UserRepository;
 import com.devlink.user_service.service.PostServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 public class PostServiceClientImpl implements PostServiceClient {
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final UserHelper u;
     private final FollowRepository followRepository;
 
@@ -107,5 +109,11 @@ public class PostServiceClientImpl implements PostServiceClient {
         BadgeType badge = userRepository.findBadgeByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return Map.of(userId, badge);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserInfoForCommentInternal> getAllUsersBasicInfo() {
+        return userProfileRepository.findAllUsersBasicInfo();
     }
 }

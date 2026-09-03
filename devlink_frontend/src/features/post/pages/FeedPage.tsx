@@ -1,8 +1,6 @@
 // src/features/post/pages/FeedPage.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, Inbox } from 'lucide-react';
-import ProfileSetupModal from '../../profile/components/ProfileSetupModal';
-import { useProfileSetup } from '../../../hooks/useProfileSetup.ts';
 import CreatePostModal from '../../../components/post/CreatePostModal/CreatePostModal';
 import { getFeedApi } from '../../../api/post-service/getFeedApi';
 import type { FeedPostResponse } from '../../../types/post.types';
@@ -11,7 +9,6 @@ import { getCurrentUserInfo } from '../../../utils/auth';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 
 export default function FeedPage() {
-    const { showModal, closeModal }           = useProfileSetup();
     const [showCreatePost, setShowCreatePost] = useState(false);
     const [posts, setPosts]                   = useState<FeedPostResponse[]>([]);
     const [page, setPage]                     = useState(0);
@@ -151,10 +148,7 @@ export default function FeedPage() {
     };
 
     return (
-        <>
-            {showModal && <ProfileSetupModal onClose={closeModal} initialFullName={displayName ?? ''} />}
-
-            {showCreatePost && (
+        <>            {showCreatePost && (
                 <CreatePostModal
                     onClose={() => setShowCreatePost(false)}
                     onSuccess={() => {

@@ -44,6 +44,14 @@ public class PostServiceController {
                                 ApiResponse.ok(userBlockService.getBlockedAndBlockerIds(userId), "Success"));
         }
 
+        @GetMapping("/block-check")
+        public ResponseEntity<ApiResponse<Boolean>> isBlockedBetween(
+                        @RequestParam Long userId,
+                        @RequestParam Long targetId) {
+                boolean blocked = userBlockService.checkIfUserIsBlocked(userId, targetId);
+                return ResponseEntity.ok(ApiResponse.ok(blocked, "Success"));
+        }
+
         @PostMapping("/feed-info")
         public ResponseEntity<ApiResponse<Map<Long, UserFeedInfoResponse>>> getUserFeedInfo(
                         @RequestHeader("X-User-Id") Long currentUserId,
@@ -141,6 +149,14 @@ public class PostServiceController {
                                                 .data(groupRepository.findTopPublicGroupIds(
                                                                 org.springframework.data.domain.PageRequest.of(0, 20)))
                                                 .build());
+        }
+
+        @GetMapping("/all-basic-info")
+        public ApiResponse<List<UserInfoForCommentInternal>> getAllUsersBasicInfo() {
+                return ApiResponse.<List<UserInfoForCommentInternal>>builder()
+                                .success(true)
+                                .data(postServiceClient.getAllUsersBasicInfo())
+                                .build();
         }
 
 }

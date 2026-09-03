@@ -3,7 +3,7 @@ package com.devlink.post_service.service.impl;
 import com.devlink.post_service.dto.event.CommentCreatedEvent;
 import com.devlink.post_service.config.WsEventConstants;
 import com.devlink.post_service.dto.request.CreateCommentRequest;
-import com.devlink.post_service.dto.request.ModerationResult;
+
 import com.devlink.post_service.dto.request.UpdateCommentRequest;
 import com.devlink.post_service.dto.response.CommentProjection;
 import com.devlink.post_service.dto.response.CommentResponse;
@@ -23,7 +23,7 @@ import com.devlink.post_service.repository.PostRepository;
 import com.devlink.post_service.repository.UserProfileRepository;
 import com.devlink.post_service.security.SecurityUtils;
 import com.devlink.post_service.service.CommentService;
-import com.devlink.post_service.service.GeminiModerationService;
+
 import com.devlink.post_service.service.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +50,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final CommentLockRepository commentLockRepository;
     private final PostRepository postRepository;
-    private final GeminiModerationService geminiModerationService;
+
     private final CommentReplyRepository commentReplyRepository;
     private final UserProfileRepository userProfileRepository;
     private final PostServiceImpl postService;
@@ -75,20 +75,11 @@ public class CommentServiceImpl implements CommentService {
             throw new AppException(ErrorCode.COMMENT_POST_LOCKED);
         }
 
-        ModerationResult moderation = geminiModerationService.moderateContent(request.getContent());
-
-        CommentStatus commentStatus = switch (moderation.getStatus()) {
-            case APPROVED, MANUAL_REVIEW, PENDING -> CommentStatus.ACTIVE;
-            case REJECTED -> CommentStatus.HIDDEN;
-        };
-
         Comment comment = Comment.builder()
                 .postId(request.getPostId())
                 .authorId(authorId)
                 .content(request.getContent())
-                .status(commentStatus)
-                .aiModerationStatus(moderation.getStatus())
-                .aiModerationScore(moderation.getScore())
+                .status(CommentStatus.ACTIVE)
                 .likeCount(0L)
                 .build();
 
@@ -195,15 +186,6 @@ public class CommentServiceImpl implements CommentService {
     public CommentResponse update(Long id, UpdateCommentRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
-        // AI moderation first
-        ModerationResult moderation = geminiModerationService
-                .moderateContent(request.getContent());
-
-        CommentStatus newStatus = switch (moderation.getStatus()) {
-            case APPROVED, MANUAL_REVIEW, PENDING -> CommentStatus.ACTIVE;
-            case REJECTED -> CommentStatus.HIDDEN;
-        };
-
         if (request.getType() == CommentType.COMMENT) {
             Comment comment = commentRepository.findById(id)
                     .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
@@ -213,9 +195,7 @@ public class CommentServiceImpl implements CommentService {
             }
 
             comment.setContent(request.getContent());
-            comment.setStatus(newStatus);
-            comment.setAiModerationStatus(moderation.getStatus());
-            comment.setAiModerationScore(moderation.getScore());
+            comment.setStatus(CommentStatus.ACTIVE);
 
             return toResponse(commentRepository.save(comment));
         }
@@ -225,13 +205,11 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!reply.getAuthorId().equals(currentUserId)) {
-            throw new AppException(ErrorCode.FORBIDDEN);
+                throw new AppException(ErrorCode.FORBIDDEN);
         }
 
         reply.setContent(request.getContent());
-        reply.setStatus(newStatus);
-        reply.setAiModerationStatus(moderation.getStatus());
-        reply.setAiModerationScore(moderation.getScore());
+        reply.setStatus(CommentStatus.ACTIVE);
 
         return toReplyResponse(commentReplyRepository.save(reply));
     }
@@ -243,7 +221,6 @@ public class CommentServiceImpl implements CommentService {
                 .authorId(c.getAuthorId())
                 .content(c.getContent())
                 .status(c.getStatus())
-                .aiModerationStatus(c.getAiModerationStatus())
                 .createdAt(c.getCreatedAt())
                 .type(CommentType.COMMENT)
                 .build();
@@ -256,7 +233,6 @@ public class CommentServiceImpl implements CommentService {
                 .authorId(r.getAuthorId())
                 .content(r.getContent())
                 .status(r.getStatus())
-                .aiModerationStatus(r.getAiModerationStatus())
                 .createdAt(r.getCreatedAt())
                 .type(CommentType.REPLY)
                 .build();

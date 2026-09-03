@@ -59,7 +59,7 @@ public class UniversityServiceImpl implements UniversityService {
     @Override
     public List<UniversityResponse> search(String keyword) {
         if (keyword == null || keyword.isBlank()) {
-            return Collections.emptyList();
+            keyword = ""; // Allows fetching default top 20 universities from DB
         }
 
         List<Object[]> dbUniversities = universityRepository.searchRichUniversities(

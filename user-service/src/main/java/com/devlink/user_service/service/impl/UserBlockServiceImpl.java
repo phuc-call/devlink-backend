@@ -2,10 +2,10 @@ package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
 import com.devlink.user_service.config.WsEventConstants;
+import com.devlink.user_service.dto.event.BlockChangedEvent;
 import com.devlink.user_service.dto.response.BlockStatusResponse;
 import com.devlink.user_service.entity.User;
 import com.devlink.user_service.entity.UserBlock;
-
 import com.devlink.user_service.exception.AppException;
 import com.devlink.user_service.exception.ErrorCode;
 import com.devlink.user_service.repository.FollowRepository;
@@ -16,6 +16,7 @@ import com.devlink.user_service.service.UserBlockService;
 import com.devlink.user_service.service.WebSocketEventPublisher;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,12 +25,16 @@ import java.util.List;
 @Transactional
 @RequiredArgsConstructor
 public class UserBlockServiceImpl implements UserBlockService {
+
+    private static final String BLOCK_CHANGED_TOPIC = "block-changed";
+
     private final UserBlockRepository userBlockRepository;
     private final UserHelper userHelper;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final UserProfileRepository userProfileRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     public boolean checkIfUserIsBlocked(Long a, Long b) {
         return userBlockRepository.isBlocked(a, b)
                 || userBlockRepository.isBlocked(b, a);
@@ -68,6 +73,7 @@ public class UserBlockServiceImpl implements UserBlockService {
             userBlockRepository.deleteByBlockerIdAndBlockedId(currentUserId, userId);
             webSocketEventPublisher.publishUserEvent(currentUserId, WsEventConstants.BLOCK_UPDATED, userId);
             webSocketEventPublisher.publishUserEvent(userId, WsEventConstants.BLOCK_UPDATED, currentUserId);
+            publishBlockChangedEvent(currentUserId, userId);
             return BlockStatusResponse.builder()
                     .blocked(false)
                     .message("Unblocked the user")
@@ -83,11 +89,20 @@ public class UserBlockServiceImpl implements UserBlockService {
             userBlockRepository.save(block);
             webSocketEventPublisher.publishUserEvent(currentUserId, WsEventConstants.BLOCK_UPDATED, userId);
             webSocketEventPublisher.publishUserEvent(userId, WsEventConstants.BLOCK_UPDATED, currentUserId);
+            publishBlockChangedEvent(currentUserId, userId);
             return BlockStatusResponse.builder()
                     .blocked(true)
                     .message("Blocked the user")
                     .build();
         }
+    }
+
+    private void publishBlockChangedEvent(Long blockerId, Long blockedId) {
+        BlockChangedEvent event = BlockChangedEvent.builder()
+                .blockerId(blockerId)
+                .blockedId(blockedId)
+                .build();
+        kafkaTemplate.send(BLOCK_CHANGED_TOPIC, String.valueOf(blockerId), event);
     }
 
     private void removeFollowRelationships(Long currentUserId, Long userId) {

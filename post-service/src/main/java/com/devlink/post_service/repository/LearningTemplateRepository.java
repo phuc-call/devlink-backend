@@ -21,18 +21,12 @@ import java.util.Optional;
 @Repository
 public interface LearningTemplateRepository extends JpaRepository<LearningTemplate, Long> {
 
-    @Modifying
-    @Query("UPDATE LearningTemplate t SET t.extractedText = :extractedText, t.aiSummary = :aiSummary WHERE t.id = :id")
-    void updateExtractedTextAndSummary(
-            @Param("id") Long id,
-            @Param("extractedText") String extractedText,
-            @Param("aiSummary") String aiSummary
-    );
+
 
     @Query("""
             SELECT new com.devlink.post_service.dto.response.TemplateCardResponse(
                 t.id, t.title, t.language, t.difficulty, t.fileType,
-                t.fileUrl, t.fileName, t.aiSummary, t.viewCount, t.forkCount,
+                t.fileUrl, t.fileName, t.viewCount, t.forkCount,
                 t.status, t.createdAt,
                 CASE WHEN EXISTS (
                     SELECT 1 FROM UserTemplateFork f
@@ -57,7 +51,7 @@ public interface LearningTemplateRepository extends JpaRepository<LearningTempla
     @Query("""
             SELECT new com.devlink.post_service.dto.response.TemplateCardResponse(
                 t.id, t.title, t.language, t.difficulty, t.fileType,
-                t.fileUrl, t.fileName, t.aiSummary, t.viewCount, t.forkCount,
+                t.fileUrl, t.fileName, t.viewCount, t.forkCount,
                 t.status, t.createdAt, false
             )
             FROM LearningTemplate t

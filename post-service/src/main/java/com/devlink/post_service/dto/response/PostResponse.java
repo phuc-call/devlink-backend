@@ -1,6 +1,6 @@
 package com.devlink.post_service.dto.response;
 
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.Visibility;
@@ -21,7 +21,7 @@ public class PostResponse {
     private PostStatus status;
     private Visibility visibility;
     private PostType postType;
-    private AiModerationStatus aiModerationStatus;
+
     private List<String> tags;
     private List<MediaResponse> mediaList;
     private Instant createdAt;

@@ -17,24 +17,21 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain chain)
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain chain)
             throws ServletException, IOException {
 
-        String id    = request.getHeader("X-User-Id");
+        String id = request.getHeader("X-User-Id");
         String email = request.getHeader("X-User-Email");
-        String role  = request.getHeader("X-User-Role");
+        String role = request.getHeader("X-User-Role");
         if (id != null && role != null) {
             AuthUserDetails principal = new AuthUserDetails(
-                    Long.parseLong(id), email, role
-            );
+                    Long.parseLong(id), email, role);
 
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            principal.getAuthorities()
-                    );
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    principal.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(auth);
         }

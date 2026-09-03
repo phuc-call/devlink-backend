@@ -1,7 +1,7 @@
 package com.devlink.post_service.dto.response;
 
 
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.CommentStatus;
 import com.devlink.post_service.entity.enums.CommentType;
 import lombok.Builder;
@@ -19,7 +19,7 @@ public class CommentResponse {
     private Long parentCommentId;
     private String content;
     private CommentStatus status;
-    private AiModerationStatus aiModerationStatus;
+
     private Instant createdAt;
     private CommentType type;
 }

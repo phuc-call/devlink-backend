@@ -121,28 +121,21 @@ spring:
               filters:
                 - RewritePath=/post-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
-            # x
-            - id: x
-              uri: lb://x
+            # chat-service
+            - id: chat-service
+              uri: lb://chat-service
               predicates:
-                - Path=/api/x/**
+                - Path=/api/chat/**
               filters:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
 
-            - id: x-service-docs
-              uri: lb://x-service
+            - id: chat-service-docs
+              uri: lb://chat-service
               predicates:
-                - Path=/x-service/v3/api-docs/**
+                - Path=/chat-service/v3/api-docs/**
               filters:
-                - RewritePath=/x-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
-
-            - id: x-service-docs
-              uri: lb://x-service
-              predicates:
-                - Path=/x-service/v3/api-docs/**
-              filters:
-                - RewritePath=/x-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
+                - RewritePath=/chat-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
 eureka:
   client:
@@ -187,6 +180,6 @@ springdoc:
         url: /user-service/v3/api-docs
       - name: post-service
         url: /post-service/v3/api-docs
-      - name: x
-        url: /x/v3/api-docs
+      - name: chat-service
+        url: /chat-service/v3/api-docs
 

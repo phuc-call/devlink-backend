@@ -5,7 +5,7 @@ import com.devlink.post_service.dto.response.FeedPostResponse;
 import com.devlink.post_service.dto.response.SavePostProjectionResponse;
 import com.devlink.post_service.entity.Post;
 import com.devlink.post_service.entity.UserSavedPost;
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.Visibility;
 import com.devlink.post_service.entity.enums.ActionType;
 import com.devlink.post_service.exception.AppException;
@@ -81,9 +81,6 @@ public class UserSavedPostServiceImpl implements UserSavedPostService {
     private void validatePostAvailability(Post post) {
         if (post.getDeletedAt() != null) {
             throw new AppException(ErrorCode.POST_UNAVAILABLE);
-        }
-        if (post.getAiModerationStatus() == AiModerationStatus.REJECTED) {
-            throw new AppException(ErrorCode.POST_VIOLATED);
         }
     }
 

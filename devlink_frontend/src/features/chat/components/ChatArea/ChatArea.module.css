@@ -1,0 +1,260 @@
+.chatArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    height: 100%;
+}
+
+/* Phần đầu (Header) */
+.header {
+    height: 56px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E5E7EB;
+    background-color: #ffffff;
+    flex-shrink: 0;
+}
+
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.userName {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.status {
+    font-size: 0.875rem;
+    color: #10B981;
+    /* Màu xanh cho trạng thái đang hoạt động */
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Nút back — ẩn trên desktop, chỉ hiện trên mobile */
+.backBtn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4B5563;
+    padding: 4px;
+    border-radius: 9999px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.backBtn:hover {
+    background-color: #F3F4F6;
+    color: #111827;
+}
+
+@media (max-width: 639px) {
+    .backBtn {
+        display: flex;
+    }
+    .header {
+        padding: 0 12px;
+    }
+    .messageListWrapper {
+        padding: 12px;
+    }
+    .inputArea {
+        padding: 8px 10px;
+        height: auto;
+    }
+    .inputContainer {
+        gap: 6px;
+    }
+    .inputActions {
+        gap: 4px;
+    }
+    /* Ẩn icon desktop, hiện icon 3 chấm */
+    .desktopOnly {
+        display: none;
+    }
+    .moreBtn {
+        display: flex;
+    }
+    .inputBox {
+        font-size: 0.875rem;
+        padding: 0 12px;
+        min-width: 0;
+    }
+}
+
+.iconBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6B7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition: color 0.2s, background-color 0.2s;
+    padding: 6px;
+}
+.iconBtn:hover {
+    color: #111827;
+    background-color: #F3F4F6;
+}
+
+/* Icon 3 chấm: ẩn trên desktop, hiện trên mobile */
+.moreBtn {
+    display: none;
+}
+/* Icon chỉ dùng trên desktop */
+.desktopOnly {
+    display: flex;
+}
+
+/* Danh sách tin nhắn */
+.messageListWrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #F9FAFB;
+}
+
+/* Ẩn thanh cuộn để giao diện gọn gàng hơn */
+.messageListWrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messageListWrapper::-webkit-scrollbar-thumb {
+    background-color: #D1D5DB;
+    border-radius: 3px;
+}
+
+.messageListContent {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.messageRow {
+    display: flex;
+    gap: 8px;
+    max-width: 70%;
+}
+
+.messageRow.me {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.messageRow.other {
+    align-self: flex-start;
+}
+
+.msgAvatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    align-self: flex-end;
+    /* Căn dưới cùng với bong bóng tin nhắn */
+}
+
+.bubble {
+    background-color: #ffffff;
+    border: 1px solid #E5E7EB;
+    padding: 10px 16px;
+    border-radius: 12px;
+    color: #111827;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.messageRow.me .bubble {
+    background-color: #3B82F6;
+    /* Màu xanh dương cho tin nhắn của mình */
+    color: #ffffff;
+    border-color: #3B82F6;
+}
+
+/* Khu vực nhập tin nhắn */
+.inputArea {
+    height: 64px;
+    padding: 12px 20px;
+    border-top: 1px solid #E5E7EB;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.inputContainer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.inputActions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.inputBox {
+    flex: 1;
+    height: 38px;
+    border-radius: 9999px;
+    background-color: #F3F4F6;
+    border: none;
+    padding: 0 16px;
+    font-size: 0.9375rem;
+    outline: none;
+    color: #111827;
+    min-width: 0;
+}
+
+.inputBox:focus {
+    background-color: #ECECEC;
+}
+
+.sendBtn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9999px;
+    background-color: #3B82F6;
+    color: #ffffff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.sendBtn:hover {
+    background-color: #2563EB;
+}

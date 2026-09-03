@@ -29,7 +29,12 @@ public class UniversityDataLoader {
 
     @PostConstruct
     public void init() {
-        loadUniversities();
+        try {
+            loadUniversities();
+        } catch (Exception e) {
+            log.error("Initial loading of universities failed during startup: {}", e.getMessage());
+            fallbackLoadUniversities(e);
+        }
     }
 
     @CircuitBreaker(name = "hipoUniversityApi", fallbackMethod = "fallbackLoadUniversities")

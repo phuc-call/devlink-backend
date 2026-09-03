@@ -1,6 +1,6 @@
 package com.devlink.post_service.entity;
 
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.Visibility;
@@ -81,13 +81,7 @@ public class Post {
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ai_moderation_status", length = 20, nullable = false)
-    @Builder.Default
-    private AiModerationStatus aiModerationStatus = AiModerationStatus.PENDING;
 
-    @Column(name = "ai_moderation_score")
-    private Double aiModerationScore;
 
     @Builder.Default
     @Column(name = "comment_count", nullable = false)
@@ -107,8 +101,6 @@ public class Post {
     @Builder.Default
     private List<PostMedia> mediaList = new ArrayList<>();
 
-    @Column(name = "ai_moderation_reason", length = 500)
-    private String aiModerationReason;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

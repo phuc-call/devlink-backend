@@ -8,7 +8,7 @@ volumes:
   chat-db-data:
   minio-data:
 services:
-  # ─── DATABASES ───────────────────────────────────────────────
+  #DATABASES 
   # post-db
   post-db:
     image: mysql:8.0
@@ -189,7 +189,8 @@ services:
   chat-service:
     build: ./chat-service
     container_name: chat-service
-
+    env_file:
+      - .env
     environment:
       DB_HOST: chat-db
       DB_NAME: chat_db
@@ -208,7 +209,7 @@ services:
     networks:
       - microservice-net
 
-  # ─── GATEWAY ─────────────────────────────────────────────────
+  # GATEWAY
   gateway-service:
     build: ./gateway-service
     container_name: gateway-service

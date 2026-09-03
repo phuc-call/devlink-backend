@@ -9,6 +9,7 @@ import OAuth2SuccessPage from '../features/auth/pages/OAuth2SuccessPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 
 import MainLayout from '../components/layout/MainLayout';
+import ChatLayout from '../components/layout/ChatLayout';
 import FeedPage from '../features/post/pages/FeedPage';
 import FollowingPage from '../features/post/pages/FollowingPage';
 import FriendsPage from '../features/post/pages/FriendsPage';
@@ -79,7 +80,6 @@ const router = createBrowserRouter([
                     { path: '/groups/:id', element: <GroupDetailPage /> },
                     { path: '/notifications', element: <NotificationPage /> },
                     { path: '/hidden', element: <HiddenContentPage /> },
-                    { path: '/chat', element: <ChatPage /> },
                     { path: '/dashboard/*', element: <UserDashboardPage /> },
                     { path: '/templates', element: <MyTemplatesPage /> },
                     { path: '/saved', element: <SavedPage /> },
@@ -94,6 +94,12 @@ const router = createBrowserRouter([
                     { path: '/profile/me', element: <ProfilePage /> },
                     { path: '/profile/:userId', element: <UserProfilePage /> },
                     { path: '/university/:name', element: <UniversityPage /> },
+                ],
+            },
+            {
+                element: <ChatLayout />,
+                children: [
+                    { path: '/chat', element: <ChatPage /> },
                 ],
             },
             { path: '/forks/:forkId/edit', element: <ForkEditorPage /> },

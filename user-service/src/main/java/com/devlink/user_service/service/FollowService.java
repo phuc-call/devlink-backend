@@ -13,7 +13,7 @@ public interface FollowService {
   void followUser(Long userId);
   void unFollowUser(Long userId);
   void incrementViewCount( Long followingId);
-  public PageResponse<FollowResponse> getFollowList(FollowListType type, Integer pageNumber, Integer pageSize);
+   PageResponse<FollowResponse> getFollowList(FollowListType type, Integer pageNumber, Integer pageSize);
   List<Long> getFriendIds(Long userId);
 
   void cancelFollowRequest( Long followingId);

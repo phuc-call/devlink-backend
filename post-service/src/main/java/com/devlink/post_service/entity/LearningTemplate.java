@@ -56,8 +56,6 @@ public class LearningTemplate {
     @Column(name = "extracted_text", columnDefinition = "LONGTEXT")
     private String extractedText;
 
-    @Column(name = "ai_summary", columnDefinition = "TEXT")
-    private String aiSummary;
 
     // JSON string: ["spring-boot","oop","design-pattern"]
     @Column(columnDefinition = "JSON")

@@ -1,6 +1,6 @@
 package com.devlink.post_service.entity;
 
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.CommentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,13 +65,6 @@ public class CommentReply {
     @Builder.Default
     private CommentStatus status = CommentStatus.ACTIVE;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ai_moderation_status", length = 20, nullable = false)
-    @Builder.Default
-    private AiModerationStatus aiModerationStatus = AiModerationStatus.PENDING;
-
-    @Column(name = "ai_moderation_score")
-    private Double aiModerationScore;
 
     @Column(name = "like_count", nullable = false)
     @Builder.Default

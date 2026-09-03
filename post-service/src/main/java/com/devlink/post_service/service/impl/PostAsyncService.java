@@ -6,7 +6,7 @@ import com.devlink.post_service.entity.PostMedia;
 import com.devlink.post_service.entity.UserSavedPost;
 import com.devlink.post_service.entity.enums.*;
 import com.devlink.post_service.repository.*;
-import com.devlink.post_service.service.GeminiModerationService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ public class PostAsyncService {
     private final PostFileRepository postFileRepository;
     private final UserStorageConfigRepository storageConfigRepository;
     private final UserSavedPostRepository userSavedPostRepository;
-    private final GeminiModerationService geminiModerationService;
+
     private final ObjectMapper objectMapper;
     private final LearningTemplateRepository templateRepository;
     private final ApplicationContext applicationContext;
@@ -58,30 +58,15 @@ public class PostAsyncService {
 
         log.info("[Async][Moderation] postId={}", postId);
         try {
-            var result = geminiModerationService.moderateContent(post.getContent());
 
-            post.setAiModerationStatus(result.getStatus());
-            post.setAiModerationScore(result.getScore());
-            post.setAiModerationReason(result.getReason());
-
-
-            if (result.getStatus() == AiModerationStatus.APPROVED) {
-                post.setStatus(PostStatus.ACTIVE);
-            } else if (result.getStatus() == AiModerationStatus.REJECTED) {
-                post.setStatus(PostStatus.DELETED);
-            }
+            post.setStatus(PostStatus.ACTIVE);
             postRepository.save(post);
 
-            if (result.getStatus() == AiModerationStatus.APPROVED
-                    && post.getVisibility() == Visibility.PUBLIC) {
+            if (post.getVisibility() == Visibility.PUBLIC) {
                 self().autoSavePosts(post);
             }
-
         } catch (Exception e) {
             log.error("[Async][Moderation] postId={} lỗi: {}", postId, e.getMessage());
-            post.setAiModerationStatus(AiModerationStatus.MANUAL_REVIEW);
-            post.setAiModerationReason("AI error — cần review thủ công");
-            postRepository.save(post);
         }
     }
 
@@ -105,9 +90,7 @@ public class PostAsyncService {
 
             String extractedText = extractText(fileUrl, fileType);
             if (extractedText != null) {
-                String summary = geminiModerationService.summarizeFileContent(extractedText);
                 postFile.setExtractedText(extractedText);
-                postFile.setAiSummary(summary);
                 postFile.setProcessedAt(Instant.now());
                 postFileRepository.save(postFile);
             }
@@ -197,16 +180,10 @@ public class PostAsyncService {
         try {
             String extractedText = extractText(fileUrl, fileType);
 
-            final String aiSummary = (extractedText != null && !extractedText.isBlank())
-                    ? geminiModerationService.summarizeFileContent(extractedText)
-                    : null;
-
             templateRepository.findById(templateId).ifPresent(t -> {
                 t.setExtractedText(extractedText);
-                t.setAiSummary(aiSummary);
                 templateRepository.save(t);
-                log.info("[Async][Template] done id={} | summary={}",
-                        templateId, aiSummary != null ? "yes" : "no");
+                log.info("[Async][Template] done id={}", templateId);
             });
         } catch (Exception e) {
             log.error("[Async][Template] failed id={}", templateId, e);

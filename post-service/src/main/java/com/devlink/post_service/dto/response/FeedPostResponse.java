@@ -1,6 +1,6 @@
 package com.devlink.post_service.dto.response;
 
-import com.devlink.post_service.entity.enums.AiModerationStatus;
+
 import com.devlink.post_service.entity.enums.PostStatus;
 import com.devlink.post_service.entity.enums.PostType;
 import com.devlink.post_service.entity.enums.Visibility;
@@ -26,7 +26,7 @@ public class FeedPostResponse {
     private Long viewCount;
 
     private Boolean isPinned;
-    private AiModerationStatus aiModerationStatus;
+
     private Instant createdAt;
     private Instant updatedAt;
     private Long commentCount;
@@ -41,11 +41,9 @@ public class FeedPostResponse {
     private FeedPostResponse sharedPost;
 
     @Builder
-    // Constructor cho JPQL — không có tags và mediaList
     public FeedPostResponse(Long id, Long authorId, Long groupId, String content,
             PostStatus status, Visibility visibility, PostType postType,
             Long viewCount, Boolean isPinned,
-            AiModerationStatus aiModerationStatus,
             Instant createdAt, Instant updatedAt,
             Long commentCount, Long likeCount, Long sharedPostId) {
         this.id = id;
@@ -57,7 +55,6 @@ public class FeedPostResponse {
         this.postType = postType;
         this.viewCount = viewCount;
         this.isPinned = isPinned;
-        this.aiModerationStatus = aiModerationStatus;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.commentCount = commentCount;

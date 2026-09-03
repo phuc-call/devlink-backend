@@ -24,7 +24,7 @@ public class TemplateResponse {
     private String fileUrl;
     private String fileName;
     private Long fileSize;
-    private String aiSummary;
+
     private List<String> tags;
     private List<String> topics;
     private Long viewCount;
