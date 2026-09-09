@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -29,4 +30,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
             @Param("conversationId") Long conversationId,
             @Param("currentUserId") Long currentUserId
     );
+    List<ConversationMember> findByConversationId(Long conversationId);
+
+    boolean existsByConversationIdAndUserId(Long conversationId, Long userId);
 }

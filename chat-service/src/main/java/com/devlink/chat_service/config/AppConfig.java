@@ -1,5 +1,6 @@
 package com.devlink.chat_service.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -21,14 +22,20 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 import ua_parser.Parser;
 
 import java.beans.BeanProperty;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import io.minio.MinioClient;
 
@@ -65,6 +72,34 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint(wsEndpoint)
                 .setAllowedOriginPatterns("*")
+                .addInterceptors(new HandshakeInterceptor() {
+                    @Override
+                    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                                   WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
+                        if (request instanceof ServletServerHttpRequest) {
+                            ServletServerHttpRequest servletRequest = (ServletServerHttpRequest) request;
+                            String userId = servletRequest.getServletRequest().getHeader("X-User-Id");
+                            if (userId != null) {
+                                attributes.put("userId", userId);
+                            }
+                        }
+                        return true;
+                    }
+                    @Override
+                    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                               WebSocketHandler wsHandler, Exception exception) {
+                    }
+                })
+                .setHandshakeHandler(new org.springframework.web.socket.server.support.DefaultHandshakeHandler() {
+                    @Override
+                    protected java.security.Principal determineUser(org.springframework.http.server.ServerHttpRequest request, org.springframework.web.socket.WebSocketHandler wsHandler, java.util.Map<String, Object> attributes) {
+                        String userId = (String) attributes.get("userId");
+                        if (userId != null) {
+                            return () -> userId;
+                        }
+                        return super.determineUser(request, wsHandler, attributes);
+                    }
+                })
                 .withSockJS(); // Fallback option
     }
 
@@ -152,6 +187,14 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
     public CacheManager redisCacheManager(RedisConnectionFactory factory) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules(); // Hỗ trợ Java 8 time types
+        // Kích hoạt default typing để lưu thông tin class (VD: @class) vào Redis JSON
+        // Giúp khi deserialize Jackson biết map vào class nào, tránh lỗi ClassCastException (LinkedHashMap)
+        objectMapper.activateDefaultTyping(
+                objectMapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .disableCachingNullValues()

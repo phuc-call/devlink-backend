@@ -8,8 +8,8 @@
 
 /* ── Desktop ── */
 .sidebarWrapper {
-    width: 280px;
-    max-width: 30%;
+    width: 340px;
+    max-width: 35%;
     flex-shrink: 0;
     height: 100%;
     background-color: #FDFBF7;

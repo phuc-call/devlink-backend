@@ -1,5 +1,6 @@
 package com.devlink.chat_service.repository;
 
+import com.devlink.chat_service.dto.reponse.MessageHistoryResponse;
 import com.devlink.chat_service.entity.Conversation;
 import com.devlink.chat_service.entity.enums.ConversationType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -33,4 +35,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             @Param("userId2") Long userId2,
             @Param("type") ConversationType type
     );
+
 }

@@ -1,9 +1,56 @@
 .chatArea {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    background-color: #ffffff;
     height: 100%;
+    width: 100%;
+    background-color: #ffffff;
+}
+
+.chatMain {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rightSidebar {
+    width: 340px;
+    border-left: 1px solid #E5E7EB;
+    background-color: #FDFBF7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    flex-shrink: 0;
+}
+
+.rightSidebarAvatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    background-color: #E5E7EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #4B5563;
+}
+
+.rightSidebarName {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+@media (max-width: 800px) {
+    .rightSidebar {
+        display: none;
+    }
 }
 
 /* Phần đầu (Header) */
@@ -201,12 +248,13 @@
 
 /* Khu vực nhập tin nhắn */
 .inputArea {
-    height: 64px;
-    padding: 12px 20px;
+    min-height: 64px;
+    padding: 10px 20px;
     border-top: 1px solid #E5E7EB;
     background-color: #ffffff;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
     flex-shrink: 0;
 }
 

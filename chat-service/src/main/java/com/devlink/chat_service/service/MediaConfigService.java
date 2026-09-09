@@ -6,4 +6,5 @@ public interface MediaConfigService {
     MediaConfig getConfig(MediaType mediaType);
 
     MediaConfig updateConfig(MediaType mediaType, UpdateMediaConfigRequest request);
+
 }

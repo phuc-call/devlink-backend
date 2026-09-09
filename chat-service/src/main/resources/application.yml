@@ -124,3 +124,8 @@ minio:
   secret-key: ${MINIO_PASSWORD:devlink_secret_123}
   bucket: ${MINIO_BUCKET:devlink-media}
 
+chat:
+  pagination:
+    min-limit: 1
+    max-limit: 100
+    default-limit: 20

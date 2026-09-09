@@ -28,20 +28,18 @@ import java.util.*;
 @Slf4j
 public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
     private final MinioClient minioClient;
-    private final MediaConfigRepository mediaConfigRepository;
     private final MediaRepository mediaRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final MediaConfigService mediaConfigService;
     private final Tika tika = new Tika();
 
-    @Value("${minio.bucket-name:devlink-chat}")
+    @Value("${minio.bucket:devlink-media}")
     private String bucketName;
     @Value("${websocket.queue-messages:/queue/messages}")
     private String wsQueueMessages;
     @Value("${websocket.queue-errors:/queue/errors}")
     private String wsQueueErrors;
 
-    @Async
     @Override
     public void processAndUploadFiles(List<MultipartFile> files,
                                       Message message,

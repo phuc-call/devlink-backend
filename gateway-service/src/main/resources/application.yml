@@ -121,6 +121,14 @@ spring:
               filters:
                 - RewritePath=/post-service/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
+            - id: chat-service-ws
+              uri: lb://chat-service
+              predicates:
+                - Path=/ws-chat/**
+              filters:
+                - name: JwtAuthFilter
+                - name: LoggingFilter
+
             # chat-service
             - id: chat-service
               uri: lb://chat-service

@@ -42,6 +42,9 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 org.springframework.http.HttpCookie cookie = request.getCookies().getFirst("accessToken");
                 if (cookie != null) {
                     token = cookie.getValue();
+                } else {
+                    // Hỗ trợ WebSocket gửi token qua query param
+                    token = request.getQueryParams().getFirst("token");
                 }
             }
 

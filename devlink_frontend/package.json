@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
+    "@tanstack/react-query": "^5.102.8",
     "@types/sockjs-client": "^1.5.4",
     "axios": "^1.15.2",
     "date-fns": "^4.3.0",
+    "dexie": "^4.4.5",
+    "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.16.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

@@ -7,7 +7,7 @@ export type WsEvent = {
     payload: any;
 };
 
-export const useWebSocket = (service: 'user' | 'post', topic: string, onMessage: (event: WsEvent) => void) => {
+export const useWebSocket = (service: 'user' | 'post' | 'chat', topic: string, onMessage: (event: WsEvent) => void) => {
     const [connected, setConnected] = useState(false);
     const clientRef = useRef<Client | null>(null);
 
@@ -16,7 +16,7 @@ export const useWebSocket = (service: 'user' | 'post', topic: string, onMessage:
         if (!isLoggedIn) return;
 
         const baseUrl = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080';
-        const wsUrl = service === 'user' ? `${baseUrl}/ws-user` : `${baseUrl}/ws-post`;
+        const wsUrl = service === 'user' ? `${baseUrl}/ws-user` : service === 'post' ? `${baseUrl}/ws-post` : `${baseUrl}/ws-chat`;
 
         const client = new Client({
             webSocketFactory: () => new SockJS(wsUrl),
@@ -51,7 +51,13 @@ export const useWebSocket = (service: 'user' | 'post', topic: string, onMessage:
                 clientRef.current.deactivate();
             }
         };
-    }, [service, topic]); // Notice we exclude onMessage to prevent reconnect loops, you should ensure onMessage is stable or use a ref inside the effect if it changes often
+    }, [service, topic]); 
 
-    return { connected };
+    const sendMessage = (destination: string, body: any) => {
+        if (clientRef.current && connected) {
+            clientRef.current.publish({ destination, body: JSON.stringify(body) });
+        }
+    };
+
+    return { connected, sendMessage };
 };

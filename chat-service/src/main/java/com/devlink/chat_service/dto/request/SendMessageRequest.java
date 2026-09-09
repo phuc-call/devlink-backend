@@ -15,5 +15,6 @@ public class SendMessageRequest {
     @NotNull(message = "conversationId is required")
     private Long conversationId;
     private String content;
+    private String clientTempId;
     private List<MultipartFile> files;
 }
