@@ -229,6 +229,7 @@ class MessageServiceImplTest {
         message.setSender(sender);
         message.setConversation(conversation);
         message.setRecalled(false);
+        message.setCreatedAt(java.time.LocalDateTime.now().minusMinutes(5));
 
         when(messageRepository.findById(100L)).thenReturn(Optional.of(message));
         when(itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(100L, com.devlink.chat_service.entity.enums.TargetType.MESSAGE, 1L)).thenReturn(false);
@@ -239,9 +240,8 @@ class MessageServiceImplTest {
         assertTrue(message.isRecalled());
         assertNotNull(message.getRecalledAt());
         verify(messageRepository, times(1)).save(message);
-        verify(messagingTemplate, times(1)).convertAndSendToUser(
-                eq(String.valueOf(receiver.getId())),
-                eq("/queue/messages"),
+        verify(messagingTemplate, times(1)).convertAndSend(
+                eq("/queue/messages/" + otherMember.getUser().getId()),
                 any(com.devlink.chat_service.dto.reponse.MessageRecallResponse.class)
         );
     }
@@ -293,6 +293,7 @@ class MessageServiceImplTest {
     void deleteMessage_success() {
         Message message = new Message();
         message.setId(100L);
+        message.setConversation(conversation);
 
         when(userRepository.getReferenceById(1L)).thenReturn(sender);
         when(messageRepository.findById(100L)).thenReturn(Optional.of(message));

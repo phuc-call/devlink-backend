@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
-import { chatApi } from '../../../../api/chat-service/chatApi';
-import { db, type LocalMessage } from '../../../../utils/db';
-import type { SendMessageRequest } from '../../../../types/chat.types';
+import { chatApi } from '../../../api/chat-service/chatApi';
+import { db } from '../../../utils/db';
+import type { SendMessageRequest } from '../../../types/chat.types';
 
 export function useSendMessage() {
   return useMutation({
@@ -10,7 +10,7 @@ export function useSendMessage() {
       const res = await chatApi.sendMessage(params.request);
       return { serverMsg: res.data, localMsgId: params.localMsgId };
     },
-    onMutate: async (variables) => {
+    onMutate: async (_variables) => {
        // Không cần làm gì ở đây vì đã tạo tin nhắn tạm trong component và lưu vào Dexie trước khi gọi hook.
     },
     onSuccess: async ({ serverMsg, localMsgId }) => {
@@ -34,7 +34,7 @@ export function useSendMessage() {
         }
       });
     },
-    onError: async (error, variables) => {
+    onError: async (_error, variables) => {
       // Thất bại -> cập nhật status thành 'failed'
       await db.messages.update(variables.localMsgId, { status: 'failed' });
     }

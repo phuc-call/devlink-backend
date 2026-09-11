@@ -43,9 +43,6 @@ public class ConversationConfig {
     @Builder.Default
     private String themeColor = "#0084ff";
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pinned_message_id")
-    private Message pinnedMessage;
 
     @Column(name = "only_read", nullable = false)
     @Builder.Default

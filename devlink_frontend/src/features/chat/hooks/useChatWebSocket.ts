@@ -1,14 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { db } from '../../../../utils/db';
-import type { MessageHistoryResponse } from '../../../../types/chat.types';
-import { useQueryClient } from '@tanstack/react-query';
+import { db } from '../../../utils/db';
+import type { MessageHistoryResponse } from '../../../types/chat.types';
 
 export function useChatWebSocket(currentUserId: number | null) {
   const stompClientRef = useRef<Client | null>(null);
-  const queryClient = useQueryClient();
-
+  
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!isLoggedIn || !currentUserId) return;
@@ -74,16 +72,18 @@ export function useChatWebSocket(currentUserId: number | null) {
             if (!existing) {
                // Tránh duplicate nếu là tin nhắn mình vừa gửi (có clientTempId)
                // Nếu nó có clientTempId, nó đã được xử lý bởi onMutate/onSuccess của useSendMessage
-               if (!newMsg.clientTempId) {
+               if (!(newMsg as any).clientTempId) {
                    await db.messages.put({
                         id: idStr,
                         serverId: newMsg.id,
                         conversationId: newMsg.conversationId,
                         senderId: newMsg.senderId,
+                        senderName: newMsg.senderName,
+                        senderAvatar: newMsg.senderAvatar,
                         content: newMsg.content,
                         createdAt: newMsg.createdAt,
                         status: 'sent',
-                        isRecalled: newMsg.isRecalled,
+                        isRecalled: newMsg.isRecalled || false,
                         mediaList: newMsg.mediaList,
                         attachmentList: newMsg.attachmentList
                    });

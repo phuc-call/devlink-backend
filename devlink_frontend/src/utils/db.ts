@@ -4,6 +4,8 @@ export interface LocalMessage {
   id: string; // Use String(serverId) for synced messages, or clientTempId for temp messages
   conversationId: number;
   senderId: number;
+  senderName?: string;
+  senderAvatar?: string;
   content: string;
   createdAt: string;
   status: 'sending' | 'sent' | 'failed';
@@ -11,10 +13,12 @@ export interface LocalMessage {
   clientTempId?: string;
   mediaList?: any[];
   attachmentList?: any[];
+  files?: File[];
+  filePreviewUrls?: string[];
   serverId?: number;
 }
 
-const db = new Dexie('ChatDatabase') as Dexie & {
+const db = new Dexie('DevLinkDatabase') as Dexie & {
   messages: EntityTable<LocalMessage, 'id'>;
 };
 

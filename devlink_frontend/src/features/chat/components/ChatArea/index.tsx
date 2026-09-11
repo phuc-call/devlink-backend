@@ -5,7 +5,10 @@ import SockJS from 'sockjs-client';
 import { chatApi } from '../../../../api/chat-service/chatApi';
 import type { MessageHistoryResponse } from '../../../../types/chat.types';
 import styles from './ChatArea.module.css';
-
+import { useChatMessages } from '../../hooks/useChatMessages';
+import { useSendMessage } from '../../hooks/useSendMessage';
+import { useChatWebSocket } from '../../hooks/useChatWebSocket';
+import { db, type LocalMessage } from '../../../../utils/db';
 export interface SelectedUser {
     userId: number;
     fullName: string;
@@ -17,48 +20,26 @@ interface ChatAreaProps {
     onBack?: () => void;
 }
 
-type MessageStatus = 'PENDING' | 'SENT' | 'FAILED';
 
-interface LocalMessage {
-    tempId: string;
-    serverId?: number;
-    conversationId: number;
-    senderId: number;
-    senderName: string;
-    senderAvatar?: string;
-    content: string;
-    files?: File[];
-    filePreviewUrls?: string[];
-    status: MessageStatus;
-    createdAt: string;
-    isLocal: true;
-}
 
-type DisplayMessage = (MessageHistoryResponse & { isLocal?: false }) | LocalMessage;
 
 let tempIdCounter = 0;
 const genTempId = () => `temp_${Date.now()}_${++tempIdCounter}`;
 
 export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
-    // Conversation + Messages state
+    
+    // Conversation state
     const [conversationId, setConversationId] = useState<number | null>(null);
-    const [serverMessages, setServerMessages] = useState<MessageHistoryResponse[]>([]);
-    const [localMessages, setLocalMessages] = useState<LocalMessage[]>([]);
-    const [nextCursor, setNextCursor] = useState<number | undefined>(undefined);
-    const [hasMore, setHasMore] = useState(false);
-    const [loadingMessages, setLoadingMessages] = useState(false);
-    const [isBlocked, setIsBlocked] = useState(false);
+    const { messages: displayMessages, isLoading: loadingMessages, hasMore, nextCursor, isBlocked, query } = useChatMessages(conversationId);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
-
-    // Input state
+// Input state
     const [message, setMessage] = useState('');
     const [files, setFiles] = useState<File[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaInputRef = useRef<HTMLInputElement>(null);
     const messageEndRef = useRef<HTMLDivElement>(null);
-    const stompClientRef = useRef<Client | null>(null);
-    
+        
     const currentUserId = Number(localStorage.getItem('userId'));
     const currentUserName = localStorage.getItem('fullName') || '';
     const currentUserAvatar = localStorage.getItem('avatar') || undefined;
@@ -68,7 +49,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     
     const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
     const [menuOpenMsgId, setMenuOpenMsgId] = useState<string | null>(null);
-    const [confirmAction, setConfirmAction] = useState<{type: 'delete'|'recall', msgId: number} | null>(null);
+    const [confirmAction, setConfirmAction] = useState<{type: 'delete'|'recall', msgId: number | string} | null>(null);
     const draftsRef = useRef<Record<number, { message: string; files: File[] }>>({});
     const currentInputRef = useRef({ message: '', files: [] as File[] });
     const [activeUserId, setActiveUserId] = useState<number | null>(null);
@@ -78,7 +59,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchResults, setSearchResults] = useState<MessageHistoryResponse[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [highlightedMsgId, setHighlightedMsgId] = useState<number | null>(null);
+    const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
     const [hoveredSearchMsgId, setHoveredSearchMsgId] = useState<number | null>(null);
 
     // Cập nhật ref mỗi khi user gõ để không bị stale closure
@@ -131,17 +112,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         };
     }, [files]);
 
-    // Merge server messages + local pending/failed messages
-    const displayMessages: DisplayMessage[] = useMemo(() => {
-        const serverIds = new Set(serverMessages.map(m => m.id));
-        // Chỉ hiện local messages chưa có trong server list
-        const pendingLocal = localMessages.filter(lm =>
-            lm.conversationId === conversationId &&
-            (!lm.serverId || !serverIds.has(lm.serverId))
-        );
-        return [...serverMessages, ...pendingLocal];
-    }, [serverMessages, localMessages, conversationId]);
-
+    
     useEffect(() => {
         const handleClickOutside = () => {
             setMenuOpenMsgId(null);
@@ -154,20 +125,20 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         };
     }, [menuOpenMsgId]);
 
-    // Step 1: Khi click vào user → tạo/lấy conversation
+    // Step 1: Khi click vào user tạo/lấy conversation
     useEffect(() => {
         if (!selectedUser) {
             setConversationId(null);
-            setServerMessages([]);
-            setLocalMessages([]);
+            
+            
             return;
         }
 
         setConversationId(null);
-        setServerMessages([]);
-        setLocalMessages([]);
-        setNextCursor(undefined);
-        setHasMore(false);
+        
+        
+        
+        
 
         const fetchConversation = async () => {
             try {
@@ -181,119 +152,14 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         fetchConversation();
     }, [selectedUser]);
 
-    // Step 2: Khi có conversationId → load tin nhắn lần đầu
-    useEffect(() => {
-        if (!conversationId) return;
-        loadMessages(conversationId, undefined, true);
-    }, [conversationId]);
+    
+    // Step 2: Khi có conversationId -> query lấy data đã được useChatMessages xử lý.
+    // Tự động WebSocket
 
-    const loadMessages = useCallback(async (convId: number, cursor?: number, isFirst = false) => {
-        setLoadingMessages(true);
-        try {
-            const res = await chatApi.getMessages(convId, cursor);
-            const data = res.data;
-
-            setIsBlocked(data.isBlocked);
-            setNextCursor(data.nextCursor);
-            setHasMore(data.hasMore);
-
-            if (isFirst) {
-                setServerMessages([...data.messages].reverse());
-            } else {
-                setServerMessages(prev => [...[...data.messages].reverse(), ...prev]);
-            }
-        } catch (error) {
-            console.error('Failed to load messages:', error);
-        } finally {
-            setLoadingMessages(false);
-        }
-    }, []);
-
-    // WebSocket STOMP Connection cho tin nhắn mới
-    useEffect(() => {
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        if (!isLoggedIn || !currentUserId) return;
-
-        const baseUrl = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080';
-        const token = localStorage.getItem('accessToken') || '';
-        const wsUrl = `${baseUrl}/ws-chat?token=${token}`;
-
-        const client = new Client({
-            webSocketFactory: () => new SockJS(wsUrl),
-            reconnectDelay: 5000,
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
-            onConnect: () => {
-                console.log('[STOMP] Connected to chat-service');
-                
-                // Lắng nghe tin nhắn mới
-                client.subscribe(`/queue/messages/${currentUserId}`, (message: IMessage) => {
-                    try {
-                        const payload = JSON.parse(message.body);
-                        console.log('[STOMP] Received payload:', payload);
-
-                        if (payload.action === 'RECALL_MESSAGE') {
-                            setServerMessages(prev => prev.map(m => 
-                                m.id === payload.messageId ? { ...m, isRecalled: true, content: '' } : m
-                            ));
-                            return;
-                        }
-
-                        if (payload.action === 'DELETE_MESSAGE_FOR_ME') {
-                            setServerMessages(prev => prev.filter(m => m.id !== payload.messageId));
-                            return;
-                        }
-
-                        const newMsg = payload as MessageHistoryResponse;
-                        // Cập nhật vào danh sách nếu đúng conversation đang mở
-                        setConversationId(prevConvId => {
-                            if (prevConvId === newMsg.conversationId) {
-                                setServerMessages(prev => {
-                                    // Tránh duplicate nếu là tin nhắn mình vừa gửi (vì đã có optimistic update)
-                                    if (prev.some(m => m.id === newMsg.id)) return prev;
-                                    return [...prev, newMsg];
-                                });
-                            }
-                            return prevConvId;
-                        });
-                    } catch (e) {
-                        console.error('Failed to parse incoming message', e);
-                    }
-                });
-
-                // Lắng nghe cập nhật media cho tin nhắn (Async Upload)
-                client.subscribe(`/queue/messages/media/${currentUserId}`, (message: IMessage) => {
-                    try {
-                        const mediaUpdate = JSON.parse(message.body);
-                        console.log('[STOMP] Media update received:', mediaUpdate);
-                        // Cập nhật serverMessages với media mới
-                        setServerMessages(prev => prev.map(msg => {
-                            // Backend trả về entity Media, cần kiểm tra messageId
-                            if (msg.id === mediaUpdate.message?.id) {
-                                return {
-                                    ...msg,
-                                    mediaList: [...(msg.mediaList || []), mediaUpdate]
-                                };
-                            }
-                            return msg;
-                        }));
-                    } catch (e) {
-                        console.error('Failed to parse incoming media update', e);
-                    }
-                });
-            },
-            onStompError: (frame) => {
-                console.error('Broker reported error: ' + frame.headers['message']);
-            },
-        });
-
-        client.activate();
-        stompClientRef.current = client;
-
-        return () => {
-            client.deactivate();
-        };
-    }, [currentUserId]);
+    
+    // Lắng nghe WebSocket
+    useChatWebSocket(currentUserId);
+    const { mutate: sendMessageMutation } = useSendMessage();
 
     // Tự scroll xuống cuối khi có tin nhắn mới
     const prevMsgCountRef = useRef(0);
@@ -317,121 +183,105 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         };
     }, []);
 
+    
     // Auto-retry khi có mạng lại
     useEffect(() => {
         if (!isOnline) return;
-        const failedMessages = localMessages.filter(m => m.status === 'FAILED');
+        const failedMessages = displayMessages.filter(m => m.status === 'failed');
         if (failedMessages.length === 0) return;
 
-        // Retry tất cả tin nhắn FAILED theo thứ tự
         failedMessages.forEach(msg => {
-            retrySendMessage(msg.tempId);
+            retrySendMessage(msg.clientTempId || msg.id);
         });
-    }, [isOnline]);
+    }, [isOnline, displayMessages]);
 
     // Load thêm tin nhắn cũ khi scroll lên trên
-    const handleLoadMore = () => {
+    
+    const handleLoadMore = async () => {
         if (conversationId && hasMore && !loadingMessages && nextCursor !== undefined) {
-            loadMessages(conversationId, nextCursor);
+             const res = await chatApi.getMessages(conversationId, nextCursor);
+             const serverMsgs = res.data.messages;
+             await db.transaction('rw', db.messages, async () => {
+                 for (const sMsg of serverMsgs) {
+                     const idStr = String(sMsg.id);
+                     if (!(await db.messages.get(idStr))) {
+                         await db.messages.put({
+                             id: idStr,
+                             serverId: sMsg.id,
+                             conversationId: sMsg.conversationId,
+                             senderId: sMsg.senderId,
+                             senderName: sMsg.senderName,
+                             senderAvatar: sMsg.senderAvatar,
+                             content: sMsg.content,
+                             createdAt: sMsg.createdAt,
+                             status: 'sent',
+                             isRecalled: sMsg.isRecalled || false,
+                             mediaList: sMsg.mediaList,
+                             attachmentList: sMsg.attachmentList
+                         });
+                     }
+                 }
+             });
         }
     };
 
     
 
-    const sendMessageWithStatus = useCallback(async (localMsg: LocalMessage) => {
-        // Cập nhật thành PENDING
-        setLocalMessages(prev =>
-            prev.map(m => m.tempId === localMsg.tempId ? { ...m, status: 'PENDING' as MessageStatus } : m)
-        );
-
-        try {
-            const res = await chatApi.sendMessage({
-                conversationId: localMsg.conversationId,
-                content: localMsg.content,
-                files: localMsg.files,
-            });
-
-            const sent = res.data;
-
-            // Thành công → cập nhật SENT + serverId
-            setLocalMessages(prev =>
-                prev.map(m => m.tempId === localMsg.tempId
-                    ? { ...m, status: 'SENT' as MessageStatus, serverId: sent.id }
-                    : m
-                )
-            );
-
-            // Thêm vào serverMessages để hiện đúng (với media, attachments từ server)
-            const serverMsg: MessageHistoryResponse = {
-                id: sent.id,
-                conversationId: sent.conversationId,
-                senderId: sent.senderId,
-                senderName: sent.senderName,
-                senderAvatar: sent.senderAvatar,
-                content: sent.content,
-                isRecalled: false,
-                createdAt: sent.createdAt,
-                mediaList: [],
-                attachmentList: [],
-            };
-            setServerMessages(prev => [...prev, serverMsg]);
-
-            // Xóa local message sau 2s (đã có server message thay thế)
-            setTimeout(() => {
-                setLocalMessages(prev => prev.filter(m => m.tempId !== localMsg.tempId));
-            }, 2000);
-
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            // Thất bại → cập nhật FAILED
-            setLocalMessages(prev =>
-                prev.map(m => m.tempId === localMsg.tempId ? { ...m, status: 'FAILED' as MessageStatus } : m)
-            );
-        }
-    }, []);
+    
+    const sendMessageWithStatus = useCallback(async (localMsgId: string, requestData: any) => {
+        // useSendMessage hook handles this
+        sendMessageMutation({ request: requestData, localMsgId });
+    }, [sendMessageMutation]);
 
     const handleSendMessage = async () => {
         if (!conversationId || (!message.trim() && files.length === 0)) return;
 
-        // Tạo file preview URLs cho local message
-        const localFilePreviewUrls = files.map(f => {
-            if (f.type.startsWith('image/') || f.type.startsWith('video/')) {
-                return URL.createObjectURL(f);
-            }
-            return '';
-        });
+        const tempId = genTempId();
+        const requestData = {
+            conversationId,
+            content: message.trim(),
+            files: [...files],
+        };
 
-        const localMsg: LocalMessage = {
-            tempId: genTempId(),
+        const localDbMsg = {
+            id: tempId,
+            clientTempId: tempId,
             conversationId,
             senderId: currentUserId,
             senderName: currentUserName,
             senderAvatar: currentUserAvatar,
             content: message.trim(),
-            files: [...files],
-            filePreviewUrls: localFilePreviewUrls,
-            status: 'PENDING',
             createdAt: new Date().toISOString(),
-            isLocal: true,
+            status: 'sending' as 'sending',
+            isRecalled: false
         };
 
-        // Thêm vào local messages + clear input ngay
-        setLocalMessages(prev => [...prev, localMsg]);
+        // Thêm vào Dexie
+        await db.messages.put(localDbMsg);
+        
         setMessage('');
         setFiles([]);
 
-        // Gửi async
-        sendMessageWithStatus(localMsg);
+        // Gọi hook
+        sendMessageWithStatus(tempId, requestData);
     };
 
-    const retrySendMessage = useCallback((tempId: string) => {
-        const msg = localMessages.find(m => m.tempId === tempId);
+    const retrySendMessage = useCallback(async (tempId: string) => {
+        const msg = await db.messages.get(tempId);
         if (!msg) return;
-        sendMessageWithStatus(msg);
-    }, [localMessages, sendMessageWithStatus]);
+        
+        await db.messages.update(tempId, { status: 'sending' });
+        
+        const requestData = {
+            conversationId: msg.conversationId,
+            content: msg.content,
+            // We cannot retry files if they were lost from memory, but we will pass what we have
+        };
+        sendMessageWithStatus(tempId, requestData);
+    }, [sendMessageWithStatus]);
 
-    const deleteFailedMessage = (tempId: string) => {
-        setLocalMessages(prev => prev.filter(m => m.tempId !== tempId));
+    const deleteFailedMessage = async (tempId: string) => {
+        await db.messages.delete(tempId);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -484,20 +334,23 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     };
 
     // Helpers
-    const handleDeleteMessageForMe = async (msgId: number) => {
+    const handleDeleteMessageForMe = async (msgId: number | string) => {
         try {
-            await chatApi.deleteMessageForMe(msgId);
+            await chatApi.deleteMessageForMe(Number(msgId));
+            // Xóa thành công ở backend -> xóa luôn ở local DB
+            await db.messages.delete(String(msgId));
             setMenuOpenMsgId(null);
-            // WebSocket sẽ báo về, hoặc có thể optimistic update local state
-            setServerMessages(prev => prev.filter(m => m.id !== msgId));
-        } catch (e) { console.error('Failed to delete message', e); }
+        } catch (e) { 
+            console.error('Failed to delete message', e); 
+        }
     };
 
-    const handleRecallMessage = async (msgId: number) => {
+    const handleRecallMessage = async (msgId: number | string) => {
         try {
-            await chatApi.recallMessage(msgId);
+            await chatApi.recallMessage(Number(msgId));
+            // Thu hồi thành công ở backend -> update cờ isRecalled ở local DB
+            await db.messages.update(String(msgId), { isRecalled: true });
             setMenuOpenMsgId(null);
-            // WebSocket sẽ báo về
         } catch (e: any) { 
             console.error('Failed to recall message', e); 
             if (e.response?.data?.message) {
@@ -521,8 +374,8 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         }
     };
 
-    const handleJumpToMessage = (msgId: number) => {
-        setHighlightedMsgId(msgId);
+    const handleJumpToMessage = (msgId: string) => {
+        setHighlightedMsgId(String(msgId));
         
         // Find the element and scroll into view
         setTimeout(() => {
@@ -554,7 +407,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     
     const renderStatusIcon = (msg: LocalMessage) => {
         switch (msg.status) {
-            case 'PENDING':
+            case 'sending':
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end' }}>
                         <Loader2
@@ -567,18 +420,18 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                         <span style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>Đang gửi...</span>
                     </div>
                 );
-            case 'SENT':
+            case 'sent':
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end' }}>
                         <Check size={12} style={{ color: '#10B981' }} />
                         <span style={{ fontSize: '0.65rem', color: '#10B981' }}>Đã gửi</span>
                     </div>
                 );
-            case 'FAILED':
+            case 'failed':
                 return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end' }}>
                         <button
-                            onClick={() => retrySendMessage(msg.tempId)}
+                            onClick={() => retrySendMessage(msg.clientTempId || msg.id)}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -598,7 +451,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                             <RefreshCw size={12} style={{ color: '#EF4444' }} />
                         </button>
                         <button
-                            onClick={() => deleteFailedMessage(msg.tempId)}
+                            onClick={() => deleteFailedMessage(msg.clientTempId || msg.id)}
                             style={{
                                 fontSize: '0.6rem',
                                 color: '#9CA3AF',
@@ -703,21 +556,20 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                     )}
 
                     {/* Loading lần đầu */}
-                    {loadingMessages && serverMessages.length === 0 && (
+                    {loadingMessages && displayMessages.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '24px', color: '#9CA3AF' }}>Đang tải tin nhắn...</div>
                     )}
 
+                    
                     {/* Danh sách tin nhắn */}
                     {displayMessages.map(msg => {
-                        const isLocal = 'isLocal' in msg && msg.isLocal;
-                        const isMine = isLocal
-                            ? (msg as LocalMessage).senderId === currentUserId
-                            : (msg as MessageHistoryResponse).senderId === currentUserId;
-                        const msgKey = isLocal ? (msg as LocalMessage).tempId : `server-${(msg as MessageHistoryResponse).id}`;
-                        const localMsg = isLocal ? msg as LocalMessage : null;
-                        const serverMsg = !isLocal ? msg as MessageHistoryResponse : null;
-                        const isPending = localMsg?.status === 'PENDING';
-                        const isFailed = localMsg?.status === 'FAILED';
+                        const isMine = msg.senderId === currentUserId;
+                        const msgKey = msg.id;
+                        const isPending = msg.status === 'sending';
+                        const isFailed = msg.status === 'failed';
+                        const serverMsg = msg; // for alias
+                        const localMsg = msg;  // for alias
+
 
                         return (
                             <div
@@ -729,7 +581,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                     marginBottom: '8px',
                                     padding: '8px 12px',
                                     opacity: isPending ? 0.7 : 1,
-                                    background: serverMsg?.id === highlightedMsgId ? '#FEF3C7' : 'transparent',
+                                    background: String(serverMsg?.serverId) === highlightedMsgId || serverMsg?.id === highlightedMsgId ? '#FEF3C7' : 'transparent',
                                     transition: 'background 0.5s ease'
                                 }}
                                 onMouseEnter={() => setHoveredMsgId(msgKey)}
@@ -747,120 +599,83 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
 
                                 <div style={{ maxWidth: '65%', display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ position: 'relative' }}>
-                                        {/* Server message content */}
-                                        {serverMsg && (
+                                        {/* Unified message content */}
+                                        {msg.isRecalled ? (
+                                            <div style={{ padding: '8px 12px', borderRadius: '8px', background: '#F3F4F6', color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.875rem', border: '1px solid #E5E7EB', opacity: 0.6 }}>
+                                                Tin nhắn đã bị thu hồi
+                                            </div>
+                                        ) : (
                                             <>
-                                                {(serverMsg.isRecalled || serverMsg.recalled) ? (
-                                                    <div style={{ padding: '8px 12px', borderRadius: '8px', background: '#F3F4F6', color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.875rem', border: '1px solid #E5E7EB', opacity: 0.6 }}>
-                                                        Tin nhắn đã được thu hồi
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {serverMsg.content && (
-                                                            <div style={{
-                                                                padding: '8px 12px',
-                                                                borderRadius: '8px',
-                                                                background: isMine ? '#E0F2FE' : '#FFFFFF',
-                                                                color: '#111827',
-                                                                fontSize: '0.9rem',
-                                                                wordBreak: 'break-word',
-                                                                border: isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB',
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                            }}>
-                                                                <div>{serverMsg.content}</div>
-                                                                <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '4px', textAlign: 'right', alignSelf: 'flex-end' }}>
-                                                                    {formatTime(serverMsg.createdAt)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Hiển thị ảnh / video */}
-                                                        {serverMsg.mediaList?.map(media => (
-                                                            <div key={media.id} style={{ marginTop: 4 }}>
-                                                                {media.mediaType === 'IMAGE' ? (
-                                                                    <img
-                                                                        src={media.fileUrl}
-                                                                        alt="ảnh"
-                                                                        style={{
-                                                                            width: media.width ? Math.min(media.width, 320) : undefined,
-                                                                            height: media.height && media.width
-                                                                                ? Math.min(media.width, 320) * (media.height / media.width)
-                                                                                : undefined,
-                                                                            maxWidth: '100%',
-                                                                            borderRadius: 8,
-                                                                            display: 'block',
-                                                                            cursor: 'pointer',
-                                                                            border: '1px solid #E5E7EB',
-                                                                        }}
-                                                                        onClick={() => window.open(media.fileUrl, '_blank')}
-                                                                    />
-                                                                ) : (
-                                                                    <video
-                                                                        src={media.fileUrl}
-                                                                        poster={media.thumbnailUrl}
-                                                                        controls
-                                                                        style={{
-                                                                            width: media.width ? Math.min(media.width, 320) : 320,
-                                                                            maxWidth: '100%',
-                                                                            borderRadius: 8,
-                                                                            display: 'block',
-                                                                            border: '1px solid #E5E7EB',
-                                                                        }}
-                                                                    />
-                                                                )}
-                                                            </div>
-                                                        ))}
-
-                                                        {/* Hiển thị file đính kèm */}
-                                                        {serverMsg.attachmentList?.map(att => (
-                                                            <div key={att.id} style={{ marginTop: 4 }}>
-                                                                <a href={att.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: isMine ? '#0369A1' : '#3B82F6', background: isMine ? '#E0F2FE' : '#FFFFFF', padding: '6px 10px', borderRadius: 8, display: 'inline-block', border: isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB' }}>
-                                                                    📎 {att.fileName}
-                                                                </a>
-                                                            </div>
-                                                        ))}
-
-                                                        {/* Thời gian cho media/attachment nếu không có text */}
-                                                        {!serverMsg.content && (serverMsg.mediaList?.length || serverMsg.attachmentList?.length) ? (
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-                                                                <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
-                                                                    {formatTime(serverMsg.createdAt)}
-                                                                </span>
-                                                            </div>
-                                                        ) : null}
-                                                    </>
-                                                )}
-                                            </>
-                                        )}
-
-                                        {/* Local message content (PENDING / FAILED) */}
-                                        {localMsg && (
-                                            <>
-                                                {localMsg.content && (
+                                                {msg.content && (
                                                     <div style={{
                                                         padding: '8px 12px',
                                                         borderRadius: '8px',
-                                                        background: isFailed ? '#FEE2E2' : '#E0F2FE',
+                                                        background: isFailed ? '#FEE2E2' : (isMine ? '#E0F2FE' : '#FFFFFF'),
                                                         color: isFailed ? '#991B1B' : '#111827',
                                                         fontSize: '0.9rem',
                                                         wordBreak: 'break-word',
-                                                        border: isFailed ? '1px solid #FECACA' : '1px solid #BAE6FD',
+                                                        border: isFailed ? '1px solid #FECACA' : (isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB'),
                                                         display: 'flex',
                                                         flexDirection: 'column',
                                                     }}>
-                                                        <div>{localMsg.content}</div>
+                                                        <div>{msg.content}</div>
                                                         <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '4px', textAlign: 'right', alignSelf: 'flex-end' }}>
-                                                            {formatTime(localMsg.createdAt)}
+                                                            {formatTime(msg.createdAt)}
                                                         </span>
                                                     </div>
                                                 )}
 
-                                                {/* Preview files đang gửi */}
-                                                {localMsg.filePreviewUrls && localMsg.filePreviewUrls.length > 0 && (
+                                                {/* Hiển thị ảnh / video từ Server */}
+                                                {msg.mediaList?.map(media => (
+                                                    <div key={media.id} style={{ marginTop: 4 }}>
+                                                        {media.mediaType === 'IMAGE' ? (
+                                                            <img
+                                                                src={media.fileUrl}
+                                                                alt="Ảnh"
+                                                                style={{
+                                                                    width: media.width ? Math.min(media.width, 320) : undefined,
+                                                                    height: media.height && media.width
+                                                                        ? Math.min(media.width, 320) * (media.height / media.width)
+                                                                        : undefined,
+                                                                    maxWidth: '100%',
+                                                                    borderRadius: 8,
+                                                                    display: 'block',
+                                                                    cursor: 'pointer',
+                                                                    border: '1px solid #E5E7EB',
+                                                                }}
+                                                                onClick={() => window.open(media.fileUrl, '_blank')}
+                                                            />
+                                                        ) : (
+                                                            <video
+                                                                src={media.fileUrl}
+                                                                poster={media.thumbnailUrl}
+                                                                controls
+                                                                style={{
+                                                                    width: media.width ? Math.min(media.width, 320) : 320,
+                                                                    maxWidth: '100%',
+                                                                    borderRadius: 8,
+                                                                    display: 'block',
+                                                                    border: '1px solid #E5E7EB',
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ))}
+
+                                                {/* Hiển thị file đính kèm từ Server */}
+                                                {msg.attachmentList?.map(att => (
+                                                    <div key={att.id} style={{ marginTop: 4 }}>
+                                                        <a href={att.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: isMine ? '#0369A1' : '#3B82F6', background: isMine ? '#E0F2FE' : '#FFFFFF', padding: '6px 10px', borderRadius: 8, display: 'inline-block', border: isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB' }}>
+                                                            📎 {att.fileName}
+                                                        </a>
+                                                    </div>
+                                                ))}
+
+                                                {/* Preview files đang gửi (Local) */}
+                                                {msg.filePreviewUrls && msg.filePreviewUrls.length > 0 && (
                                                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                                                        {localMsg.files?.map((file, i) => {
-                                                            const url = localMsg.filePreviewUrls?.[i];
+                                                        {msg.files?.map((file, i) => {
+                                                            const url = msg.filePreviewUrls?.[i];
                                                             if (file.type.startsWith('image/') && url) {
                                                                 return (
                                                                     <img
@@ -904,8 +719,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                                             display: 'flex',
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
-                                                                            color: '#fff',
-                                                                            fontSize: 16,
+                                                                            color: 'white'
                                                                         }}>
                                                                             ▶
                                                                         </div>
@@ -928,17 +742,19 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                         })}
                                                     </div>
                                                 )}
-                                                
-                                                {/* Thời gian cho file đang gửi nếu không có text */}
-                                                {!localMsg.content && localMsg.files && localMsg.files.length > 0 && (
+
+                                                {/* Thời gian cho media/attachment/files nếu không có text */}
+                                                {!msg.content && (msg.mediaList?.length || msg.attachmentList?.length || msg.files?.length) ? (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
                                                         <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
-                                                            {formatTime(localMsg.createdAt)}
+                                                            {formatTime(msg.createdAt)}
                                                         </span>
                                                     </div>
-                                                )}
+                                                ) : null}
                                             </>
                                         )}
+
+
 
                                         {/* Menu 3 chấm (Hover) */}
                                         {(!isPending && !isFailed && (hoveredMsgId === msgKey || menuOpenMsgId === msgKey)) && serverMsg && (
@@ -984,7 +800,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                             >
                                                                 <Trash2 size={16} /> Xóa phía tôi
                                                             </button>
-                                                            {isMine && !(serverMsg.isRecalled || serverMsg.recalled) && (
+                                                            {isMine && !(serverMsg.isRecalled) && (
                                                                 <button
                                                                     onClick={() => {
                                                                         setConfirmAction({ type: 'recall', msgId: serverMsg.id });
@@ -1218,6 +1034,8 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                     </div>
 
                     <input
+                        id="chat-input"
+                        name="chat-input"
                         type="text"
                         className={styles.inputBox}
                         placeholder={isBlocked ? 'Không thể gửi tin nhắn' : 'Type a message...'}
@@ -1347,7 +1165,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                         e.currentTarget.style.background = 'transparent';
                                         setHoveredSearchMsgId(null);
                                     }}
-                                    onClick={() => handleJumpToMessage(msg.id)}
+                                    onClick={() => handleJumpToMessage(String(msg.id))}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                         {msg.senderAvatar ? (
@@ -1370,7 +1188,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleJumpToMessage(msg.id);
+                                                handleJumpToMessage(String(msg.id));
                                             }}
                                             style={{
                                                 position: 'absolute', bottom: 8, right: 12,

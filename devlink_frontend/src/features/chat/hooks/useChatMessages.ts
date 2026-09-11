@@ -1,12 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { chatApi } from '../../../../api/chat-service/chatApi';
-import { db, type LocalMessage } from '../../../../utils/db';
-import { useEffect } from 'react';
+import { chatApi } from '../../../api/chat-service/chatApi';
+import { db } from '../../../utils/db';
 
 export function useChatMessages(conversationId: number | null) {
-  const queryClient = useQueryClient();
-
+  
   // 1. Lấy dữ liệu từ Dexie theo thời gian thực (Local-first)
   const localMessages = useLiveQuery(
     () => {
@@ -29,7 +27,7 @@ export function useChatMessages(conversationId: number | null) {
       const serverMsgs = res.data.messages;
       
       // Đồng bộ từ server về Dexie
-      const tx = await db.transaction('rw', db.messages, async () => {
+      await db.transaction('rw', db.messages, async () => {
         for (const sMsg of serverMsgs) {
           const idStr = String(sMsg.id);
           const existing = await db.messages.get(idStr);
@@ -41,10 +39,12 @@ export function useChatMessages(conversationId: number | null) {
               serverId: sMsg.id,
               conversationId: sMsg.conversationId,
               senderId: sMsg.senderId,
+              senderName: sMsg.senderName,
+              senderAvatar: sMsg.senderAvatar,
               content: sMsg.content,
               createdAt: sMsg.createdAt,
               status: 'sent',
-              isRecalled: sMsg.isRecalled,
+              isRecalled: sMsg.isRecalled || false,
               mediaList: sMsg.mediaList,
               attachmentList: sMsg.attachmentList
             });
