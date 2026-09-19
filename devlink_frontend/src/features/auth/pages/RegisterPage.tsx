@@ -1,3 +1,5 @@
+import { ROUTES } from '../../../constants/routes';
+import { AUTH_MESSAGES } from '../../../constants/messages';
 import {useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {authApi} from '../../../api/user-service/authApi.ts';
@@ -48,7 +50,7 @@ export default function RegisterPage() {
         e.preventDefault();
         setError('');
         if (password !== confirmPassword) {
-            setError('Mật khẩu không khớp');
+            setError(AUTH_MESSAGES.PASSWORD_MISMATCH);
             return;
         }
         setLoading(true);
@@ -97,7 +99,6 @@ export default function RegisterPage() {
                 {/* Logo */}
                 <div className="auth-logo">
                     <h1>DevLink</h1>
-                    <p>Kết nối cộng đồng lập trình viên</p>
                 </div>
 
                 {/* Card */}
@@ -226,7 +227,7 @@ export default function RegisterPage() {
                         className="btn-google"
                         onClick={() => {
                             document.cookie = 'oauth_mode=register; path=/';
-                            window.location.href = `${import.meta.env.VITE_API_GATEWAY_URL}/oauth2/authorization/google`;
+                            window.location.href = `${import.meta.env.VITE_API_GATEWAY_URL}${ROUTES.OAUTH_GOOGLE}`;
                         }}
                     >
                         <svg width="18" height="18" viewBox="0 0 18 18">

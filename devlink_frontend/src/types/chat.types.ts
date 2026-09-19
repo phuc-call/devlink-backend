@@ -22,8 +22,35 @@ export interface CreateConversationRequest {
 
 export interface ConversationResponse {
     id: number;
-    type: string;
-    createdAt: string;
+    type: 'DIRECT' | 'GROUP';
+    lastMessageId?: number;
+    lastMessageContent?: string;
+    lastMessageType?: string;
+    lastMessageSenderName?: string;
+    isLastMessageRecalled?: boolean;
+    lastMessageAt?: string;
+    countUnreadMessages?: number;
+    isPinned?: boolean;
+    pinnedAt?: string;
+    isMuted?: boolean;
+
+    // Direct
+    otherUserId?: number;
+    otherUserName?: string;
+    otherUserAvatar?: string;
+
+    // Group
+    groupId?: number;
+    groupName?: string;
+    groupAvatar?: string;
+    memberAvatars?: string[];
+}
+
+export interface SliceResponse<T> {
+    content: T[];
+    last: boolean;
+    number: number;
+    size: number;
 }
 
 export interface MediaResponse {
@@ -64,7 +91,7 @@ export interface ConversationMessagesResponse {
     type: string;       // DIRECT | GROUP
     title: string;
     avatarUrl?: string;
-    partnerId?: number; // chỉ dành cho DIRECT
+    partnerId?: number; // chá»‰ dÃ nh cho DIRECT
     isBlocked: boolean;
     messages: MessageHistoryResponse[];
     nextCursor?: number;

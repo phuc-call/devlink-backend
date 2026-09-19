@@ -1,3 +1,6 @@
+import { ERROR_CODES } from '../../../constants/roles';
+import { SESSION_KEYS } from '../../../constants/storage';
+import { ROUTES } from '../../../constants/routes';
 // src/features/notification/components/HiddenNotificationSection.tsx
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,8 +27,8 @@ function timeAgo(dateStr: string): string {
 
 function parseErrorCode(e: unknown): string {
     const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
-    if (code === 'NOTIFICATION_PASSWORD_NOT_SET') return 'Bạn chưa đặt mật khẩu thông báo';
-    if (code === 'NOTIFICATION_PASSWORD_WRONG') return 'Mật khẩu không đúng, thử lại';
+    if (code === ERROR_CODES.NOTIFICATION_PASSWORD_NOT_SET) return 'Bạn chưa đặt mật khẩu thông báo';
+    if (code === ERROR_CODES.NOTIFICATION_PASSWORD_WRONG) return 'Mật khẩu không đúng, thử lại';
     return 'Có lỗi xảy ra, thử lại sau';
 }
 
@@ -140,7 +143,7 @@ function SetupPasswordStep({ onDone }: SetupPasswordStepProps) {
             .catch((e: unknown) => {
                 const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
                 // Đã có password → chuyển thẳng sang nhập password
-                if (code === 'NOTIFICATION_PASSWORD_ALREADY_SET') {
+                if (code === ERROR_CODES.NOTIFICATION_PASSWORD_ALREADY_SET) {
                     onDone();
                 } else {
                     setError('Không thể gửi OTP. Thử lại sau.');
@@ -339,11 +342,11 @@ export function HiddenNotificationItem({ n, onRefresh }: HiddenItemProps) {
         }
 
         if (n.type === 'REACTION' && n.referenceId) {
-            void navigate(`/profile/me?postId=${n.referenceId}`);
+            void navigate(`${ROUTES.PROFILE_ME}?postId=${n.referenceId}`);
             return;
         }
 
-        void navigate(`/profile/${n.actorId}`);
+        void navigate(ROUTES.PROFILE_USER(n.actorId));
     };
 
     const handleDelete = async () => {
@@ -443,8 +446,8 @@ export default function HiddenNotificationSection() {
     const navigate = useNavigate();
 
     const handleUnlocked = () => {
-        sessionStorage.setItem('hidden_unlocked', 'true');
-        navigate('/hidden');
+        sessionStorage.setItem(SESSION_KEYS.HIDDEN_UNLOCKED, 'true');
+        navigate(ROUTES.HIDDEN);
     };
 
     return (

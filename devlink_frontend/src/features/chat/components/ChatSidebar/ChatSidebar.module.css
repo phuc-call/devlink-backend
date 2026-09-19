@@ -88,7 +88,7 @@
     color: #4B5563;
     font-size: 0.8125rem;
     font-weight: 500;
-    cursor: inherit; /* Kế thừa grab/grabbing từ cha */
+    cursor: inherit; /* Káº¿ thá»«a grab/grabbing tá»« cha */
     white-space: nowrap;
     transition: background-color 0.2s, color 0.2s;
     user-select: none;
@@ -120,10 +120,10 @@
 .list {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 16px;
+    padding-bottom: 80px;
 }
 
-/* Ẩn thanh cuộn để giao diện gọn gàng hơn */
+/* áº¨n thanh cuá»™n Ä‘á»ƒ giao diá»‡n gá»n gÃ ng hÆ¡n */
 .list::-webkit-scrollbar {
     width: 6px;
 }
@@ -141,6 +141,7 @@
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s;
     border-left: 3px solid transparent;
+    position: relative;
 }
 .item:hover {
     background-color: #F0EDE6;
@@ -203,3 +204,15 @@
     font-size: 0.875rem;
 }
 
+
+.unreadBadge {
+  background-color: #e41e3f;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 8px;
+  display: inline-block;
+  vertical-align: middle;
+}

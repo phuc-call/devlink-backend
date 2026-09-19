@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Paperclip, Image as ImageIcon, Smile, Send, ArrowLeft, MoreHorizontal, Loader2, Check, AlertCircle, RefreshCw, MoreVertical, Trash2, CornerUpLeft, Search, X } from 'lucide-react';
+import { STORAGE_KEYS } from '../../../../constants/storage';
+import { CHAT_MESSAGES } from '../../../../constants/messages';
+import { CHAT_ACTIONS, MESSAGE_TYPES, CHAT_UI } from '../../../../constants/chat';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { Paperclip, Image as ImageIcon, Smile, Send, ArrowLeft, MoreHorizontal, Loader2, Check, AlertCircle, RefreshCw, MoreVertical, Trash2, CornerUpLeft, Search, X, Pin, ChevronDown, ChevronUp, Paintbrush, Info } from 'lucide-react';
 import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { chatApi } from '../../../../api/chat-service/chatApi';
@@ -8,11 +11,16 @@ import styles from './ChatArea.module.css';
 import { useChatMessages } from '../../hooks/useChatMessages';
 import { useSendMessage } from '../../hooks/useSendMessage';
 import { useChatWebSocket } from '../../hooks/useChatWebSocket';
-import { db, type LocalMessage } from '../../../../utils/db';
+import { db, type LocalMessage, type LocalPinnedMessage } from '../../../../utils/db';
+import { usePinnedMessage } from '../../hooks/usePinnedMessage';
+import { useConversationConfig } from '../../hooks/useConversationConfig';
+import ConversationMediaPanel from './ConversationMediaPanel';
+
 export interface SelectedUser {
     userId: number;
     fullName: string;
     avatar?: string;
+    conversationId?: number;
 }
 
 interface ChatAreaProps {
@@ -27,35 +35,40 @@ let tempIdCounter = 0;
 const genTempId = () => `temp_${Date.now()}_${++tempIdCounter}`;
 
 export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
-    
+
     // Conversation state
     const [conversationId, setConversationId] = useState<number | null>(null);
     const { messages: displayMessages, isLoading: loadingMessages, hasMore, nextCursor, isBlocked, query } = useChatMessages(conversationId);
+    const { pinnedMessages, refetch: refetchPinnedMessages } = usePinnedMessage(conversationId);
+    const { config, updateThemeConfig } = useConversationConfig(conversationId);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
-// Input state
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+    // Input state
     const [message, setMessage] = useState('');
+    const [isPinnedExpanded, setIsPinnedExpanded] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const mediaInputRef = useRef<HTMLInputElement>(null);
     const messageEndRef = useRef<HTMLDivElement>(null);
-        
-    const currentUserId = Number(localStorage.getItem('userId'));
-    const currentUserName = localStorage.getItem('fullName') || '';
-    const currentUserAvatar = localStorage.getItem('avatar') || undefined;
 
-    
+    const currentUserId = Number(localStorage.getItem(STORAGE_KEYS.USER_ID));
+    const currentUserName = localStorage.getItem(STORAGE_KEYS.FULL_NAME) || '';
+    const currentUserAvatar = localStorage.getItem(STORAGE_KEYS.AVATAR) || undefined;
 
-    
+
+
+
     const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
     const [menuOpenMsgId, setMenuOpenMsgId] = useState<string | null>(null);
-    const [confirmAction, setConfirmAction] = useState<{type: 'delete'|'recall', msgId: number | string} | null>(null);
+    const [confirmAction, setConfirmAction] = useState<{ type: typeof CHAT_ACTIONS.DELETE | typeof CHAT_ACTIONS.RECALL, msgId: number | string } | null>(null);
     const draftsRef = useRef<Record<number, { message: string; files: File[] }>>({});
     const currentInputRef = useRef({ message: '', files: [] as File[] });
     const [activeUserId, setActiveUserId] = useState<number | null>(null);
 
     // Search state
     const [isSearchMode, setIsSearchMode] = useState(false);
+    const [isShowConfigMenu, setIsShowConfigMenu] = useState(false);
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchResults, setSearchResults] = useState<MessageHistoryResponse[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -75,7 +88,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
             if (activeUserId !== null) {
                 draftsRef.current[activeUserId] = currentInputRef.current;
             }
-            
+
             // 2. Load draft của người mới (hoặc reset nếu chưa có)
             if (incomingId !== null) {
                 const draft = draftsRef.current[incomingId];
@@ -85,12 +98,12 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                 setMessage('');
                 setFiles([]);
             }
-            
+
             setActiveUserId(incomingId);
         }
     }, [selectedUser?.userId, activeUserId]);
 
-    
+
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
     useEffect(() => {
@@ -112,7 +125,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         };
     }, [files]);
 
-    
+
     useEffect(() => {
         const handleClickOutside = () => {
             setMenuOpenMsgId(null);
@@ -129,16 +142,17 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     useEffect(() => {
         if (!selectedUser) {
             setConversationId(null);
-            
-            
+
+
             return;
         }
 
         setConversationId(null);
-        
-        
-        
-        
+
+        if (selectedUser.conversationId) {
+            setConversationId(selectedUser.conversationId);
+            return;
+        }
 
         const fetchConversation = async () => {
             try {
@@ -152,24 +166,46 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         fetchConversation();
     }, [selectedUser]);
 
-    
-    // Step 2: Khi có conversationId -> query lấy data đã được useChatMessages xử lý.
+    // Step 2: Mark conversation as read when it opens
+    useEffect(() => {
+        if (conversationId) {
+            chatApi.markConversationAsRead(conversationId).catch(err => {
+                console.error("Failed to mark conversation as read:", err);
+            });
+        }
+    }, [conversationId]);
+
     // Tự động WebSocket
 
-    
+
     // Lắng nghe WebSocket
-    useChatWebSocket(currentUserId);
+    useChatWebSocket(currentUserId, conversationId);
     const { mutate: sendMessageMutation } = useSendMessage();
 
     // Tự scroll xuống cuối khi có tin nhắn mới
     const prevMsgCountRef = useRef(0);
-    useEffect(() => {
-        if (displayMessages.length > prevMsgCountRef.current) {
-            const isInitialLoad = prevMsgCountRef.current === 0;
-            messageEndRef.current?.scrollIntoView({ behavior: isInitialLoad ? 'auto' : 'smooth' });
+    const prevConvIdRef = useRef<number | null>(null);
+
+    useLayoutEffect(() => {
+        let isInitialLoad = false;
+
+        // Nếu đổi conversation, reset bộ đếm
+        if (conversationId !== prevConvIdRef.current) {
+            prevMsgCountRef.current = 0;
+            prevConvIdRef.current = conversationId;
+            isInitialLoad = true;
+        } else {
+            isInitialLoad = prevMsgCountRef.current === 0;
+        }
+
+        if (displayMessages.length > prevMsgCountRef.current || isInitialLoad) {
+            // Cuộn xuống nếu có tin nhắn mới HOẶC vừa đổi conversation (dù số lượng không đổi)
+            if (displayMessages.length > 0) {
+                messageEndRef.current?.scrollIntoView({ behavior: isInitialLoad ? 'auto' : 'smooth' });
+            }
         }
         prevMsgCountRef.current = displayMessages.length;
-    }, [displayMessages]);
+    }, [displayMessages, conversationId]);
 
     // Theo dõi trạng thái mạng
     useEffect(() => {
@@ -183,7 +219,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         };
     }, []);
 
-    
+
     // Auto-retry khi có mạng lại
     useEffect(() => {
         if (!isOnline) return;
@@ -196,38 +232,38 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     }, [isOnline, displayMessages]);
 
     // Load thêm tin nhắn cũ khi scroll lên trên
-    
+
     const handleLoadMore = async () => {
         if (conversationId && hasMore && !loadingMessages && nextCursor !== undefined) {
-             const res = await chatApi.getMessages(conversationId, nextCursor);
-             const serverMsgs = res.data.messages;
-             await db.transaction('rw', db.messages, async () => {
-                 for (const sMsg of serverMsgs) {
-                     const idStr = String(sMsg.id);
-                     if (!(await db.messages.get(idStr))) {
-                         await db.messages.put({
-                             id: idStr,
-                             serverId: sMsg.id,
-                             conversationId: sMsg.conversationId,
-                             senderId: sMsg.senderId,
-                             senderName: sMsg.senderName,
-                             senderAvatar: sMsg.senderAvatar,
-                             content: sMsg.content,
-                             createdAt: sMsg.createdAt,
-                             status: 'sent',
-                             isRecalled: sMsg.isRecalled || false,
-                             mediaList: sMsg.mediaList,
-                             attachmentList: sMsg.attachmentList
-                         });
-                     }
-                 }
-             });
+            const res = await chatApi.getMessages(conversationId, nextCursor);
+            const serverMsgs = res.data.messages;
+            await db.transaction('rw', db.messages, async () => {
+                for (const sMsg of serverMsgs) {
+                    const idStr = String(sMsg.id);
+                    if (!(await db.messages.get(idStr))) {
+                        await db.messages.put({
+                            id: idStr,
+                            serverId: sMsg.id,
+                            conversationId: sMsg.conversationId,
+                            senderId: sMsg.senderId,
+                            senderName: sMsg.senderName,
+                            senderAvatar: sMsg.senderAvatar,
+                            content: sMsg.content,
+                            createdAt: sMsg.createdAt,
+                            status: 'sent',
+                            isRecalled: sMsg.isRecalled || false,
+                            mediaList: sMsg.mediaList,
+                            attachmentList: sMsg.attachmentList
+                        });
+                    }
+                }
+            });
         }
     };
 
-    
 
-    
+
+
     const sendMessageWithStatus = useCallback(async (localMsgId: string, requestData: any) => {
         // useSendMessage hook handles this
         sendMessageMutation({ request: requestData, localMsgId });
@@ -243,6 +279,13 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
             files: [...files],
         };
 
+        const filePreviewUrls = files.map(f => {
+            if (f.type.startsWith(CHAT_UI.MIME_IMAGE) || f.type.startsWith(CHAT_UI.MIME_VIDEO)) {
+                return URL.createObjectURL(f);
+            }
+            return '';
+        });
+
         const localDbMsg = {
             id: tempId,
             clientTempId: tempId,
@@ -253,12 +296,14 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
             content: message.trim(),
             createdAt: new Date().toISOString(),
             status: 'sending' as 'sending',
-            isRecalled: false
+            isRecalled: false,
+            files: [...files],
+            filePreviewUrls
         };
 
         // Thêm vào Dexie
         await db.messages.put(localDbMsg);
-        
+
         setMessage('');
         setFiles([]);
 
@@ -269,9 +314,9 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     const retrySendMessage = useCallback(async (tempId: string) => {
         const msg = await db.messages.get(tempId);
         if (!msg) return;
-        
+
         await db.messages.update(tempId, { status: 'sending' });
-        
+
         const requestData = {
             conversationId: msg.conversationId,
             content: msg.content,
@@ -312,7 +357,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         if (!items) return;
         const imageFiles: File[] = [];
         for (const item of Array.from(items)) {
-            if (item.type.startsWith('image/')) {
+            if (item.type.startsWith(CHAT_UI.MIME_IMAGE)) {
                 const file = item.getAsFile();
                 if (file) imageFiles.push(file);
             }
@@ -340,8 +385,8 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
             // Xóa thành công ở backend -> xóa luôn ở local DB
             await db.messages.delete(String(msgId));
             setMenuOpenMsgId(null);
-        } catch (e) { 
-            console.error('Failed to delete message', e); 
+        } catch (e) {
+            console.error('Failed to delete message', e);
         }
     };
 
@@ -351,13 +396,33 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
             // Thu hồi thành công ở backend -> update cờ isRecalled ở local DB
             await db.messages.update(String(msgId), { isRecalled: true });
             setMenuOpenMsgId(null);
-        } catch (e: any) { 
-            console.error('Failed to recall message', e); 
+        } catch (e: any) {
+            console.error('Failed to recall message', e);
             if (e.response?.data?.message) {
                 alert(e.response.data.message);
             } else {
-                alert("Không thể thu hồi tin nhắn.");
+                alert("Failed to recall message");
             }
+        }
+    };
+
+    const handlePinMessage = async (msgId: number | string) => {
+        try {
+            await chatApi.pinMessage(Number(msgId));
+            if (conversationId) {
+                refetchPinnedMessages();
+            }
+        } catch (e: any) {
+            console.error('Failed to pin message', e);
+        }
+    };
+
+    const handleUnpinMessage = async (pinnedMessageId: string) => {
+        try {
+            await db.pinnedMessages.delete(pinnedMessageId);
+            await chatApi.unpinMessage(Number(pinnedMessageId));
+        } catch (e: any) {
+            console.error(CHAT_MESSAGES.UNPIN_FAILED, e);
         }
     };
 
@@ -376,7 +441,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
 
     const handleJumpToMessage = (msgId: string) => {
         setHighlightedMsgId(String(msgId));
-        
+
         // Find the element and scroll into view
         setTimeout(() => {
             const element = document.getElementById(`msg-${msgId}`);
@@ -404,25 +469,18 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     };
 
-    
+
     const renderStatusIcon = (msg: LocalMessage) => {
         switch (msg.status) {
             case 'sending':
                 return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end' }}>
-                        <Loader2
-                            size={12}
-                            style={{
-                                color: '#9CA3AF',
-                                animation: 'spin 1s linear infinite',
-                            }}
-                        />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end', minHeight: 16 }}>
                         <span style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>Đang gửi...</span>
                     </div>
                 );
             case 'sent':
                 return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, justifyContent: 'flex-end', minHeight: 16 }}>
                         <Check size={12} style={{ color: '#10B981' }} />
                         <span style={{ fontSize: '0.65rem', color: '#10B981' }}>Đã gửi</span>
                     </div>
@@ -469,7 +527,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
         }
     };
 
-    
+
     if (!selectedUser) {
         return (
             <div className={styles.chatArea} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -479,316 +537,428 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
     }
 
     return (
-        <div className={styles.chatArea}>
-            <div className={styles.chatMain}>
-            {/* CSS cho spinner animation */}
-            <style>{`
+        <div className={styles.chatArea} style={config.backgroundImageUrl ? { backgroundImage: `url(${config.backgroundImageUrl.startsWith('http') ? config.backgroundImageUrl : (import.meta.env.VITE_API_GATEWAY_URL || '') + config.backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : {}}>
+            <div className={styles.chatMain} style={{ backgroundColor: config.backgroundImageUrl ? 'rgba(255, 255, 255, 0.85)' : 'transparent', backdropFilter: config.backgroundImageUrl ? 'blur(4px)' : 'none' }}>
+                {/* CSS cho spinner animation */}
+                <style>{`
                 @keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
                 }
             `}</style>
 
-            {/* ── Header ───────────────────────────────────────────────────── */}
-            <div className={styles.header}>
-                <div className={styles.userInfo}>
-                    {onBack && (
-                        <button className={styles.backBtn} onClick={onBack} title="Quay lại">
-                            <ArrowLeft size={20} />
-                        </button>
-                    )}
-                    {selectedUser.avatar ? (
-                        <img src={selectedUser.avatar} alt="User Avatar" className={styles.avatar} />
-                    ) : (
-                        <div className={styles.avatar} style={{ backgroundColor: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, color: '#4B5563' }}>
-                            {initials}
+                {/* ── Header ───────────────────────────────────────────────────── */}
+                <div className={styles.header}>
+                    <div className={styles.userInfo}>
+                        {onBack && (
+                            <button className={styles.backBtn} onClick={onBack} title="Quay lại">
+                                <ArrowLeft size={20} />
+                            </button>
+                        )}
+                        {selectedUser.avatar ? (
+                            <img src={selectedUser.avatar} alt="User Avatar" className={styles.avatar} />
+                        ) : (
+                            <div className={styles.avatar} style={{ backgroundColor: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, color: '#4B5563' }}>
+                                {initials}
+                            </div>
+                        )}
+                        <div>
+                            <div className={styles.userName}>{selectedUser.fullName}</div>
+                            <div className={styles.status}>Active now</div>
                         </div>
-                    )}
-                    <div>
-                        <div className={styles.userName}>{selectedUser.fullName}</div>
-                        <div className={styles.status}>Active now</div>
+                    </div>
+                    {/* Network status indicator */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {!isOnline && (
+                            <div style={{ fontSize: '0.75rem', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
+                                Mất kết nối
+                            </div>
+                        )}
+                        <button
+                            onClick={() => { setIsSearchMode(false); setIsShowConfigMenu(!isShowConfigMenu); setShowMobileSidebar(false); }}
+                            style={{
+                                background: isShowConfigMenu ? '#E0F2FE' : 'transparent',
+                                color: isShowConfigMenu ? '#0369A1' : '#4B5563',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 8,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s'
+                            }}
+                            title="Tùy chỉnh giao diện"
+                        >
+                            <Paintbrush size={20} />
+                        </button>
+
+                        <button
+                            onClick={() => { setIsShowConfigMenu(false); setIsSearchMode(!isSearchMode); setShowMobileSidebar(false); }}
+                            style={{
+                                background: isSearchMode ? '#E0F2FE' : 'transparent',
+                                color: isSearchMode ? '#0369A1' : '#4B5563',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 8,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s'
+                            }}
+                            title="Tìm kiếm tin nhắn"
+                        >
+                            <Search size={20} />
+                        </button>
+                        <button
+                            onClick={() => { setShowMobileSidebar(!showMobileSidebar); setIsSearchMode(false); setIsShowConfigMenu(false); }}
+                            className={`${styles.iconBtn} ${styles.mobileOnlyBtn}`}
+                            style={{
+                                background: showMobileSidebar ? '#E0F2FE' : 'transparent',
+                                color: showMobileSidebar ? '#0369A1' : '#4B5563',
+                            }}
+                            title="Thông tin hội thoại"
+                        >
+                            <Info size={20} />
+                        </button>
                     </div>
                 </div>
-                {/* Network status indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {!isOnline && (
-                        <div style={{ fontSize: '0.75rem', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
-                            Mất kết nối
-                        </div>
-                    )}
-                    <button
-                        onClick={() => setIsSearchMode(!isSearchMode)}
-                        style={{
-                            background: isSearchMode ? '#E0F2FE' : 'transparent',
-                            color: isSearchMode ? '#0369A1' : '#4B5563',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: 8,
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s'
-                        }}
-                        title="Tìm kiếm tin nhắn"
-                    >
-                        <Search size={20} />
-                    </button>
-                </div>
-            </div>
 
-            {/* ── Vùng hiển thị tin nhắn ───────────────────────────────────── */}
-            <div className={styles.messageListWrapper}>
-                <div className={styles.messageListContent}>
-
-                    {/* Nút tải thêm tin nhắn cũ */}
-                    {hasMore && (
-                        <div style={{ textAlign: 'center', padding: '8px' }}>
-                            <button
-                                onClick={handleLoadMore}
-                                disabled={loadingMessages}
-                                style={{ fontSize: '0.75rem', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                                {loadingMessages ? 'Đang tải...' : '↑ Tải tin nhắn cũ hơn'}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Loading lần đầu */}
-                    {loadingMessages && displayMessages.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '24px', color: '#9CA3AF' }}>Đang tải tin nhắn...</div>
-                    )}
-
-                    
-                    {/* Danh sách tin nhắn */}
-                    {displayMessages.map(msg => {
-                        const isMine = msg.senderId === currentUserId;
-                        const msgKey = msg.id;
-                        const isPending = msg.status === 'sending';
-                        const isFailed = msg.status === 'failed';
-                        const serverMsg = msg; // for alias
-                        const localMsg = msg;  // for alias
-
-
-                        return (
-                            <div
-                                key={msgKey}
-                                id={serverMsg ? `msg-${serverMsg.id}` : undefined}
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: isMine ? 'flex-end' : 'flex-start',
-                                    marginBottom: '8px',
-                                    padding: '8px 12px',
-                                    opacity: isPending ? 0.7 : 1,
-                                    background: String(serverMsg?.serverId) === highlightedMsgId || serverMsg?.id === highlightedMsgId ? '#FEF3C7' : 'transparent',
-                                    transition: 'background 0.5s ease'
-                                }}
-                                onMouseEnter={() => setHoveredMsgId(msgKey)}
-                                onMouseLeave={() => setHoveredMsgId(null)}
-                            >
-                                {/* Avatar người khác */}
-                                {!isMine && (
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#4B5563', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-start' }}>
-                                        {(serverMsg?.senderAvatar || localMsg?.senderAvatar)
-                                            ? <img src={(serverMsg?.senderAvatar || localMsg?.senderAvatar)!} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                            : (serverMsg?.senderName || localMsg?.senderName)?.charAt(0)?.toUpperCase()
-                                        }
+                {/* Pinned Messages Banner */}
+                {pinnedMessages && pinnedMessages.length > 0 && (
+                    <div style={{
+                        display: 'flex', flexDirection: 'column',
+                        background: '#F3F4F6', borderBottom: '1px solid #E5E7EB',
+                        position: 'sticky', top: 0, zIndex: 10
+                    }}>
+                        {(isPinnedExpanded ? pinnedMessages : [pinnedMessages[0]]).map(pinnedMessage => (
+                            <div key={pinnedMessage.id} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '8px 16px', borderBottom: '1px solid #E5E7EB', cursor: 'pointer', background: '#F9FAFB'
+                            }}
+                                onClick={() => {
+                                    // Scroll to message logic
+                                    const el = document.getElementById(`msg-${pinnedMessage.messageId}`);
+                                    if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        el.style.backgroundColor = '#FEF08A'; // highlight yellow
+                                        setTimeout(() => { el.style.backgroundColor = 'transparent'; }, 2000);
+                                    }
+                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                                    <div style={{ color: '#3B82F6', flexShrink: 0 }}><Pin size={16} /></div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4B5563' }}>Tin nhắn ghim - {pinnedMessage.senderName}</span>
+                                        <span style={{ fontSize: '0.85rem', color: '#1F2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {pinnedMessage.content || "Đính kèm/Hình ảnh"}
+                                        </span>
                                     </div>
-                                )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <button onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUnpinMessage(pinnedMessage.id);
+                                    }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: '0.75rem', fontWeight: 500, padding: '4px 8px', borderRadius: 4 }}>
+                                        Bỏ ghim
+                                    </button>
+                                    {pinnedMessages.length > 1 && pinnedMessage.id === (isPinnedExpanded ? pinnedMessages[0].id : pinnedMessages[0].id) && (
+                                        <button onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsPinnedExpanded(!isPinnedExpanded);
+                                        }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}>
+                                            {isPinnedExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
-                                <div style={{ maxWidth: '65%', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ position: 'relative' }}>
-                                        {/* Unified message content */}
-                                        {msg.isRecalled ? (
-                                            <div style={{ padding: '8px 12px', borderRadius: '8px', background: '#F3F4F6', color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.875rem', border: '1px solid #E5E7EB', opacity: 0.6 }}>
-                                                Tin nhắn đã bị thu hồi
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {msg.content && (
-                                                    <div style={{
-                                                        padding: '8px 12px',
-                                                        borderRadius: '8px',
-                                                        background: isFailed ? '#FEE2E2' : (isMine ? '#E0F2FE' : '#FFFFFF'),
-                                                        color: isFailed ? '#991B1B' : '#111827',
-                                                        fontSize: '0.9rem',
-                                                        wordBreak: 'break-word',
-                                                        border: isFailed ? '1px solid #FECACA' : (isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB'),
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                    }}>
-                                                        <div>{msg.content}</div>
-                                                        <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '4px', textAlign: 'right', alignSelf: 'flex-end' }}>
-                                                            {formatTime(msg.createdAt)}
-                                                        </span>
-                                                    </div>
-                                                )}
+                {/* ── Vùng hiển thị tin nhắn ───────────────────────────────────── */}
+                <div className={styles.messageListWrapper}>
+                    <div className={styles.messageListContent}>
 
-                                                {/* Hiển thị ảnh / video từ Server */}
-                                                {msg.mediaList?.map(media => (
-                                                    <div key={media.id} style={{ marginTop: 4 }}>
-                                                        {media.mediaType === 'IMAGE' ? (
-                                                            <img
-                                                                src={media.fileUrl}
-                                                                alt="Ảnh"
-                                                                style={{
-                                                                    width: media.width ? Math.min(media.width, 320) : undefined,
-                                                                    height: media.height && media.width
-                                                                        ? Math.min(media.width, 320) * (media.height / media.width)
-                                                                        : undefined,
-                                                                    maxWidth: '100%',
-                                                                    borderRadius: 8,
-                                                                    display: 'block',
-                                                                    cursor: 'pointer',
-                                                                    border: '1px solid #E5E7EB',
-                                                                }}
-                                                                onClick={() => window.open(media.fileUrl, '_blank')}
-                                                            />
-                                                        ) : (
-                                                            <video
-                                                                src={media.fileUrl}
-                                                                poster={media.thumbnailUrl}
-                                                                controls
-                                                                style={{
-                                                                    width: media.width ? Math.min(media.width, 320) : 320,
-                                                                    maxWidth: '100%',
-                                                                    borderRadius: 8,
-                                                                    display: 'block',
-                                                                    border: '1px solid #E5E7EB',
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                ))}
+                        {/* Nút tải thêm tin nhắn cũ */}
+                        {hasMore && (
+                            <div style={{ textAlign: 'center', padding: '8px' }}>
+                                <button
+                                    onClick={handleLoadMore}
+                                    disabled={loadingMessages}
+                                    style={{ fontSize: '0.75rem', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    {loadingMessages ? 'Đang tải...' : '↑ Tải tin nhắn cũ hơn'}
+                                </button>
+                            </div>
+                        )}
 
-                                                {/* Hiển thị file đính kèm từ Server */}
-                                                {msg.attachmentList?.map(att => (
-                                                    <div key={att.id} style={{ marginTop: 4 }}>
-                                                        <a href={att.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: isMine ? '#0369A1' : '#3B82F6', background: isMine ? '#E0F2FE' : '#FFFFFF', padding: '6px 10px', borderRadius: 8, display: 'inline-block', border: isMine ? '1px solid #BAE6FD' : '1px solid #E5E7EB' }}>
-                                                            📎 {att.fileName}
-                                                        </a>
-                                                    </div>
-                                                ))}
+                        {/* Loading lần đầu */}
+                        {loadingMessages && displayMessages.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '24px', color: '#9CA3AF' }}>Đang tải tin nhắn...</div>
+                        )}
 
-                                                {/* Preview files đang gửi (Local) */}
-                                                {msg.filePreviewUrls && msg.filePreviewUrls.length > 0 && (
-                                                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                                                        {msg.files?.map((file, i) => {
-                                                            const url = msg.filePreviewUrls?.[i];
-                                                            if (file.type.startsWith('image/') && url) {
-                                                                return (
-                                                                    <img
-                                                                        key={i}
-                                                                        src={url}
-                                                                        alt={file.name}
-                                                                        style={{
-                                                                            maxWidth: 200,
-                                                                            maxHeight: 200,
-                                                                            borderRadius: 8,
-                                                                            opacity: isPending ? 0.6 : 1,
-                                                                            border: isFailed ? '2px solid #EF4444' : '1px solid #E5E7EB',
-                                                                        }}
-                                                                    />
-                                                                );
-                                                            }
-                                                            if (file.type.startsWith('video/') && url) {
-                                                                return (
-                                                                    <div key={i} style={{ position: 'relative' }}>
-                                                                        <video
-                                                                            src={url}
+
+                        {/* Danh sách tin nhắn */}
+                        {displayMessages.map((msg, index) => {
+                            const isNearBottom = index >= displayMessages.length - 3;
+                            const isMine = msg.senderId === currentUserId;
+                            const msgKey = msg.id;
+                            const isPending = msg.status === 'sending';
+                            const isFailed = msg.status === 'failed';
+                            const serverMsg = msg; // for alias
+                            const localMsg = msg;  // for alias
+
+
+                            return (
+                                <div
+                                    key={msgKey}
+                                    id={serverMsg ? `msg-${serverMsg.id}` : undefined}
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: isMine ? 'flex-end' : 'flex-start',
+                                        marginBottom: '8px',
+                                        padding: '8px 12px',
+                                        opacity: isPending ? 0.7 : 1,
+                                        background: String(serverMsg?.serverId) === highlightedMsgId || serverMsg?.id === highlightedMsgId ? '#FEF3C7' : 'transparent',
+                                        transition: 'background 0.5s ease'
+                                    }}
+                                    onMouseEnter={() => setHoveredMsgId(msgKey)}
+                                    onMouseLeave={() => setHoveredMsgId(null)}
+                                    onClick={() => setMenuOpenMsgId(menuOpenMsgId === msgKey ? null : msgKey)}
+                                >
+                                    {/* Avatar người khác */}
+                                    {!isMine && (
+                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#4B5563', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-start' }}>
+                                            {(serverMsg?.senderAvatar || localMsg?.senderAvatar)
+                                                ? <img src={(serverMsg?.senderAvatar || localMsg?.senderAvatar)!} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                                                : (serverMsg?.senderName || localMsg?.senderName)?.charAt(0)?.toUpperCase()
+                                            }
+                                        </div>
+                                    )}
+
+                                    <div style={{ maxWidth: '65%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+                                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+                                            {/* Unified message content */}
+                                            {msg.isRecalled ? (
+                                                <div style={{ padding: '8px 12px', borderRadius: '8px', background: '#F3F4F6', color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.875rem', border: '1px solid #E5E7EB', opacity: 0.6 }}>
+                                                    Tin nhắn đã bị thu hồi
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {msg.content && (
+                                                        <div style={{
+                                                            padding: '8px 12px',
+                                                            borderRadius: '8px',
+                                                            background: isFailed ? '#FEE2E2' : (isMine ? config.themeColor : '#FFFFFF'),
+                                                            color: isFailed ? '#991B1B' : (isMine ? '#FFFFFF' : '#111827'),
+                                                            fontSize: '0.9rem',
+                                                            wordBreak: 'break-word',
+                                                            border: isFailed ? '1px solid #FECACA' : (isMine ? `1px solid ${config.themeColor}` : '1px solid #E5E7EB'),
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                        }}>
+                                                            <div>{msg.content}</div>
+                                                            <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '4px', textAlign: 'right', alignSelf: 'flex-end' }}>
+                                                                {formatTime(msg.createdAt)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Hiển thị ảnh / video từ Server */}
+                                                    {msg.mediaList && msg.mediaList.length > 0 && (
+                                                        <div style={{
+                                                            display: 'grid',
+                                                            gap: 4,
+                                                            marginTop: 4,
+                                                            maxWidth: 320,
+                                                            gridTemplateColumns: msg.mediaList.length === 1 ? '1fr' :
+                                                                (msg.mediaList.length === 2 || msg.mediaList.length === 4) ? 'repeat(2, 1fr)' :
+                                                                    'repeat(3, 1fr)',
+                                                            borderRadius: 8,
+                                                            overflow: 'hidden'
+                                                        }}>
+                                                            {msg.mediaList.map(media => (
+                                                                <div key={media.id} style={{ position: 'relative', width: '100%', aspectRatio: msg.mediaList!.length === 1 ? 'auto' : '1' }}>
+                                                                    {media.mediaType === MESSAGE_TYPES.IMAGE ? (
+                                                                        <img
+                                                                            src={media.fileUrl}
+                                                                            alt="Ảnh"
                                                                             style={{
-                                                                                maxWidth: 200,
-                                                                                maxHeight: 200,
-                                                                                borderRadius: 8,
-                                                                                opacity: isPending ? 0.6 : 1,
-                                                                                border: isFailed ? '2px solid #EF4444' : '1px solid #E5E7EB',
+                                                                                width: '100%',
+                                                                                height: msg.mediaList!.length === 1 ? 'auto' : '100%',
+                                                                                objectFit: msg.mediaList!.length === 1 ? 'contain' : 'cover',
+                                                                                display: 'block',
+                                                                                cursor: 'pointer',
+                                                                                minHeight: 100
                                                                             }}
-                                                                            muted
-                                                                            preload="metadata"
+                                                                            onClick={(e) => { e.stopPropagation(); window.open(media.fileUrl, '_blank'); }}
                                                                         />
-                                                                        <div style={{
-                                                                            position: 'absolute',
-                                                                            top: '50%',
-                                                                            left: '50%',
-                                                                            transform: 'translate(-50%, -50%)',
-                                                                            width: 32,
-                                                                            height: 32,
-                                                                            borderRadius: '50%',
-                                                                            background: 'rgba(0,0,0,0.5)',
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                            color: 'white'
-                                                                        }}>
-                                                                            ▶
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                            return (
-                                                                <div key={i} style={{
-                                                                    padding: '6px 10px',
-                                                                    background: isFailed ? '#FEE2E2' : '#E0F2FE',
-                                                                    borderRadius: 8,
-                                                                    fontSize: '0.75rem',
-                                                                    color: '#374151',
-                                                                    opacity: isPending ? 0.6 : 1,
-                                                                    border: isFailed ? '1px solid #FECACA' : '1px solid #BAE6FD',
-                                                                }}>
-                                                                    📎 {file.name}
+                                                                    ) : (
+                                                                        <video
+                                                                            src={media.fileUrl}
+                                                                            poster={media.thumbnailUrl}
+                                                                            controls={msg.mediaList!.length === 1}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                height: msg.mediaList!.length === 1 ? 'auto' : '100%',
+                                                                                objectFit: msg.mediaList!.length === 1 ? 'contain' : 'cover',
+                                                                                display: 'block',
+                                                                                minHeight: 100
+                                                                            }}
+                                                                        />
+                                                                    )}
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
+                                                            ))}
+                                                        </div>
+                                                    )}
 
-                                                {/* Thời gian cho media/attachment/files nếu không có text */}
-                                                {!msg.content && (msg.mediaList?.length || msg.attachmentList?.length || msg.files?.length) ? (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-                                                        <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
-                                                            {formatTime(msg.createdAt)}
-                                                        </span>
-                                                    </div>
-                                                ) : null}
-                                            </>
-                                        )}
+                                                    {/* Hiển thị file đính kèm từ Server */}
+                                                    {msg.attachmentList?.map(att => (
+                                                        <div key={att.id} style={{ marginTop: 4 }}>
+                                                            <a href={att.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: isMine ? config.themeColor : '#3B82F6', background: isMine ? config.themeColor : '#FFFFFF', padding: '6px 10px', borderRadius: 8, display: 'inline-block', border: isMine ? `1px solid ${config.themeColor}` : '1px solid #E5E7EB' }}>
+                                                                📎 {att.fileName}
+                                                            </a>
+                                                        </div>
+                                                    ))}
+
+                                                    {/* Preview files đang gửi (Local) */}
+                                                    {msg.filePreviewUrls && msg.filePreviewUrls.length > 0 && (
+                                                        <>
+                                                            <div style={{
+                                                                display: 'grid',
+                                                                gap: 4,
+                                                                marginTop: 4,
+                                                                maxWidth: 320,
+                                                                gridTemplateColumns: msg.files!.filter(f => f.type.startsWith(CHAT_UI.MIME_IMAGE) || f.type.startsWith(CHAT_UI.MIME_VIDEO)).length === 1 ? '1fr' :
+                                                                    (msg.files!.filter(f => f.type.startsWith(CHAT_UI.MIME_IMAGE) || f.type.startsWith(CHAT_UI.MIME_VIDEO)).length === 2 || msg.files!.filter(f => f.type.startsWith(CHAT_UI.MIME_IMAGE) || f.type.startsWith(CHAT_UI.MIME_VIDEO)).length === 4) ? 'repeat(2, 1fr)' :
+                                                                        'repeat(3, 1fr)',
+                                                                borderRadius: 8,
+                                                                overflow: 'hidden'
+                                                            }}>
+                                                                {msg.files?.map((file, i) => {
+                                                                    const url = msg.filePreviewUrls?.[i];
+                                                                    if (!url) return null;
+                                                                    const mediaCount = msg.files!.filter(f => f.type.startsWith(CHAT_UI.MIME_IMAGE) || f.type.startsWith(CHAT_UI.MIME_VIDEO)).length;
+                                                                    const isGrid = mediaCount > 1;
+
+                                                                    if (file.type.startsWith(CHAT_UI.MIME_IMAGE)) {
+                                                                        return (
+                                                                            <div key={i} style={{ width: '100%', aspectRatio: isGrid ? '1' : 'auto' }}>
+                                                                                <img
+                                                                                    src={url}
+                                                                                    alt={file.name}
+                                                                                    style={{
+                                                                                        width: '100%',
+                                                                                        height: isGrid ? '100%' : 'auto',
+                                                                                        objectFit: isGrid ? 'cover' : 'contain',
+                                                                                        opacity: isPending ? 0.6 : 1,
+                                                                                        display: 'block',
+                                                                                        minHeight: 100
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    if (file.type.startsWith(CHAT_UI.MIME_VIDEO)) {
+                                                                        return (
+                                                                            <div key={i} style={{ position: 'relative', width: '100%', aspectRatio: isGrid ? '1' : 'auto' }}>
+                                                                                <video
+                                                                                    src={url}
+                                                                                    style={{
+                                                                                        width: '100%',
+                                                                                        height: isGrid ? '100%' : 'auto',
+                                                                                        objectFit: isGrid ? 'cover' : 'contain',
+                                                                                        opacity: isPending ? 0.6 : 1,
+                                                                                        display: 'block',
+                                                                                        minHeight: 100
+                                                                                    }}
+                                                                                    muted
+                                                                                    preload="metadata"
+                                                                                />
+                                                                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                                                                    ▶
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                                                                {msg.files?.map((file, i) => {
+                                                                    const url = msg.filePreviewUrls?.[i];
+                                                                    if (url) return null;
+                                                                    return (
+                                                                        <div key={i} style={{
+                                                                            padding: '6px 10px',
+                                                                            background: isFailed ? '#FEE2E2' : '#E0F2FE',
+                                                                            borderRadius: 8,
+                                                                            fontSize: '0.75rem',
+                                                                            color: '#374151',
+                                                                            opacity: isPending ? 0.6 : 1,
+                                                                            border: isFailed ? '1px solid #FECACA' : '1px solid #BAE6FD',
+                                                                        }}>
+                                                                            📎 {file.name}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    {/* Thời gian cho media/attachment/files nếu không có text */}
+                                                    {!msg.content && (msg.mediaList?.length || msg.attachmentList?.length || msg.files?.length) ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                                                            <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                                                                {formatTime(msg.createdAt)}
+                                                            </span>
+                                                        </div>
+                                                    ) : null}
+                                                </>
+                                            )}
 
 
 
-                                        {/* Menu 3 chấm (Hover) */}
-                                        {(!isPending && !isFailed && (hoveredMsgId === msgKey || menuOpenMsgId === msgKey)) && serverMsg && (
-                                            <div style={{ 
-                                                position: 'absolute', 
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                ...(isMine ? { right: '100%', marginRight: 8 } : { left: '100%', marginLeft: 8 }),
-                                                zIndex: 10
-                                            }}>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setMenuOpenMsgId(menuOpenMsgId === msgKey ? null : msgKey);
-                                                    }}
-                                                    style={{
-                                                        background: '#F3F4F6', border: 'none', borderRadius: '50%',
-                                                        width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        cursor: 'pointer', color: '#4B5563',
-                                                    }}
-                                                >
-                                                    <MoreVertical size={16} />
-                                                </button>
-                                                
-                                                {menuOpenMsgId === msgKey && (
-                                                    <div style={{
-                                                        position: 'absolute', zIndex: 10,
-                                                        top: 30, right: isMine ? 0 : 'auto', left: isMine ? 'auto' : 0,
-                                                        background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
-                                                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: 4, minWidth: 150
-                                                    }}>
+                                            {/* Menu 3 chấm (Hover) */}
+                                            {(!isPending && !isFailed && (hoveredMsgId === msgKey || menuOpenMsgId === msgKey)) && serverMsg && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    marginTop: 8,
+                                                    ...(isMine ? { right: '100%', marginRight: 8 } : { left: '100%', marginLeft: 8 }),
+                                                    zIndex: 10
+                                                }}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setMenuOpenMsgId(menuOpenMsgId === msgKey ? null : msgKey);
+                                                        }}
+                                                        style={{
+                                                            background: '#F3F4F6', border: 'none', borderRadius: '50%',
+                                                            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            cursor: 'pointer', color: '#4B5563',
+                                                        }}
+                                                    >
+                                                        <MoreVertical size={16} />
+                                                    </button>
+
+                                                    {menuOpenMsgId === msgKey && (
+                                                        <div style={{
+                                                            position: 'absolute', zIndex: 10,
+                                                            ...(isNearBottom
+                                                                ? { bottom: '100%', marginBottom: 4 }
+                                                                : { top: 30 }
+                                                            ),
+                                                            right: isMine ? 0 : 'auto', left: isMine ? 'auto' : 0,
+                                                            background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8,
+                                                            boxShadow: isNearBottom ? '0 -4px 6px rgba(0,0,0,0.1)' : '0 4px 6px rgba(0,0,0,0.1)',
+                                                            padding: 4, minWidth: 150
+                                                        }}>
                                                             <button
                                                                 onClick={() => {
-                                                                    setConfirmAction({ type: 'delete', msgId: serverMsg.id });
+                                                                    setConfirmAction({ type: CHAT_ACTIONS.DELETE, msgId: serverMsg.id });
                                                                     setMenuOpenMsgId(null);
                                                                 }}
                                                                 style={{
@@ -800,10 +970,24 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                             >
                                                                 <Trash2 size={16} /> Xóa phía tôi
                                                             </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handlePinMessage(serverMsg.id);
+                                                                    setMenuOpenMsgId(null);
+                                                                }}
+                                                                style={{
+                                                                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                                                                    padding: '8px 12px', background: 'none', border: 'none',
+                                                                    cursor: 'pointer', fontSize: '0.875rem', color: '#4B5563',
+                                                                    textAlign: 'left', borderRadius: 4, marginTop: 2
+                                                                }}
+                                                            >
+                                                                <Pin size={16} /> Ghim tin nhắn
+                                                            </button>
                                                             {isMine && !(serverMsg.isRecalled) && (
                                                                 <button
                                                                     onClick={() => {
-                                                                        setConfirmAction({ type: 'recall', msgId: serverMsg.id });
+                                                                        setConfirmAction({ type: CHAT_ACTIONS.RECALL, msgId: serverMsg.id });
                                                                         setMenuOpenMsgId(null);
                                                                     }}
                                                                     style={{
@@ -817,98 +1001,86 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                                 </button>
                                                             )}
                                                         </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
 
-                                    {/* Status icon cho tin nhắn local */}
-                                    {localMsg && isMine && renderStatusIcon(localMsg)}
+                                        {/* Status icon cho tin nhắn local */}
+                                        {localMsg && isMine && renderStatusIcon(localMsg)}
+                                    </div>
                                 </div>
+
+                            );
+                        })}
+
+                        <div ref={messageEndRef} />
+                    </div>
+                </div>
+
+                {/* ── Input Area ────────────────────────────────────────────────── */}
+                <div className={styles.inputArea}>
+                    {/* Cảnh báo bị block */}
+                    {isBlocked && (
+                        <div style={{ textAlign: 'center', padding: '6px', color: '#EF4444', fontSize: '0.8rem' }}>
+                            Bạn hoặc người dùng này đã chặn nhau. Không thể gửi tin nhắn.
+                        </div>
+                    )}
+
+                    {/* File preview - hiển thị trước khi gửi */}
+                    {files.length > 0 && (
+                        <div style={{
+                            padding: '10px 12px',
+                            borderBottom: '1px solid #E5E7EB',
+                            marginBottom: 6,
+                            background: '#FAFAFA',
+                            borderRadius: '8px 8px 0 0',
+                        }}>
+                            {/* Header preview */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 500 }}>
+                                    {files.length} tệp đã chọn
+                                </span>
+                                <button
+                                    onClick={() => setFiles([])}
+                                    style={{
+                                        fontSize: '0.75rem',
+                                        color: '#EF4444',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '2px 6px',
+                                        borderRadius: 4,
+                                    }}
+                                >
+                                    Xóa tất cả
+                                </button>
                             </div>
 
-                        );
-                    })}
+                            {/* Preview list */}
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                {files.map((file, idx) => {
+                                    const isImage = file.type.startsWith('image/');
+                                    const isVideo = file.type.startsWith('video/');
+                                    const previewUrl = previewUrls[idx];
 
-                    <div ref={messageEndRef} />
-                </div>
-            </div>
-
-            {/* ── Input Area ────────────────────────────────────────────────── */}
-            <div className={styles.inputArea}>
-                {/* Cảnh báo bị block */}
-                {isBlocked && (
-                    <div style={{ textAlign: 'center', padding: '6px', color: '#EF4444', fontSize: '0.8rem' }}>
-                        Bạn hoặc người dùng này đã chặn nhau. Không thể gửi tin nhắn.
-                    </div>
-                )}
-
-                {/* File preview - hiển thị trước khi gửi */}
-                {files.length > 0 && (
-                    <div style={{
-                        padding: '10px 12px',
-                        borderBottom: '1px solid #E5E7EB',
-                        marginBottom: 6,
-                        background: '#FAFAFA',
-                        borderRadius: '8px 8px 0 0',
-                    }}>
-                        {/* Header preview */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 500 }}>
-                                {files.length} tệp đã chọn
-                            </span>
-                            <button
-                                onClick={() => setFiles([])}
-                                style={{
-                                    fontSize: '0.75rem',
-                                    color: '#EF4444',
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    padding: '2px 6px',
-                                    borderRadius: 4,
-                                }}
-                            >
-                                Xóa tất cả
-                            </button>
-                        </div>
-
-                        {/* Preview list */}
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                            {files.map((file, idx) => {
-                                const isImage = file.type.startsWith('image/');
-                                const isVideo = file.type.startsWith('video/');
-                                const previewUrl = previewUrls[idx];
-
-                                return (
-                                    <div
-                                        key={idx}
-                                        style={{
-                                            position: 'relative',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: 4,
-                                            maxWidth: 100,
-                                        }}
-                                    >
-                                        {/* Thumbnail */}
-                                        {isImage && previewUrl ? (
-                                            <img
-                                                src={previewUrl}
-                                                alt={file.name}
-                                                style={{
-                                                    width: 80,
-                                                    height: 80,
-                                                    objectFit: 'cover',
-                                                    borderRadius: 8,
-                                                    border: '1px solid #E5E7EB',
-                                                }}
-                                            />
-                                        ) : isVideo && previewUrl ? (
-                                            <div style={{ position: 'relative', width: 80, height: 80 }}>
-                                                <video
+                                    return (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                position: 'relative',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                maxWidth: 100,
+                                            }}
+                                        >
+                                            {/* Thumbnail */}
+                                            {isImage && previewUrl ? (
+                                                <img
                                                     src={previewUrl}
+                                                    alt={file.name}
                                                     style={{
                                                         width: 80,
                                                         height: 80,
@@ -916,198 +1088,222 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                                         borderRadius: 8,
                                                         border: '1px solid #E5E7EB',
                                                     }}
-                                                    muted
-                                                    preload="metadata"
                                                 />
-                                                {/* Play icon overlay */}
+                                            ) : isVideo && previewUrl ? (
+                                                <div style={{ position: 'relative', width: 80, height: 80 }}>
+                                                    <video
+                                                        src={previewUrl}
+                                                        style={{
+                                                            width: 80,
+                                                            height: 80,
+                                                            objectFit: 'cover',
+                                                            borderRadius: 8,
+                                                            border: '1px solid #E5E7EB',
+                                                        }}
+                                                        muted
+                                                        preload="metadata"
+                                                    />
+                                                    {/* Play icon overlay */}
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        top: '50%',
+                                                        left: '50%',
+                                                        transform: 'translate(-50%, -50%)',
+                                                        width: 28,
+                                                        height: 28,
+                                                        borderRadius: '50%',
+                                                        background: 'rgba(0,0,0,0.5)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#fff',
+                                                        fontSize: 14,
+                                                    }}>
+                                                        ▶
+                                                    </div>
+                                                </div>
+                                            ) : (
                                                 <div style={{
+                                                    width: 80,
+                                                    height: 80,
+                                                    background: '#F3F4F6',
+                                                    borderRadius: 8,
+                                                    border: '1px solid #E5E7EB',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: 4,
+                                                }}>
+                                                    <span style={{ fontSize: 24 }}>📎</span>
+                                                    <span style={{
+                                                        fontSize: '0.6rem',
+                                                        color: '#3B82F6',
+                                                        fontWeight: 500,
+                                                        textTransform: 'uppercase',
+                                                    }}>
+                                                        {file.name.split('.').pop()}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* File name + size */}
+                                            <div style={{ textAlign: 'center', width: '100%' }}>
+                                                <div style={{
+                                                    fontSize: '0.65rem',
+                                                    color: '#374151',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    maxWidth: 90,
+                                                }}>
+                                                    {file.name}
+                                                </div>
+                                                <div style={{ fontSize: '0.6rem', color: '#9CA3AF' }}>
+                                                    {formatFileSize(file.size)}
+                                                </div>
+                                            </div>
+
+                                            {/* Nút xóa */}
+                                            <button
+                                                onClick={() => removeFile(idx)}
+                                                style={{
                                                     position: 'absolute',
-                                                    top: '50%',
-                                                    left: '50%',
-                                                    transform: 'translate(-50%, -50%)',
-                                                    width: 28,
-                                                    height: 28,
+                                                    top: -6,
+                                                    right: 4,
+                                                    width: 20,
+                                                    height: 20,
                                                     borderRadius: '50%',
-                                                    background: 'rgba(0,0,0,0.5)',
+                                                    background: '#EF4444',
+                                                    color: '#fff',
+                                                    border: '2px solid #fff',
+                                                    cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    color: '#fff',
-                                                    fontSize: 14,
-                                                }}>
-                                                    ▶
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div style={{
-                                                width: 80,
-                                                height: 80,
-                                                background: '#F3F4F6',
-                                                borderRadius: 8,
-                                                border: '1px solid #E5E7EB',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 4,
-                                            }}>
-                                                <span style={{ fontSize: 24 }}>📎</span>
-                                                <span style={{
-                                                    fontSize: '0.6rem',
-                                                    color: '#3B82F6',
-                                                    fontWeight: 500,
-                                                    textTransform: 'uppercase',
-                                                }}>
-                                                    {file.name.split('.').pop()}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* File name + size */}
-                                        <div style={{ textAlign: 'center', width: '100%' }}>
-                                            <div style={{
-                                                fontSize: '0.65rem',
-                                                color: '#374151',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                maxWidth: 90,
-                                            }}>
-                                                {file.name}
-                                            </div>
-                                            <div style={{ fontSize: '0.6rem', color: '#9CA3AF' }}>
-                                                {formatFileSize(file.size)}
-                                            </div>
+                                                    fontSize: 10,
+                                                    fontWeight: 700,
+                                                    lineHeight: 1,
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
-                                        {/* Nút xóa */}
-                                        <button
-                                            onClick={() => removeFile(idx)}
-                                            style={{
-                                                position: 'absolute',
-                                                top: -6,
-                                                right: 4,
-                                                width: 20,
-                                                height: 20,
-                                                borderRadius: '50%',
-                                                background: '#EF4444',
-                                                color: '#fff',
-                                                border: '2px solid #fff',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: 10,
-                                                fontWeight: 700,
-                                                lineHeight: 1,
-                                            }}
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                    <div className={styles.inputContainer}>
+                        <div className={styles.inputActions}>
+                            <button className={`${styles.iconBtn} ${styles.moreBtn}`} title="More">
+                                <MoreHorizontal size={20} />
+                            </button>
+
+                            {/* Input file cho tất cả loại file */}
+                            <input type="file" multiple ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+                            {/* Input riêng cho ảnh/video */}
+                            <input type="file" multiple accept="image/*,video/*" ref={mediaInputRef} style={{ display: 'none' }} onChange={handleMediaChange} />
+
+                            <button type="button" className={`${styles.iconBtn} ${styles.desktopOnly}`} title="Đính kèm file" onClick={() => fileInputRef.current?.click()} disabled={isBlocked}>
+                                <Paperclip size={20} />
+                            </button>
+                            <button type="button" className={`${styles.iconBtn} ${styles.desktopOnly}`} title="Gửi ảnh/video" onClick={() => mediaInputRef.current?.click()} disabled={isBlocked}>
+                                <ImageIcon size={20} />
+                            </button>
+                            <button type="button" className={styles.iconBtn} title="Send emoji" disabled={isBlocked}>
+                                <Smile size={20} />
+                            </button>
+                        </div>
+
+                        <input
+                            id="chat-input"
+                            name="chat-input"
+                            type="text"
+                            className={styles.inputBox}
+                            placeholder={isBlocked ? 'Không thể gửi tin nhắn' : 'Type a message...'}
+                            value={message}
+                            onChange={e => setMessage(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onPaste={handlePaste}
+                            disabled={!conversationId || isBlocked}
+                        />
+
+                        <button
+                            type="button"
+                            className={styles.sendBtn}
+                            title="Send message"
+                            onClick={handleSendMessage}
+                            disabled={!conversationId || isBlocked || (!message.trim() && files.length === 0)}
+                            style={{ opacity: (!conversationId || isBlocked || (!message.trim() && files.length === 0)) ? 0.5 : 1 }}
+                        >
+                            <Send size={16} />
+                        </button>
+                    </div>
+                </div> {/* Đóng inputArea */}
+
+                {/* Confirm Overlay */}
+                {confirmAction && (
+                    <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{
+                            background: '#fff', padding: 24, borderRadius: 12, width: 320, maxWidth: '90%',
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                        }}>
+                            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.125rem', color: '#111827' }}>
+                                Xác nhận {confirmAction.type === CHAT_ACTIONS.DELETE ? 'xóa' : 'thu hồi'}
+                            </h3>
+                            <p style={{ margin: '0 0 20px 0', color: '#4B5563', fontSize: '0.9375rem' }}>
+                                {confirmAction.type === CHAT_ACTIONS.DELETE
+                                    ? 'Bạn có chắc chắn muốn xóa tin nhắn này phía bạn?'
+                                    : 'Bạn có chắc chắn muốn thu hồi tin nhắn này? Mọi người sẽ không thấy nữa.'}
+                            </p>
+                            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => setConfirmAction(null)}
+                                    style={{
+                                        padding: '8px 16px', background: '#F3F4F6', color: '#4B5563',
+                                        border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500
+                                    }}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (confirmAction.type === CHAT_ACTIONS.DELETE) handleDeleteMessageForMe(confirmAction.msgId);
+                                        else handleRecallMessage(confirmAction.msgId);
+                                        setConfirmAction(null);
+                                    }}
+                                    style={{
+                                        padding: '8px 16px', background: confirmAction.type === CHAT_ACTIONS.DELETE ? '#EF4444' : '#3B82F6',
+                                        color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500
+                                    }}
+                                >
+                                    {confirmAction.type === CHAT_ACTIONS.DELETE ? 'Xóa' : 'Thu hồi'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
-
-                <div className={styles.inputContainer}>
-                    <div className={styles.inputActions}>
-                        <button className={`${styles.iconBtn} ${styles.moreBtn}`} title="More">
-                            <MoreHorizontal size={20} />
-                        </button>
-
-                        {/* Input file cho tất cả loại file */}
-                        <input type="file" multiple ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
-                        {/* Input riêng cho ảnh/video */}
-                        <input type="file" multiple accept="image/*,video/*" ref={mediaInputRef} style={{ display: 'none' }} onChange={handleMediaChange} />
-
-                        <button type="button" className={`${styles.iconBtn} ${styles.desktopOnly}`} title="Đính kèm file" onClick={() => fileInputRef.current?.click()} disabled={isBlocked}>
-                            <Paperclip size={20} />
-                        </button>
-                        <button type="button" className={`${styles.iconBtn} ${styles.desktopOnly}`} title="Gửi ảnh/video" onClick={() => mediaInputRef.current?.click()} disabled={isBlocked}>
-                            <ImageIcon size={20} />
-                        </button>
-                        <button type="button" className={styles.iconBtn} title="Send emoji" disabled={isBlocked}>
-                            <Smile size={20} />
-                        </button>
-                    </div>
-
-                    <input
-                        id="chat-input"
-                        name="chat-input"
-                        type="text"
-                        className={styles.inputBox}
-                        placeholder={isBlocked ? 'Không thể gửi tin nhắn' : 'Type a message...'}
-                        value={message}
-                        onChange={e => setMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onPaste={handlePaste}
-                        disabled={!conversationId || isBlocked}
-                    />
-
-                    <button
-                        type="button"
-                        className={styles.sendBtn}
-                        title="Send message"
-                        onClick={handleSendMessage}
-                        disabled={!conversationId || isBlocked || (!message.trim() && files.length === 0)}
-                        style={{ opacity: (!conversationId || isBlocked || (!message.trim() && files.length === 0)) ? 0.5 : 1 }}
-                    >
-                        <Send size={16} />
-                    </button>
-                </div>
-            </div> {/* Đóng inputArea */}
-
-            {/* Confirm Overlay */}
-            {confirmAction && (
-                <div style={{
-                    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <div style={{
-                        background: '#fff', padding: 24, borderRadius: 12, width: 320, maxWidth: '90%',
-                        boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
-                    }}>
-                        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.125rem', color: '#111827' }}>
-                            Xác nhận {confirmAction.type === 'delete' ? 'xóa' : 'thu hồi'}
-                        </h3>
-                        <p style={{ margin: '0 0 20px 0', color: '#4B5563', fontSize: '0.9375rem' }}>
-                            {confirmAction.type === 'delete' 
-                                ? 'Bạn có chắc chắn muốn xóa tin nhắn này phía bạn?' 
-                                : 'Bạn có chắc chắn muốn thu hồi tin nhắn này? Mọi người sẽ không thấy nữa.'}
-                        </p>
-                        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                            <button
-                                onClick={() => setConfirmAction(null)}
-                                style={{
-                                    padding: '8px 16px', background: '#F3F4F6', color: '#4B5563',
-                                    border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500
-                                }}
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (confirmAction.type === 'delete') handleDeleteMessageForMe(confirmAction.msgId);
-                                    else handleRecallMessage(confirmAction.msgId);
-                                    setConfirmAction(null);
-                                }}
-                                style={{
-                                    padding: '8px 16px', background: confirmAction.type === 'delete' ? '#EF4444' : '#3B82F6',
-                                    color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500
-                                }}
-                            >
-                                {confirmAction.type === 'delete' ? 'Xóa' : 'Thu hồi'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
             </div> {/* End chatMain */}
 
             {/* Right Sidebar */}
-            <div className={styles.rightSidebar} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Thêm overlay cho mobile khi sidebar đang mở */}
+            {(isSearchMode || isShowConfigMenu || showMobileSidebar) && (
+                <div
+                    className={styles.mobileOnlyBtn} /* Lợi dụng class này để chỉ hiện trên mobile */
+                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }}
+                    onClick={() => {
+                        setIsSearchMode(false);
+                        setIsShowConfigMenu(false);
+                        setShowMobileSidebar(false);
+                    }}
+                />
+            )}
+            <div className={`${styles.rightSidebar} ${(isSearchMode || isShowConfigMenu || showMobileSidebar) ? styles.rightSidebarShow : ''}`} style={{ height: '100%' }}>
                 {isSearchMode ? (
                     <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -1119,7 +1315,7 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                                 <X size={20} />
                             </button>
                         </div>
-                        
+
                         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                             <input
                                 type="text"
@@ -1205,8 +1401,39 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                             ))}
                         </div>
                     </div>
+                ) : isShowConfigMenu ? (
+                    <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>Tùy chỉnh giao diện</h3>
+                            <button onClick={() => setIsShowConfigMenu(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>Đổi hình nền</label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '10px 16px', background: '#F3F4F6', borderRadius: 8, color: '#4B5563', fontSize: '0.875rem' }}>
+                                <ImageIcon size={18} /> Chọn ảnh nền...
+                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) updateThemeConfig(undefined, e.target.files[0]);
+                                }} />
+                            </label>
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>Đổi màu tin nhắn</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <input type="color" value={config.themeColor || '#0084ff'} onChange={(e) => updateThemeConfig(e.target.value)} style={{ width: 40, height: 40, padding: 0, border: 'none', cursor: 'pointer', borderRadius: '50%', overflow: 'hidden' }} />
+                                <span style={{ fontSize: '0.875rem', color: '#4B5563' }}>{config.themeColor || '#0084ff'}</span>
+                            </div>
+                        </div>
+
+                        <hr style={{ border: 'none', borderTop: '1px solid #E5E7EB', margin: '16px 0', width: '100%' }} />
+
+                        <ConversationMediaPanel conversationId={conversationId} />
+                    </div>
                 ) : (
-                    <>
+                    <div className={styles.rightSidebarDefault}>
                         {selectedUser.avatar ? (
                             <img src={selectedUser.avatar} alt="User Avatar" className={styles.rightSidebarAvatar} />
                         ) : (
@@ -1216,9 +1443,10 @@ export default function ChatArea({ selectedUser, onBack }: ChatAreaProps) {
                         )}
                         <div className={styles.rightSidebarName}>{selectedUser.fullName}</div>
                         {/* Dành cho các chức năng tương lai */}
-                    </>
+                    </div>
                 )}
             </div>
         </div>
     );
 }
+

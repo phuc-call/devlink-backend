@@ -22,6 +22,7 @@ public class MessageHistoryResponse {
     private String senderName;
     private String senderAvatar;
     private String content;
+    private com.devlink.chat_service.entity.enums.MessageType type;
     private boolean isRecalled;
     private LocalDateTime recalledAt;
     private LocalDateTime createdAt;
@@ -40,6 +41,7 @@ public class MessageHistoryResponse {
             String senderName,
             String senderAvatar,
             String content,
+            com.devlink.chat_service.entity.enums.MessageType type,
             boolean isRecalled,
             LocalDateTime recalledAt,
             LocalDateTime createdAt
@@ -50,6 +52,7 @@ public class MessageHistoryResponse {
         this.senderName = senderName;
         this.senderAvatar = senderAvatar;
         this.content = content;
+        this.type = type;
         this.isRecalled = isRecalled;
         this.recalledAt = recalledAt;
         this.createdAt = createdAt;

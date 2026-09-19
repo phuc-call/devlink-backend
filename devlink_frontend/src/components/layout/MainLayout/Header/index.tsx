@@ -1,3 +1,6 @@
+import { STORAGE_KEYS } from '../../../../constants/storage';
+import { ROLES } from '../../../../constants/roles';
+import { ROUTES } from '../../../../constants/routes';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { userProfileApi } from '../../../../api/user-service/userProfileApi.ts';
@@ -10,6 +13,7 @@ import { UserPlus, Users } from 'lucide-react';
 import { JoinGroupModal } from '../../../../features/post/components/ExploreModals';
 
 import { ChangePasswordModal } from '../../../../features/auth/components/ChangePasswordModal.tsx';
+import { clearAllLocalData } from '../../../../utils/auth.ts';
 
 const NAV_TABS = [
     { label: 'Phổ biến', path: '/' },
@@ -21,7 +25,7 @@ export default function Header() {
     const location = useLocation();
 
     const [user, setUser] = useState<UserProfileResponse | null>(null);
-    const isAdmin = localStorage.getItem('role') === 'ADMIN';
+    const isAdmin = localStorage.getItem(STORAGE_KEYS.ROLE) === ROLES.ADMIN;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -52,14 +56,8 @@ export default function Header() {
         } catch {
 
         } finally {
-
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('role');
-            localStorage.removeItem('username');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            navigate('/login');
+            await clearAllLocalData();
+            navigate(ROUTES.LOGIN);
         }
     };
 
@@ -122,7 +120,7 @@ export default function Header() {
                     </div>
                     {/* Add Group Icons */}
                     <div className={styles.groupIconsWrap}>
-                        <button title="Tạo nhóm mới" onClick={() => navigate('/groups/create')} className={styles.groupIconBtn}>
+                        <button title="Tạo nhóm mới" onClick={() => navigate(ROUTES.GROUPS_CREATE)} className={styles.groupIconBtn}>
                             <UserPlus size={18} />
                         </button>
                         <button title="Tham gia nhóm" onClick={() => setJoinGroupModal(true)} className={styles.groupIconBtn}>
@@ -145,7 +143,7 @@ export default function Header() {
                 <div className={styles.right}>
                     <NotificationBell />
 
-                    <button type="button" className={styles.iconBtn} title="Tin nhắn" onClick={() => navigate('/chat')}>
+                    <button type="button" className={styles.iconBtn} title="Tin nhắn" onClick={() => navigate(ROUTES.CHAT)}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -183,7 +181,7 @@ export default function Header() {
                                     Đổi mật khẩu
                                 </button>
                                 <button type="button" className={styles.dropItem}
-                                    onClick={() => { navigate('/profile/me'); setDropdownOpen(false); }}>
+                                    onClick={() => { navigate(ROUTES.PROFILE_ME); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                         <path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" strokeLinecap="round" />
                                         <path d="M3 18a7 7 0 0 1 14 0" strokeLinecap="round" />
@@ -191,7 +189,7 @@ export default function Header() {
                                     Trang cá nhân
                                 </button>
                                 <button type="button" className={styles.dropItem}
-                                    onClick={() => { navigate('/dashboard'); setDropdownOpen(false); }}>
+                                    onClick={() => { navigate(ROUTES.DASHBOARD); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                         <rect x="3" y="3" width="7" height="7" rx="1" />
                                         <rect x="10" y="3" width="7" height="7" rx="1" />
@@ -201,7 +199,7 @@ export default function Header() {
                                     Dashboard
                                 </button>
                                 <button type="button" className={styles.dropItem}
-                                    onClick={() => { navigate('/saved'); setDropdownOpen(false); }}>
+                                    onClick={() => { navigate(ROUTES.SAVED); setDropdownOpen(false); }}>
                                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                         <path d="M16 18l-6-4.5L4 18V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14z" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
@@ -209,7 +207,7 @@ export default function Header() {
                                 </button>
                                 {isAdmin && (
                                     <button type="button" className={styles.dropItem}
-                                        onClick={() => { navigate('/admin'); setDropdownOpen(false); }}>
+                                        onClick={() => { navigate(ROUTES.ADMIN); setDropdownOpen(false); }}>
                                         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                                             <path d="M10 2l1.6 3.2L15 6l-2.4 2.4L13.2 12 10 10.4 6.8 12l.6-3.6L5 6l3.4-.8L10 2z" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>

@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Client, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { STORAGE_KEYS, STORAGE_VALUES } from '../constants/storage';
+import { WS_SERVICES } from '../constants/wsChat';
 
 export type WsEvent = {
     eventType: string;
@@ -12,11 +14,16 @@ export const useWebSocket = (service: 'user' | 'post' | 'chat', topic: string, o
     const clientRef = useRef<Client | null>(null);
 
     useEffect(() => {
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === STORAGE_VALUES.LOGGED_IN_TRUE;
         if (!isLoggedIn) return;
 
         const baseUrl = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080';
-        const wsUrl = service === 'user' ? `${baseUrl}/ws-user` : service === 'post' ? `${baseUrl}/ws-post` : `${baseUrl}/ws-chat`;
+        const wsPath = service === 'user'
+            ? WS_SERVICES.USER
+            : service === 'post'
+                ? WS_SERVICES.POST
+                : WS_SERVICES.CHAT;
+        const wsUrl = `${baseUrl}${wsPath}`;
 
         const client = new Client({
             webSocketFactory: () => new SockJS(wsUrl),

@@ -1,3 +1,5 @@
+import { ROUTES } from '../../../constants/routes';
+import { AUTH_MESSAGES } from '../../../constants/messages';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../../../api/user-service/authApi.ts';
@@ -21,7 +23,7 @@ export default function ForgotPasswordPage() {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
         } else if (timeLeft === 0) {
-            setError('Mã OTP đã hết hạn, vui lòng gửi lại.');
+            setError(AUTH_MESSAGES.OTP_EXPIRED);
         }
         return () => clearInterval(timer);
     }, [step, timeLeft]);
@@ -34,9 +36,9 @@ export default function ForgotPasswordPage() {
             await authApi.forgotPasswordInit(email);
             setStep(2);
             setTimeLeft(300); // Reset timer on new init
-            setSuccess('Mã OTP đã được gửi đến email của bạn.');
+            setSuccess(AUTH_MESSAGES.OTP_SENT);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Không thể gửi email. Vui lòng kiểm tra lại.');
+            setError(err.response?.data?.message || AUTH_MESSAGES.EMAIL_SEND_FAILED);
         } finally {
             setLoading(false);
         }
@@ -48,19 +50,19 @@ export default function ForgotPasswordPage() {
         setSuccess('');
 
         if (newPassword !== confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp');
+            setError(AUTH_MESSAGES.PASSWORD_MISMATCH);
             return;
         }
 
         setLoading(true);
         try {
             await authApi.forgotPasswordReset({ email, otp, newPassword });
-            setSuccess('Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay bây giờ.');
+            setSuccess(AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS_FORGOT);
             setTimeout(() => {
-                navigate('/login');
+                navigate(ROUTES.LOGIN);
             }, 3000);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+            setError(err.response?.data?.message || AUTH_MESSAGES.ERROR_RETRY);
         } finally {
             setLoading(false);
         }
@@ -111,10 +113,10 @@ export default function ForgotPasswordPage() {
                             </p>
 
                             {error && <div className="error-box">{error}</div>}
-                            {success && timeLeft > 0 && !success.includes('Đổi mật khẩu thành công') && (
+                            {success && timeLeft > 0 && success !== AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS_FORGOT && (
                                 <div style={{ color: '#10b981', padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '6px', marginBottom: '16px' }}>{success}</div>
                             )}
-                            {success && success.includes('Đổi mật khẩu thành công') && (
+                            {success && success === AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS_FORGOT && (
                                 <div style={{ color: '#10b981', padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '6px', marginBottom: '16px' }}>{success}</div>
                             )}
 
@@ -154,7 +156,7 @@ export default function ForgotPasswordPage() {
                                     />
                                 </div>
 
-                                <button type="submit" className="btn-primary" disabled={loading || success.includes('Đổi mật khẩu thành công') || timeLeft === 0}>
+                                <button type="submit" className="btn-primary" disabled={loading || success === AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS_FORGOT || timeLeft === 0}>
                                     {loading ? 'Đang xử lý...' : 'Xác nhận đổi mật khẩu'}
                                 </button>
                                 

@@ -15,6 +15,7 @@ public class MessageResponse {
     private String senderName;
     private String senderAvatar;
     private String content;
+    private com.devlink.chat_service.entity.enums.MessageType type;
     private String clientTempId;
     private LocalDateTime createdAt;
 }

@@ -42,7 +42,9 @@ spring:
         batch.size: 32768
         spring.json.add.type.headers: true
         spring.json.type.mapping: >-
-          userProfileUpdated:com.devlink.user_service.dto.event.UserProfileUpdatedEvent
+          userProfileUpdated:com.devlink.user_service.dto.event.UserProfileUpdatedEvent,
+          friendshipCreated:com.devlink.user_service.dto.event.FriendshipCreatedEvent,
+          groupCreated:com.devlink.user_service.dto.event.GroupCreatedEvent
     consumer:
       group-id: user-service-group
       auto-offset-reset: earliest

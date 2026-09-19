@@ -1,8 +1,10 @@
 package com.devlink.chat_service.service.impl;
 
+import com.devlink.chat_service.config.Constants;
 import com.devlink.chat_service.entity.*;
 import com.devlink.chat_service.entity.enums.MediaType;
 import com.devlink.chat_service.repository.MediaConfigRepository;
+import com.devlink.chat_service.repository.ConversationMemberRepository;
 import com.devlink.chat_service.repository.MediaRepository;
 import com.devlink.chat_service.service.AsyncMediaUploadService;
 import com.devlink.chat_service.service.MediaConfigService;
@@ -21,6 +23,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.util.*;
 
 @Service
@@ -29,60 +32,62 @@ import java.util.*;
 public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
     private final MinioClient minioClient;
     private final MediaRepository mediaRepository;
+    private final ConversationMemberRepository conversationMemberRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final MediaConfigService mediaConfigService;
     private final Tika tika = new Tika();
 
     @Value("${minio.bucket:devlink-media}")
     private String bucketName;
-    @Value("${websocket.queue-messages:/queue/messages}")
-    private String wsQueueMessages;
-    @Value("${websocket.queue-errors:/queue/errors}")
-    private String wsQueueErrors;
+    // WS topics: dùng Constants thay vì @Value hard-code
 
     @Override
     public void processAndUploadFiles(List<MultipartFile> files,
-                                      Message message,
-                                      Conversation conversation,
-                                      User uploader,
-                                      Long receiverId){
-        if(files==null||files.isEmpty()) return;
+            Message message,
+            Conversation conversation,
+            User uploader,
+            Long receiverId) {
+        if (files == null || files.isEmpty())
+            return;
         // Tika đọc nội dung thực của file
         Map<MediaType, List<FileContext>> groupedFiles = new EnumMap<>(MediaType.class);
-        for(MultipartFile file:files){
-            if(file.isEmpty()) continue;
-            try{
+        for (MultipartFile file : files) {
+            if (file.isEmpty())
+                continue;
+            try {
                 String realMimeType;
                 try (InputStream is = file.getInputStream()) {
                     realMimeType = tika.detect(is);
                 }
                 MediaType type = toMediaType(realMimeType);
-                groupedFiles.computeIfAbsent(type, k->new ArrayList<>())
-                        .add(new FileContext(file,realMimeType));
+                groupedFiles.computeIfAbsent(type, k -> new ArrayList<>())
+                        .add(new FileContext(file, realMimeType));
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.error("Failed to detect MIME type: {}", file.getOriginalFilename(), e);
             }
 
         }
-        //validation từng nhóm
-        for (Map.Entry<MediaType, List<FileContext>>entry:groupedFiles.entrySet()){
-            MediaType mediaType=entry.getKey();
-            List<FileContext> typeFiles=entry.getValue();
-            MediaConfig config=mediaConfigService.getConfig(mediaType);
+        // validation từng nhóm
+        for (Map.Entry<MediaType, List<FileContext>> entry : groupedFiles.entrySet()) {
+            MediaType mediaType = entry.getKey();
+            List<FileContext> typeFiles = entry.getValue();
+            MediaConfig config = mediaConfigService.getConfig(mediaType);
             if (config.getMaxCountPerMsg() != null && typeFiles.size() > config.getMaxCountPerMsg()) {
                 sendError(uploader.getId(),
-                        "Số lượng " + mediaType + " vượt giới hạn (tối đa " + config.getMaxCountPerMsg() + " file/tin nhắn).");
+                        "Số lượng " + mediaType + " vượt giới hạn (tối đa " + config.getMaxCountPerMsg()
+                                + " file/tin nhắn).");
                 continue;
             }
-            if(config.getMaxTotalSizeMb()!=null){
-                long totalBytes=0;
-                for(FileContext fc: typeFiles){
-                    totalBytes= fc.file().getSize();
+            if (config.getMaxTotalSizeMb() != null) {
+                long totalBytes = 0;
+                for (FileContext fc : typeFiles) {
+                    totalBytes = fc.file().getSize();
                 }
-                if(totalBytes>config.getMaxTotalSizeMb()* 1024L * 1024L){
+                if (totalBytes > config.getMaxTotalSizeMb() * 1024L * 1024L) {
                     sendError(uploader.getId(),
-                            "Tổng dung lượng " + mediaType + " vượt quá " + config.getMaxTotalSizeMb() + "MB/tin nhắn.");
+                            "Tổng dung lượng " + mediaType + " vượt quá " + config.getMaxTotalSizeMb()
+                                    + "MB/tin nhắn.");
                     continue;
                 }
             }
@@ -92,19 +97,21 @@ public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
 
         }
     }
+
     private void processOneFile(FileContext fc, MediaType type, int countInGroup,
-                                MediaConfig config, Message message, Conversation conversation,
-                                User uploader, Long receiverId) {
+            MediaConfig config, Message message, Conversation conversation,
+            User uploader, Long receiverId) {
         MultipartFile file = fc.file();
         String realMimeType = fc.mimeType();
         try {
             // Validate: Kích thước mỗi file
             if (file.getSize() > config.getMaxSizeMb() * 1024L * 1024L) {
                 sendError(uploader.getId(),
-                        "File \"" + file.getOriginalFilename() + "\" quá lớn (tối đa " + config.getMaxSizeMb() + "MB).");
+                        "File \"" + file.getOriginalFilename() + "\" quá lớn (tối đa " + config.getMaxSizeMb()
+                                + "MB).");
                 return;
             }
-            //Độ phân giải ảnh co giãn theo số lượng
+            // Độ phân giải ảnh co giãn theo số lượng
             int width = 0;
             int height = 0;
             if (type == MediaType.IMAGE) {
@@ -116,7 +123,8 @@ public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
                         int maxRes = (countInGroup == 1) ? 4000 : (countInGroup <= 5) ? 2000 : 1000;
                         if (width > maxRes || height > maxRes) {
                             sendError(uploader.getId(),
-                                    "Ảnh \"" + file.getOriginalFilename() + "\" vượt độ phân giải cho phép (" + maxRes + "x" + maxRes + "px).");
+                                    "Ảnh \"" + file.getOriginalFilename() + "\" vượt độ phân giải cho phép (" + maxRes
+                                            + "x" + maxRes + "px).");
                             return;
                         }
                     }
@@ -131,8 +139,7 @@ public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
                                 .object(fileName)
                                 .stream(inputStream, file.getSize(), -1)
                                 .contentType(realMimeType) // Dùng MIME type thật từ Tika
-                                .build()
-                );
+                                .build());
             }
             String fileUrl = "/" + bucketName + "/" + fileName;
             // Lưu vào bảng media
@@ -148,24 +155,65 @@ public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
                     .durationSeconds(0)
                     .build());
             log.info("Upload success [{}]: {}", type, fileUrl);
-            // Notify người nhận qua WebSocket
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(receiverId), wsQueueMessages + "/media", media
-            );
+            // Notify qua WebSocket
+            List<ConversationMember> members = conversationMemberRepository.findByConversationId(conversation.getId());
+            for (ConversationMember member : members) {
+                messagingTemplate.convertAndSend(
+                        Constants.WS_QUEUE_MESSAGES_MEDIA + "/" + member.getUser().getId(),
+                        media);
+            }
         } catch (Exception e) {
             log.error("Error processing file: {}", file.getOriginalFilename(), e);
             sendError(uploader.getId(), "Lỗi hệ thống khi tải lên: " + file.getOriginalFilename());
         }
     }
-    //map sang MediaType của hệ thống
+
+    @Override
+    public String uploadFile(byte[] fileBytes, String originalFilename, String mimeType) {
+        try {
+            String realMimeType;
+            try (InputStream is = new ByteArrayInputStream(fileBytes)) {
+                realMimeType = tika.detect(is);
+            } catch (Exception e) {
+                realMimeType = mimeType != null ? mimeType : Constants.APPLICATION_OCTET_STREAM;
+            }
+
+            String fileName = UUID.randomUUID() + "_" + originalFilename;
+
+            try (InputStream inputStream = new ByteArrayInputStream(fileBytes)) {
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(fileName)
+                                .stream(inputStream, fileBytes.length, -1)
+                                .contentType(realMimeType)
+                                .build());
+            }
+
+            return "/" + bucketName + "/" + fileName;
+        } catch (Exception e) {
+            log.error("Error uploading file", e);
+            throw new RuntimeException("MinIO upload failed", e);
+        }
+    }
+
+    // map sang MediaType của hệ thống
     private MediaType toMediaType(String mimeType) {
-        if (mimeType.startsWith("image/")) return MediaType.IMAGE;
-        if (mimeType.startsWith("video/")) return MediaType.VIDEO;
+        if (mimeType.startsWith("image/"))
+            return MediaType.IMAGE;
+        if (mimeType.startsWith("video/"))
+            return MediaType.VIDEO;
         return MediaType.FILE;
     }
+
     private void sendError(Long userId, String errorMessage) {
         log.warn("Upload error [User {}]: {}", userId, errorMessage);
-        messagingTemplate.convertAndSendToUser(String.valueOf(userId), wsQueueErrors, errorMessage);
+        // topic: /queue/errors/{userId}
+        messagingTemplate.convertAndSend(
+                Constants.WS_QUEUE_ERRORS + "/" + userId,
+                errorMessage);
     }
-    private record FileContext(MultipartFile file, String mimeType) {}
+
+    private record FileContext(MultipartFile file, String mimeType) {
+    }
 }

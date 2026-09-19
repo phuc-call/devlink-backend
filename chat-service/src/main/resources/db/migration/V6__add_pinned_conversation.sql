@@ -1,0 +1,1 @@
+ALTER TABLE conversation_members ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE, ADD COLUMN pinned_at DATETIME(6);

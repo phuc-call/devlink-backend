@@ -60,6 +60,13 @@ public class ConversationMember {
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
 
+    @Column(name = "is_pinned", nullable = false)
+    @Builder.Default
+    private boolean isPinned = false;
+
+    @Column(name = "pinned_at")
+    private LocalDateTime pinnedAt;
+
     @CreationTimestamp
     @Column(name = "joined_at", updatable = false)
     private LocalDateTime joinedAt;

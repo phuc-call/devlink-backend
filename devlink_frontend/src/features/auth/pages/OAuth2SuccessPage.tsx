@@ -1,5 +1,7 @@
+import { STORAGE_KEYS, STORAGE_VALUES } from '../../../constants/storage';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../constants/routes';
 
 export default function OAuth2SuccessPage() {
     const navigate = useNavigate();
@@ -11,18 +13,18 @@ export default function OAuth2SuccessPage() {
         const role = params.get('role');
 
         if (userId && username && role) {
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userId', userId);
-            localStorage.setItem('role', role);
-            localStorage.setItem('username', username);
+            localStorage.setItem(STORAGE_KEYS.IS_LOGGED_IN, STORAGE_VALUES.LOGGED_IN_TRUE);
+            localStorage.setItem(STORAGE_KEYS.USER_ID, userId);
+            localStorage.setItem(STORAGE_KEYS.ROLE, role);
+            localStorage.setItem(STORAGE_KEYS.USERNAME, username);
             // Default exp: now + 15 mins (match backend token expiry config)
-            localStorage.setItem('accessTokenExp', (Date.now() + 15 * 60 * 1000).toString());
+            localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN_EXP, (Date.now() + 15 * 60 * 1000).toString());
             // Tokens are managed by HttpOnly cookies
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            navigate('/');
+            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+            navigate(ROUTES.HOME);
         } else {
-            navigate('/login');
+            navigate(ROUTES.LOGIN);
         }
     }, [navigate]);
 

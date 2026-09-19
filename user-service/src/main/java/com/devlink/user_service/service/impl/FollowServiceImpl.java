@@ -45,6 +45,7 @@ public class    FollowServiceImpl implements FollowService {
     private final NotificationServiceImpl notificationService;
 
     private final UserBlockService userBlockService;
+    private final org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public void followUser(Long userId) {
@@ -74,6 +75,11 @@ public class    FollowServiceImpl implements FollowService {
             userProfileRepository.increaseFollowingCount(currentUserId);
             //announcement
             notificationService.followAnnouncement(currentUserId, userId, NotificationType.FOLLOW_BACK);
+            
+            // Fire Kafka event
+            kafkaTemplate.send("friendship-created", String.valueOf(currentUserId), 
+                new com.devlink.user_service.dto.event.FriendshipCreatedEvent(currentUserId, userId));
+
         } else if (Boolean.FALSE.equals(targetUser.getFollowRequestMode())) {
             // Auto 2 A→B + B→A
             followRepository.save(Follow.builder()
@@ -91,6 +97,10 @@ public class    FollowServiceImpl implements FollowService {
             //announcement
             notificationService.followAnnouncement(currentUserId, userId,NotificationType.FOLLOW);
 
+            // Fire Kafka event
+            kafkaTemplate.send("friendship-created", String.valueOf(currentUserId), 
+                new com.devlink.user_service.dto.event.FriendshipCreatedEvent(currentUserId, userId));
+
         } else {
 
             followRepository.save(Follow.builder()
@@ -101,6 +111,10 @@ public class    FollowServiceImpl implements FollowService {
             userProfileRepository.increaseFollowingCount(currentUserId);     // A +1 following
             //announcement
             notificationService.followAnnouncement(currentUserId, userId,NotificationType.FOLLOW_REQUEST);
+
+            // Fire Kafka event
+            kafkaTemplate.send("friendship-created", String.valueOf(currentUserId), 
+                new com.devlink.user_service.dto.event.FriendshipCreatedEvent(currentUserId, userId));
         }
     }
 

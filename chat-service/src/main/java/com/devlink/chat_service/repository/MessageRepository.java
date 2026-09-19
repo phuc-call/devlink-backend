@@ -21,6 +21,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             m.sender.fullName,
             m.sender.avatarUrl,
             CASE WHEN m.isRecalled = true THEN 'Tin nhắn đã bị thu hồi' ELSE m.content END,
+            m.type,
             m.isRecalled,
             m.recalledAt,
             m.createdAt
@@ -43,7 +44,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
         SELECT new com.devlink.chat_service.dto.reponse.MessageHistoryResponse(
             m.id, m.conversation.id, m.sender.id, m.sender.fullName, m.sender.avatarUrl,
-            m.content, m.isRecalled, m.recalledAt, m.createdAt
+            m.content, m.type, m.isRecalled, m.recalledAt, m.createdAt
         )
         FROM Message m
         WHERE m.conversation.id = :conversationId
@@ -62,4 +63,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             @Param("keyword") String keyword,
             @Param("currentUserId") Long currentUserId
     );
+
+    @Query("SELECT MAX(m.id) FROM Message m WHERE m.conversation.id = :conversationId")
+    java.util.Optional<Long> findMaxMessageIdByConversationId(@Param("conversationId") Long conversationId);
 }

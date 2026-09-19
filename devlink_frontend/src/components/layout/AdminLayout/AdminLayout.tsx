@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { userProfileApi } from '../../../api/user-service/userProfileApi';
 import type { UserProfileResponse } from '../../../types/profile.types';
+import { clearAllLocalData } from '../../../utils/auth';
 import {
     LayoutDashboard,
     Users,
@@ -88,8 +89,12 @@ export default function AdminLayout() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem('accessToken');
+    const handleLogout = async () => {
+        try {
+            await clearAllLocalData();
+        } catch (err) {
+            // ignore
+        }
         navigate('/login', { replace: true });
     };
 

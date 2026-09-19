@@ -13,7 +13,7 @@ services:
   post-db:
     image: mysql:8.0
     container_name: post-db
-    mem_limit: 256m
+
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: post_db
@@ -33,7 +33,7 @@ services:
   chat-db:
     image: mysql:8.0
     container_name: chat-db
-    mem_limit: 256m
+
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: chat_db
@@ -54,7 +54,7 @@ services:
   user-db:
     image: mysql:8.0
     container_name: user-db
-    mem_limit: 256m
+
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: user_db
@@ -82,7 +82,7 @@ services:
       - microservice-net
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     mem_limit: 256m
     container_name: minio
     ports:

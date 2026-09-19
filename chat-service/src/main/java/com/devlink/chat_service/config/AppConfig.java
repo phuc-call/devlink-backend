@@ -49,35 +49,26 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 @EnableWebSocketMessageBroker
 public class AppConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Value("${websocket.endpoint:/ws-chat}")
-    private String wsEndpoint;
-
-    @Value("${websocket.broker-user-prefix:/user}")
-    private String wsBrokerUserPrefix;
-
-    @Value("${websocket.app-prefix:/app}")
-    private String wsAppPrefix;
-
-    @Value("${websocket.queue-messages:/queue/messages}")
-    private String wsQueueMessages;
-
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker(wsBrokerUserPrefix, wsQueueMessages);
-        config.setApplicationDestinationPrefixes(wsAppPrefix);
-        config.setUserDestinationPrefix(wsBrokerUserPrefix);
+        // Dùng Constants — không hard-code chuỗi ở đây
+        config.enableSimpleBroker(
+                Constants.WS_BROKER_USER_PREFIX,
+                Constants.WS_QUEUE_MESSAGES
+        );
+        config.setApplicationDestinationPrefixes(Constants.WS_APP_PREFIX);
+        config.setUserDestinationPrefix(Constants.WS_BROKER_USER_PREFIX);
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint(wsEndpoint)
+        registry.addEndpoint(Constants.WS_ENDPOINT)
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(new HandshakeInterceptor() {
                     @Override
                     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-                        if (request instanceof ServletServerHttpRequest) {
-                            ServletServerHttpRequest servletRequest = (ServletServerHttpRequest) request;
+                        if (request instanceof ServletServerHttpRequest servletRequest) {
                             String userId = servletRequest.getServletRequest().getHeader("X-User-Id");
                             if (userId != null) {
                                 attributes.put("userId", userId);
@@ -92,15 +83,18 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
                 })
                 .setHandshakeHandler(new org.springframework.web.socket.server.support.DefaultHandshakeHandler() {
                     @Override
-                    protected java.security.Principal determineUser(org.springframework.http.server.ServerHttpRequest request, org.springframework.web.socket.WebSocketHandler wsHandler, java.util.Map<String, Object> attributes) {
+                    protected java.security.Principal determineUser(
+                            org.springframework.http.server.ServerHttpRequest request,
+                            org.springframework.web.socket.WebSocketHandler wsHandler,
+                            java.util.Map<String, Object> attributes) {
                         String userId = (String) attributes.get("userId");
                         if (userId != null) {
                             return () -> userId;
                         }
                         return super.determineUser(request, wsHandler, attributes);
                     }
-                })
-                .withSockJS(); // Fallback option
+                });
+
     }
 
     @Bean

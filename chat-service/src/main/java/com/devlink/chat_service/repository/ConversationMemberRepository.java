@@ -18,9 +18,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
 
     Optional<ConversationMember> findByConversationAndUser(Conversation conversation, User user);
 
-    /**
-     * Tìm member còn lại trong conversation 1-1 (người không phải currentUserId).
-     */
+
     @Query("""
             SELECT cm FROM ConversationMember cm
             WHERE cm.conversation.id = :conversationId
@@ -33,4 +31,11 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     List<ConversationMember> findByConversationId(Long conversationId);
 
     boolean existsByConversationIdAndUserId(Long conversationId, Long userId);
+
+
+    @Query("SELECT cm.user.avatarUrl FROM ConversationMember cm WHERE cm.conversation.id = :conversationId")
+    List<String> findTop4AvatarUrlsByConversationId(@Param("conversationId") Long conversationId, org.springframework.data.domain.Pageable pageable);
+    long countByUserIdAndIsPinnedTrue(Long userId);
+
+    Optional<ConversationMember> findByConversationIdAndUserId(Long conversationId, Long userId);
 }

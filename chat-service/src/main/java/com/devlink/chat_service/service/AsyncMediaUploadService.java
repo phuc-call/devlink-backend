@@ -13,4 +13,6 @@ public interface AsyncMediaUploadService {
                                Conversation conversation,
                                User uploader,
                                Long receiverId);
+
+    String uploadFile(byte[] fileBytes, String originalFilename, String mimeType);
 }

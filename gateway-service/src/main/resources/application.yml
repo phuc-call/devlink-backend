@@ -129,6 +129,22 @@ spring:
                 - name: JwtAuthFilter
                 - name: LoggingFilter
 
+            # chat-service message sending specific rate limit
+            - id: chat-service-messages
+              uri: lb://chat-service
+              predicates:
+                - Path=/api/chat/messages
+                - Method=POST
+              filters:
+                - name: JwtAuthFilter
+                - name: LoggingFilter
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@userKeyResolver}"
+
             # chat-service
             - id: chat-service
               uri: lb://chat-service

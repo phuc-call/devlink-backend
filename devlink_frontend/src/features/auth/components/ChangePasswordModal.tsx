@@ -1,3 +1,5 @@
+import { STORAGE_KEYS } from '../../../constants/storage';
+import { AUTH_MESSAGES } from '../../../constants/messages';
 import { useState } from 'react';
 import { authApi } from '../../../api/user-service/authApi.ts';
 import { useNavigate } from 'react-router-dom';
@@ -17,28 +19,28 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         setSuccess('');
 
         if (newPassword !== confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp');
+            setError(AUTH_MESSAGES.PASSWORD_MISMATCH);
             return;
         }
 
         setLoading(true);
         try {
             await authApi.changePassword({ currentPassword, newPassword });
-            setSuccess('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+            setSuccess(AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS);
             
             // Xóa session ở client và chuyển về login
             setTimeout(() => {
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('role');
-                localStorage.removeItem('username');
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
+                localStorage.removeItem(STORAGE_KEYS.IS_LOGGED_IN);
+                localStorage.removeItem(STORAGE_KEYS.USER_ID);
+                localStorage.removeItem(STORAGE_KEYS.ROLE);
+                localStorage.removeItem(STORAGE_KEYS.USERNAME);
+                localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
                 navigate('/login');
             }, 2000);
             
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+            setError(err.response?.data?.message || AUTH_MESSAGES.ERROR_RETRY);
         } finally {
             setLoading(false);
         }

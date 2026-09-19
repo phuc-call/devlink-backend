@@ -1,3 +1,4 @@
+import { SESSION_KEYS } from '../../../constants/storage';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EyeOff, Bell, MessageSquare, FileText, Lock } from 'lucide-react';
@@ -16,7 +17,7 @@ export default function HiddenContentPage() {
 
     useEffect(() => {
         // Check if unlocked
-        const isUnlocked = sessionStorage.getItem('hidden_unlocked');
+        const isUnlocked = sessionStorage.getItem(SESSION_KEYS.HIDDEN_UNLOCKED);
         if (!isUnlocked) {
             navigate('/notifications');
             return;
@@ -38,7 +39,7 @@ export default function HiddenContentPage() {
     };
 
     const lockAgain = () => {
-        sessionStorage.removeItem('hidden_unlocked');
+        sessionStorage.removeItem(SESSION_KEYS.HIDDEN_UNLOCKED);
         navigate('/notifications');
     };
 

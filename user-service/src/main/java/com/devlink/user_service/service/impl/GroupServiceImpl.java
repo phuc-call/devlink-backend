@@ -1,6 +1,7 @@
 package com.devlink.user_service.service.impl;
 
 import com.devlink.user_service.common.UserHelper;
+import com.devlink.user_service.dto.event.GroupCreatedEvent;
 import com.devlink.user_service.dto.request.CreateGroupRequest;
 import com.devlink.user_service.dto.request.InviteCodeGroupRequest;
 import com.devlink.user_service.dto.request.UpdateGroupRequest;
@@ -41,6 +42,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserProfileRepository userProfileRepository;
     private final UserHelper userHelper;
     private final FileStorageService fileStorageService;
+    private final org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public String uploadGroupCover(MultipartFile file) {
@@ -103,6 +105,20 @@ public class GroupServiceImpl implements GroupService {
         }
 
         groupMemberRepository.saveAll(membersToSave);
+
+        List<Long> allMemberIds = new ArrayList<>(validMemberIds);
+        allMemberIds.add(currentUserId);
+
+        // Fire Kafka Event group-created
+        kafkaTemplate.send("group-created", String.valueOf(savedGroup.getId()), 
+            new GroupCreatedEvent(
+                savedGroup.getId(), 
+                savedGroup.getName(), 
+                savedGroup.getCoverImage(), 
+                allMemberIds, 
+                currentUserId
+            )
+        );
 
         return GroupResponse.builder()
                 .id(savedGroup.getId())
