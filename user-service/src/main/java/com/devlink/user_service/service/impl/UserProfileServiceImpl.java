@@ -36,6 +36,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import com.devlink.user_service.config.WsEventConstants;
+import com.devlink.user_service.service.WebSocketEventPublisher;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -57,6 +59,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserBlockRepository userBlockRepository;
     private final FileStorageService fileStorageService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     private final RestTemplate restTemplate;
     private final ModelMapper modelMapper;
@@ -124,6 +127,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         // Bắn event để post-service đồng bộ UserProfile cục bộ
         publishProfileUpdatedEvent(user.getId(), savedProfile);
 
+        // Push WebSocket xuống frontend để UI cập nhật tên hiển thị ngay lập tức
+        webSocketEventPublisher.publishUserEvent(user.getId(), WsEventConstants.PROFILE_UPDATED, savedProfile.getFullName());
+
         return buildProfileResponse(savedProfile, config);
     }
 
@@ -142,6 +148,9 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         // Bắn event để post-service đồng bộ avatar mới
         publishProfileUpdatedEvent(user.getId(), userProfile);
+
+        // Push WebSocket xuống frontend để UI cập nhật avatar ngay (không cần F5)
+        webSocketEventPublisher.publishUserEvent(user.getId(), WsEventConstants.AVATAR_UPDATED, avatarUrl);
 
         return avatarUrl;
     }
@@ -407,7 +416,6 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     /**
      * Bắn Kafka event để post-service đồng bộ thông tin profile cục bộ.
-     * Language lấy từ favoriteLanguage đầu tiên (nếu có).
      */
     private void publishProfileUpdatedEvent(Long userId, UserProfile profile) {
         try {

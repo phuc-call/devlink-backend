@@ -65,3 +65,18 @@ export const userProfileApi = {
     getUserOverview: () =>
         axiosInstance.get<{data: UserOverviewResponse}>('/api/users/overview/me'),
 };
+
+export async function getUserInfoById(
+    userId: number
+): Promise<{ userName: string; avatar: string | null } | null> {
+    try {
+        const res = await fetch(
+            `${import.meta.env.VITE_API_GATEWAY_URL}/api/users/${userId}/name`,
+            { credentials: 'include' }
+        );
+        const json = await res.json();
+        return json.data ?? null;
+    } catch {
+        return null;
+    }
+}

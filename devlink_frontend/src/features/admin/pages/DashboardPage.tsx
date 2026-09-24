@@ -4,8 +4,7 @@ import {
     MessageSquare, Eye, Activity,
 } from 'lucide-react';
 import { SectionPlaceholder } from '../components/PagePlaceholder';
-import SuggestionOverviewChart from '../components/SuggestionOverviewChart';
-import TemplateOverviewSection from '../components/TemplateOverviewSection';
+
 import BadgeOverviewChart from '../components/BadgeOverviewChart';
 
 interface StatCardProps {
@@ -72,12 +71,15 @@ export default function DashboardPage() {
             {/* ── Badge Overview: donut chart, click → /admin/badges?badge=... ── */}
             <BadgeOverviewChart />
 
-            {/* ── Template Overview: stat cards + charts + items table ── */}
-            <TemplateOverviewSection />
-
             {/* ── Main grid: chart + recent ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-                <SuggestionOverviewChart />
+                <SectionPlaceholder
+                    tag="Thống kê"
+                    title="Tổng quan hoạt động"
+                    description="Biểu đồ thống kê hoạt động hệ thống theo thời gian."
+                    height={280}
+                    icon={<Activity size={32}/>}
+                />
                 <SectionPlaceholder
                     tag="Thống kê nhanh"
                     title="Top metrics hôm nay"

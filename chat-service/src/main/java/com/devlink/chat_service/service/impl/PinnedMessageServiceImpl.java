@@ -4,6 +4,7 @@ import com.devlink.chat_service.dto.reponse.PinMessageResponse;
 import com.devlink.chat_service.entity.Message;
 import com.devlink.chat_service.entity.PinnedMessage;
 import com.devlink.chat_service.entity.User;
+import com.devlink.chat_service.entity.enums.TargetType;
 import com.devlink.chat_service.repository.MessageRepository;
 import com.devlink.chat_service.repository.PinnedMessageRepository;
 import com.devlink.chat_service.repository.UserRepository;
@@ -22,6 +23,11 @@ import java.util.stream.Collectors;
 import com.devlink.chat_service.exception.AppException;
 import com.devlink.chat_service.exception.ErrorCode;
 import com.devlink.chat_service.repository.ConversationMemberRepository;
+import com.devlink.chat_service.repository.ItemDeletionRepository;
+import com.devlink.chat_service.repository.MediaRepository;
+import com.devlink.chat_service.repository.AttachmentRepository;
+import com.devlink.chat_service.dto.reponse.MediaResponse;
+import com.devlink.chat_service.dto.reponse.AttachmentResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +36,9 @@ public class PinnedMessageServiceImpl implements PinnedMessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ConversationMemberRepository conversationMemberRepository;
+    private final ItemDeletionRepository itemDeletionRepository;
+    private final MediaRepository mediaRepository;
+    private final AttachmentRepository attachmentRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final int MAX_PINNED_PER_CONVERSATION = 5;
@@ -50,7 +59,15 @@ public class PinnedMessageServiceImpl implements PinnedMessageService {
         if (!isMember) {
             throw new AppException(ErrorCode.NOT_A_MEMBER);
         }
+        if(message.isRecalled()) {
+            throw new AppException(ErrorCode.MESSAGE_ALREADY_RECALLED);
+        }
 
+        boolean isDeletedOnMySide = itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(
+                messageId, TargetType.MESSAGE, currentUserId);
+        if (isDeletedOnMySide) {
+            throw new AppException(ErrorCode.MESSAGE_ALREADY_DELETED_BY_YOU);
+        }
         boolean alreadyPinned = pinnedMessageRepository
                 .existsByConversationIdAndMessageId(conversationId, messageId);
         if (alreadyPinned) {
@@ -106,10 +123,15 @@ public class PinnedMessageServiceImpl implements PinnedMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<PinMessageResponse> getPinMessages(Long conversationId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         List<PinnedMessage> pinnedMessages = pinnedMessageRepository
                 .findByConversationIdOrderByPinnedAtDesc(conversationId);
                 
         return pinnedMessages.stream()
+                .filter(pm -> !itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(
+                        pm.getMessage().getId(), 
+                        TargetType.MESSAGE,
+                        currentUserId))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -117,6 +139,31 @@ public class PinnedMessageServiceImpl implements PinnedMessageService {
     private PinMessageResponse mapToResponse(PinnedMessage pinnedMessage) {
         Message msg = pinnedMessage.getMessage();
         User sender = msg.getSender();
+        
+        MediaResponse media = mediaRepository.findByMessageId(msg.getId()).stream()
+                .map(m -> MediaResponse.builder()
+                        .id(m.getId())
+                        .mediaType(m.getMediaType())
+                        .fileUrl(m.getFileUrl())
+                        .thumbnailUrl(m.getThumbnailUrl())
+                        .durationSeconds(m.getDurationSeconds())
+                        .width(m.getWidth())
+                        .height(m.getHeight())
+                        .fileSize(m.getFileSize())
+                        .build())
+                .findFirst()
+                .orElse(null);
+
+        AttachmentResponse attachment = attachmentRepository.findByMessageId(msg.getId()).stream()
+                .map(a -> AttachmentResponse.builder()
+                        .id(a.getId())
+                        .fileUrl(a.getFileUrl())
+                        .fileType(a.getFileType())
+                        .fileSize(a.getFileSize())
+                        .build())
+                .findFirst()
+                .orElse(null);
+                
         return PinMessageResponse.builder()
                 .id(pinnedMessage.getId())
                 .messageId(msg.getId())
@@ -125,6 +172,8 @@ public class PinnedMessageServiceImpl implements PinnedMessageService {
                 .senderName(sender.getFullName())
                 .senderAvatar(sender.getAvatarUrl())
                 .conversationId(String.valueOf(pinnedMessage.getConversation().getId()))
+                .media(media)
+                .attachment(attachment)
                 .build();
     }
 }

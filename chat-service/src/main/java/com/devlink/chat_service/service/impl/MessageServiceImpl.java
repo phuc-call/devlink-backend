@@ -44,6 +44,7 @@ public class MessageServiceImpl implements MessageService {
         private final ItemDeletionRepository itemDeletionRepository;
         private final AttachmentRepository attachmentRepository;
         private final MediaRepository mediaRepository;
+        private final com.devlink.chat_service.repository.PinnedMessageRepository pinnedMessageRepository;
 
         @Value("${chat.pagination.min-limit}")
         private int minLimit;
@@ -112,8 +113,7 @@ public class MessageServiceImpl implements MessageService {
                         asyncMediaUploadService.processAndUploadFiles(
                                         request.getFiles(), message, conversation, sender, receiverId // Keep receiverId
                                                                                                       // for
-                                                                                                      // notification
-                                                                                                      // logic if needed
+                                                                                                      // notificatio// logic if needed
                         );
                 }
 
@@ -147,6 +147,15 @@ public class MessageServiceImpl implements MessageService {
                 message.setRecalled(true);
                 message.setRecalledAt(LocalDateTime.now());
                 messageRepository.save(message);
+
+                // Auto-delete pinned message if this message is pinned
+                pinnedMessageRepository.findByMessageId(messageId).ifPresent(pm -> {
+                    pinnedMessageRepository.delete(pm);
+                    messagingTemplate.convertAndSend(
+                        com.devlink.chat_service.config.Constants.TOPIC_CHAT_READ_PREFIX.replace("read", "unpinned") + message.getConversation().getId(),
+                        pm.getId()
+                    );
+                });
 
                 MessageRecallResponse wsResponse = MessageRecallResponse.builder()
                                 .action("RECALL_MESSAGE")

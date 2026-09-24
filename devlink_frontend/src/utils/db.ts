@@ -28,6 +28,8 @@ export interface LocalPinnedMessage {
   senderName: string;
   senderAvatar: string;
   createdAt: string;
+  media?: any;
+  attachment?: any;
 }
 
 export interface LocalConversationConfig {

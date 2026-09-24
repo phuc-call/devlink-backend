@@ -28,8 +28,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(Constants.getPublicEndpoints()).permitAll()
-                        .requestMatchers("/api/posts/admin/**", "/api/templates/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/posts/**", "/api/templates/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/posts/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/posts/**").hasAnyRole("USER", "ADMIN")
 
                         .anyRequest().authenticated()
                 )

@@ -24,7 +24,6 @@ import MyViolationsPage from '../features/notification/pages/MyViolationsPage/My
 import ProfileLayout from '../components/layout/ProfileLayout/ProfileLayout';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 import UserProfilePage from '../features/profile/pages/UserProfilePage/Userprofilepage.tsx';
-import MyTemplatesPage from '../features/post/pages/MyTemplatesPage/MyTemplatesPage';
 import MyGroupsPage from '../features/post/pages/MyGroupsPage/MyGroupsPage';
 import GroupsFeedPage from '../features/post/pages/GroupsFeedPage';
 import UserDashboardPage from '../features/dashboard/pages/UserDashboardPage/UserDashboardPage';
@@ -34,7 +33,6 @@ import DashboardPage from '../features/admin/pages/DashboardPage';
 import AdminPostsPage from '../features/admin/pages/AdminPostsPage';
 import AdminUsersPage from '../features/admin/pages/AdminUsersPage';
 import AdminBadgePage from '../features/admin/pages/AdminBadgePage';
-import AdminTemplatesPage from '../features/admin/pages/AdminTemplatesPage';
 import AdminCommentsPage from '../features/admin/pages/AdminCommentsPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAnalyticsPage from '../features/admin/pages/AdminAnalyticsPage';
@@ -42,7 +40,6 @@ import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import AdminFeedConfigPage from '../features/admin/pages/AdminFeedConfigPage';
 import AdminTagGroupPage from '../features/admin/pages/AdminTagGroupPage';
 import AdminUserManagementPage from '../features/admin/pages/AdminUserManagementPage';
-import ForkEditorPage from '../features/post/pages/MyTemplatesForkPage/Forkeditorpage.tsx';
 import SavedPage from '../features/saved/pages/SavedPage';
 import VideoFeedPage from '../features/post/pages/VideoFeedPage';
 import VideoDetailPage from '../features/post/pages/VideoDetailPage';
@@ -81,7 +78,6 @@ const router = createBrowserRouter([
                     { path: '/notifications', element: <NotificationPage /> },
                     { path: '/hidden', element: <HiddenContentPage /> },
                     { path: '/dashboard/*', element: <UserDashboardPage /> },
-                    { path: '/templates', element: <MyTemplatesPage /> },
                     { path: '/saved', element: <SavedPage /> },
                     { path: '/my-violations', element: <MyViolationsPage /> },
                     { path: '/videos', element: <VideoFeedPage /> },
@@ -102,7 +98,6 @@ const router = createBrowserRouter([
                     { path: '/chat', element: <ChatPage /> },
                 ],
             },
-            { path: '/forks/:forkId/edit', element: <ForkEditorPage /> },
         ],
     },
 
@@ -116,7 +111,6 @@ const router = createBrowserRouter([
                     { path: '/admin/analytics', element: <AdminAnalyticsPage /> },
                     { path: '/admin/posts', element: <AdminPostsPage /> },
                     { path: '/admin/comments', element: <AdminCommentsPage /> },
-                    { path: '/admin/templates', element: <AdminTemplatesPage /> },
                     { path: '/admin/users', element: <AdminUsersPage /> },
                     { path: '/admin/users/interests', element: <AdminUserManagementPage /> },
                     { path: '/admin/badges',      element: <AdminBadgePage /> },

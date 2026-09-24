@@ -18,6 +18,10 @@ export default function MainLayout() {
             window.dispatchEvent(new CustomEvent(WS_EVENTS.WINDOW_NEW_NOTIFICATION));
         } else if (event.eventType === WS_EVENTS.PAYLOAD_BLOCK_UPDATED) {
             window.dispatchEvent(new CustomEvent(WS_EVENTS.WINDOW_BLOCK_UPDATED));
+        } else if (event.eventType === WS_EVENTS.PAYLOAD_AVATAR_UPDATED) {
+            window.dispatchEvent(new CustomEvent(WS_EVENTS.WINDOW_AVATAR_UPDATED, { detail: event.payload }));
+        } else if (event.eventType === WS_EVENTS.PAYLOAD_PROFILE_UPDATED) {
+            window.dispatchEvent(new CustomEvent(WS_EVENTS.WINDOW_PROFILE_UPDATED, { detail: event.payload }));
         }
     });
 

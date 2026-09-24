@@ -67,7 +67,7 @@ SELECT
         LEFT JOIN messages lm ON lm.id = latest_msg.max_msg_id
         LEFT JOIN users u_sender ON lm.sender_id = u_sender.id
         WHERE cm.user_id = :userId
-        ORDER BY cm.is_pinned DESC, cm.pinned_at DESC, lm.created_at DESC""", nativeQuery = true)
+        ORDER BY cm.is_pinned DESC, lm.created_at DESC""", nativeQuery = true)
     Slice<ConversationSummaryProjection> findConversationsForUser(
             @Param("userId") Long userId, 
             Pageable pageable

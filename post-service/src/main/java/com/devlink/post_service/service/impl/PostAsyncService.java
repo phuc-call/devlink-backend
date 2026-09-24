@@ -36,7 +36,6 @@ public class PostAsyncService {
     private final UserSavedPostRepository userSavedPostRepository;
 
     private final ObjectMapper objectMapper;
-    private final LearningTemplateRepository templateRepository;
     private final ApplicationContext applicationContext;
     private final Tika tika;
     private final PostMediaRepository postMediaRepository;
@@ -51,7 +50,6 @@ public class PostAsyncService {
      * Nếu APPROVED + PUBLIC => trigger auto-save
      */
     @Async("postAsyncExecutor")
-
     public void moderatePost(Long postId) {
         Post post = postRepository.findById(postId).orElse(null);
         if (post == null) return;
@@ -86,9 +84,8 @@ public class PostAsyncService {
 
             String fileUrl  = media.getUrl();
             String ext      = media.getFileExtension();
-            TemplateFileType fileType = resolveFileType(ext);
 
-            String extractedText = extractText(fileUrl, fileType);
+            String extractedText = extractText(fileUrl, ext);
             if (extractedText != null) {
                 postFile.setExtractedText(extractedText);
                 postFile.setProcessedAt(Instant.now());
@@ -133,12 +130,10 @@ public class PostAsyncService {
             return;
         }
 
-
         List<UserSavedPost> toSave = userIds.stream()
                 .map(userId -> UserSavedPost.builder()
                         .userId(userId)
                         .postId(post.getId())
-
                         .build())
                 .toList();
 
@@ -148,14 +143,18 @@ public class PostAsyncService {
     }
 
 
-
-
-    public String extractText(String fileUrl, TemplateFileType fileType) {
-        if (fileType != TemplateFileType.PDF
-                && fileType != TemplateFileType.DOCX
-                && fileType != TemplateFileType.XLSX) {
+    public String extractText(String fileUrl, String ext) {
+        if (ext == null) return null;
+        ext = ext.toLowerCase();
+        
+        if (!ext.equals("pdf")
+                && !ext.equals("docx")
+                && !ext.equals("doc")
+                && !ext.equals("xlsx")
+                && !ext.equals("xls")) {
             return null;
         }
+        
         try {
             URL url = URI.create(fileUrl).toURL();
             try (InputStream stream = url.openStream()) {
@@ -164,40 +163,9 @@ public class PostAsyncService {
                 return text.isBlank() ? null : text.trim();
             }
         } catch (Exception e) {
-            log.error("[Tika] extract failed | type={} url={} err={}",
-                    fileType, fileUrl, e.getMessage());
+            log.error("[Tika] extract failed | ext={} url={} err={}",
+                    ext, fileUrl, e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * [ASYNC] Extract text từ learning template PDF/DOCX + tạo AI summary
-     */
-    @Async("postAsyncExecutor")
-    @Transactional
-    public void extractAndSummarizeTemplate(Long templateId, String fileUrl, TemplateFileType fileType) {
-        log.info("[Async][Template] extract start id={}", templateId);
-        try {
-            String extractedText = extractText(fileUrl, fileType);
-
-            templateRepository.findById(templateId).ifPresent(t -> {
-                t.setExtractedText(extractedText);
-                templateRepository.save(t);
-                log.info("[Async][Template] done id={}", templateId);
-            });
-        } catch (Exception e) {
-            log.error("[Async][Template] failed id={}", templateId, e);
-        }
-    }
-
-    private TemplateFileType resolveFileType(String ext) {
-        if (ext == null) return TemplateFileType.PDF;
-        return switch (ext.toLowerCase()) {
-            case "pdf" -> TemplateFileType.PDF;
-            case "docx", "doc" -> TemplateFileType.DOCX;
-            case "xlsx", "xls" -> TemplateFileType.XLSX;
-            case "mp4", "mov", "avi" -> TemplateFileType.VIDEO;
-            default -> TemplateFileType.CODE;
-        };
     }
 }

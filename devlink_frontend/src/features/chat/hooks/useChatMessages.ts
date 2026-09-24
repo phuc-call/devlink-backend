@@ -8,7 +8,7 @@ import { MESSAGE_STATUS } from '../../../constants/chat';
 export function useChatMessages(conversationId: number | null) {
 
   // 1. Lấy dữ liệu từ Dexie theo thời gian thực (Local-first)
-  const localMessages = useLiveQuery(
+  const liveMessages = useLiveQuery(
     () => {
       if (!conversationId) return [];
       return db.messages
@@ -17,7 +17,10 @@ export function useChatMessages(conversationId: number | null) {
         .sortBy('createdAt');
     },
     [conversationId]
-  ) || [];
+  );
+
+  const localMessages = liveMessages || [];
+  const isDexieLoading = liveMessages === undefined;
 
   // 2. Gọi API để đồng bộ (chỉ gọi trang đầu khi mở conversation)
   const query = useQuery({
@@ -70,7 +73,10 @@ export function useChatMessages(conversationId: number | null) {
 
   return {
     messages: localMessages,
-    isLoading: query.isLoading && localMessages.length === 0,
+    // Tránh bị chớp "Đang tải tin nhắn..." do Dexie chậm:
+    // 1. Dexie đang load (isDexieLoading) -> có thể là true/false tuỳ bạn muốn chớp hay k. Để mượt thì isDexieLoading k set thành true vội, hoặc chờ 1 xíu.
+    // Thôi tốt nhất: chỉ khi API đang gọi VÀ Dexie trả về rỗng thì mới isLoading
+    isLoading: (isDexieLoading || query.isPending) && localMessages.length === 0,
     hasMore: query.data?.hasMore || false,
     nextCursor: query.data?.nextCursor,
     isBlocked: query.data?.isBlocked || false,

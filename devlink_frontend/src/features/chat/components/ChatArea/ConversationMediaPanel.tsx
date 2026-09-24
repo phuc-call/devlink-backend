@@ -35,6 +35,10 @@ export default function ConversationMediaPanel({ conversationId }: MediaPanelPro
         };
 
         fetchMedia();
+
+        const handleUpdate = () => fetchMedia();
+        window.addEventListener('chat_media_updated', handleUpdate);
+        return () => window.removeEventListener('chat_media_updated', handleUpdate);
     }, [conversationId, filterType]);
 
     if (!conversationId) return null;

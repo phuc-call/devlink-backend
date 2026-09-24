@@ -20,6 +20,11 @@ import { CHAT_MESSAGES } from '../../../constants/messages';
 export function useChatWebSocket(currentUserId: number | null, conversationId: number | null) {
   const stompClientRef = useRef<Client | null>(null);
   const convSubRef = useRef<any[]>([]);
+  const activeConvIdRef = useRef<number | null>(conversationId);
+
+  useEffect(() => {
+    activeConvIdRef.current = conversationId;
+  }, [conversationId]);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem(STORAGE_KEYS.IS_LOGGED_IN) === STORAGE_VALUES.LOGGED_IN_TRUE;
@@ -44,6 +49,8 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
 
             if (data.action === WS_ACTIONS.DELETE_MESSAGE_FOR_ME) {
               await db.messages.delete(String(data.messageId));
+              await db.pinnedMessages.where('messageId').equals(String(data.messageId)).delete();
+              window.dispatchEvent(new Event('chat_media_updated'));
               return;
             }
 
@@ -56,17 +63,21 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
                   if (msg.mediaList.length < originalLength) {
                     if (msg.mediaList.length === 0 && (!msg.content || msg.content === '')) {
                       await db.messages.delete(msg.id);
+                      await db.pinnedMessages.where('messageId').equals(String(msg.id)).delete();
                     } else {
                       await db.messages.update(msg.id, { mediaList: msg.mediaList });
                     }
                   }
                 }
               }
+              window.dispatchEvent(new Event('chat_media_updated'));
               return;
             }
 
             if (data.action === WS_ACTIONS.RECALL_MESSAGE) {
               await db.messages.update(String(data.messageId), { isRecalled: true });
+              await db.pinnedMessages.where('messageId').equals(String(data.messageId)).delete();
+              window.dispatchEvent(new Event('chat_media_updated'));
               return;
             }
 
@@ -82,7 +93,7 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
                 }
               }
 
-              if (!isMyTempMessage) {
+                if (!isMyTempMessage) {
                 await db.messages.put({
                   id: idStr,
                   serverId: newMsg.id,
@@ -97,6 +108,10 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
                   mediaList: newMsg.mediaList,
                   attachmentList: newMsg.attachmentList,
                 });
+              }
+
+              if ((newMsg.mediaList && newMsg.mediaList.length > 0) || (newMsg.attachmentList && newMsg.attachmentList.length > 0)) {
+                  window.dispatchEvent(new Event('chat_media_updated'));
               }
             }
 
@@ -119,16 +134,28 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
 
             if (existingConv) {
               const isMyMsg = newMsg.senderId === currentUserId;
+              const isActive = newMsg.conversationId === activeConvIdRef.current;
+              
               let newContent = newMsg.content;
               if (!newContent && newMsg.mediaList && newMsg.mediaList.length > 0) {
                 newContent = CHAT_MESSAGES.SENT_FILE_FALLBACK;
               }
+
+              // Nếu đang mở đoạn chat này hoặc là tin của chính mình -> không tăng đếm
+              const newUnreadCount = (isMyMsg || isActive) ? 0 : (existingConv.countUnreadMessages || 0) + 1;
+
               await db.conversations.update(newMsg.conversationId, {
                 lastMessageAt: newMsg.createdAt,
                 lastMessageContent: newContent,
-                countUnreadMessages: isMyMsg ? 0 : (existingConv.countUnreadMessages || 0) + 1,
+                countUnreadMessages: newUnreadCount,
               });
+
+              // Gọi API update server count về 0 nếu đang xem
+              if (isActive && !isMyMsg) {
+                chatApi.markConversationAsRead(newMsg.conversationId).catch(() => {});
+              }
             }
+
           } catch (e) {
             console.error('[STOMP] Failed to handle incoming message', e);
           }
@@ -137,6 +164,7 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
         client.subscribe(`${WS_QUEUE_MESSAGES_MEDIA}/${currentUserId}`, async (message: IMessage) => {
           try {
             const mediaUpdate = JSON.parse(message.body);
+            window.dispatchEvent(new Event('chat_media_updated'));
             if (mediaUpdate.message?.id) {
               const idStr = String(mediaUpdate.message.id);
               const existing = await db.messages.get(idStr);
@@ -217,7 +245,9 @@ export function useChatWebSocket(currentUserId: number | null, conversationId: n
             content: pin.content,
             senderName: pin.senderName,
             senderAvatar: pin.senderAvatar,
-            createdAt: pin.createdAt
+            createdAt: pin.createdAt,
+            media: pin.media,
+            attachment: pin.attachment
           });
         } catch (e) { console.error('Failed to parse pinned message ws', e); }
       });

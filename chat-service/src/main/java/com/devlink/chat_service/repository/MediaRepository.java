@@ -27,8 +27,8 @@ public interface MediaRepository extends JpaRepository<Media,Long> {
               AND NOT EXISTS (
                   SELECT 1 FROM ItemDeletion d
                   WHERE d.user.id = :currentUserId
-                    AND ( (d.targetId = m.id AND d.targetType = 'MEDIA')
-                          OR (d.targetId = msg.id AND d.targetType = 'MESSAGE') )
+                    AND ( (d.targetId = m.id AND d.targetType = TargetType.MEDIA)
+                          OR (d.targetId = msg.id AND d.targetType = TargetType.MESSAGE) )
               )
               AND (:uploaderId IS NULL OR m.uploader.id = :uploaderId)
               AND (:mediaType IS NULL OR m.mediaType = :mediaType)

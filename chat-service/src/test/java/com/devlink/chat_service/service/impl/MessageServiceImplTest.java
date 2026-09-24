@@ -55,6 +55,7 @@ class MessageServiceImplTest {
     @Mock private ItemDeletionRepository itemDeletionRepository;
     @Mock private AttachmentRepository attachmentRepository;
     @Mock private MediaRepository mediaRepository;
+    @Mock private com.devlink.chat_service.repository.PinnedMessageRepository pinnedMessageRepository;
 
     @InjectMocks
     private MessageServiceImpl messageService;
@@ -66,7 +67,6 @@ class MessageServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(messageService, "wsQueueMessages", "/queue/messages");
 
         AuthUserDetails mockUserDetails = Mockito.mock(AuthUserDetails.class);
         Mockito.lenient().when(mockUserDetails.getId()).thenReturn(1L);
@@ -234,6 +234,7 @@ class MessageServiceImplTest {
         when(messageRepository.findById(100L)).thenReturn(Optional.of(message));
         when(itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(100L, com.devlink.chat_service.entity.enums.TargetType.MESSAGE, 1L)).thenReturn(false);
         when(conversationMemberRepository.findByConversationId(10L)).thenReturn(List.of(otherMember));
+        when(pinnedMessageRepository.findByMessageId(100L)).thenReturn(Optional.empty());
 
         messageService.recallMessage(100L);
 
@@ -324,7 +325,7 @@ class MessageServiceImplTest {
 
     @Test
     void deleteMediaForMe_success() {
-        when(conversationMemberRepository.existsByConversationIdAndUserId(10L, 1L)).thenReturn(true);
+        when(conversationMemberRepository.findByConversationIdAndUserId(10L, 1L)).thenReturn(Optional.of(otherMember));
         when(userRepository.getReferenceById(1L)).thenReturn(sender);
         when(itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(200L, com.devlink.chat_service.entity.enums.TargetType.MEDIA, 1L)).thenReturn(false);
         when(itemDeletionRepository.existsByTargetIdAndTargetTypeAndUserId(201L, com.devlink.chat_service.entity.enums.TargetType.MEDIA, 1L)).thenReturn(true);
@@ -336,7 +337,7 @@ class MessageServiceImplTest {
 
     @Test
     void deleteMediaForMe_notMember_throwsException() {
-        when(conversationMemberRepository.existsByConversationIdAndUserId(10L, 1L)).thenReturn(false);
+        when(conversationMemberRepository.findByConversationIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
 
         AppException ex = assertThrows(AppException.class, () -> messageService.deleteMediaForMe(10L, List.of(200L)));
         assertEquals(ErrorCode.NOT_A_MEMBER, ex.getErrorCode());
@@ -365,7 +366,7 @@ class MessageServiceImplTest {
         fetchedMessages.add(msg1);
         fetchedMessages.add(msg2);
 
-        when(conversationMemberRepository.existsByConversationIdAndUserId(10L, 1L)).thenReturn(true);
+        when(conversationMemberRepository.findByConversationIdAndUserId(10L, 1L)).thenReturn(Optional.of(otherMember));
         when(conversationRepository.findById(10L)).thenReturn(Optional.of(conversation));
         when(conversationMemberRepository.findOtherMember(10L, 1L)).thenReturn(Optional.of(otherMember));
         when(userRelationCacheClient.isBlocked(1L, 2L)).thenReturn(false);
@@ -389,7 +390,7 @@ class MessageServiceImplTest {
 
     @Test
     void getMessagesByConversation_notMember_throwsException() {
-        when(conversationMemberRepository.existsByConversationIdAndUserId(10L, 1L)).thenReturn(false);
+        when(conversationMemberRepository.findByConversationIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
         when(conversationRepository.findById(10L)).thenReturn(Optional.of(conversation));
 
         AppException ex = assertThrows(AppException.class, () -> messageService.getMessagesByConversation(10L, null, 10));

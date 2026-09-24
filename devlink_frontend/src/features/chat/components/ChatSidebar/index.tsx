@@ -1,6 +1,6 @@
 import { CHAT_FILTER_TYPES, CONVERSATION_TYPES } from '../../../../constants/chat';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Edit, MoreHorizontal, Check } from 'lucide-react';
+import { Search, Edit, MoreHorizontal, Check, Pin } from 'lucide-react';
 import { followApi, type FollowResponse } from '../../../../api/user-service/followApi';
 import { chatApi } from '../../../../api/chat-service/chatApi';
 import { useConversations } from '../../hooks/useConversations';
@@ -224,8 +224,9 @@ export default function ChatSidebar({ onSelectUser, selectedUserId }: ChatSideba
                                     <div className={styles.itemContent} style={{ flex: 1, minWidth: 0, paddingRight: 24 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, paddingRight: 4 }}>
-                                                <div className={styles.itemName} style={{ flex: 1, minWidth: 0 }}>
-                                                    {title}
+                                                <div className={styles.itemName} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    {conv.isPinned && <Pin size={12} fill="#9CA3AF" color="#9CA3AF" style={{ transform: 'rotate(45deg)' }} />}
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
                                                 </div>
                                                 {unreadCount > 0 && <span className={styles.unreadBadge} style={{ flexShrink: 0, marginLeft: 4 }}>{unreadCount}</span>}
                                             </div>
@@ -280,6 +281,35 @@ export default function ChatSidebar({ onSelectUser, selectedUserId }: ChatSideba
                                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                     >
                                                         Đánh dấu đã đọc
+                                                    </button>
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            try {
+                                                                await chatApi.pinConversation(conv.id);
+                                                                const isCurrentlyPinned = conv.isPinned;
+                                                                db.conversations.update(conv.id, { 
+                                                                    isPinned: !isCurrentlyPinned,
+                                                                    pinnedAt: !isCurrentlyPinned ? new Date().toISOString() : null
+                                                                });
+                                                            } catch (err: any) {
+                                                                console.error("Failed to pin conversation", err);
+                                                                if (err?.response?.data?.message) {
+                                                                    alert(err.response.data.message); // Show error like MAX_PINNED_CONVERSATIONS_REACHED
+                                                                }
+                                                            }
+                                                            setMenuOpenConvId(null);
+                                                        }}
+                                                        style={{
+                                                            width: '100%', display: 'flex', alignItems: 'center',
+                                                            padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                                                            fontSize: '0.875rem', color: '#1F2937', textAlign: 'left',
+                                                            whiteSpace: 'nowrap', transition: 'background 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                    >
+                                                        {conv.isPinned ? 'Bỏ ghim cuộc hội thoại' : 'Ghim cuộc hội thoại'}
                                                     </button>
                                                 </div>
                                             )}

@@ -13,13 +13,8 @@ export function useConversations() {
         arr.sort((a, b) => {
           if (a.isPinned && !b.isPinned) return -1;
           if (!a.isPinned && b.isPinned) return 1;
-          
-          if (a.isPinned && b.isPinned) {
-              const timeA = new Date(a.pinnedAt || 0).getTime();
-              const timeB = new Date(b.pinnedAt || 0).getTime();
-              return timeB - timeA;
-          }
 
+          // Cả hai đều ghim HOẶC cả hai đều không ghim -> Sắp xếp theo tin nhắn mới nhất
           const timeA = new Date(a.lastMessageAt || 0).getTime();
           const timeB = new Date(b.lastMessageAt || 0).getTime();
           return timeB - timeA;

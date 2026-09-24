@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     List<Attachment> findByMessageIdIn(List<Long> messageIds);
+    List<Attachment> findByMessageId(Long messageId);
 }

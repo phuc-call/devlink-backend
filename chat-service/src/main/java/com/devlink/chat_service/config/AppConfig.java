@@ -51,10 +51,10 @@ public class AppConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Dùng Constants — không hard-code chuỗi ở đây
         config.enableSimpleBroker(
                 Constants.WS_BROKER_USER_PREFIX,
-                Constants.WS_QUEUE_MESSAGES
+                "/queue",
+                "/topic"
         );
         config.setApplicationDestinationPrefixes(Constants.WS_APP_PREFIX);
         config.setUserDestinationPrefix(Constants.WS_BROKER_USER_PREFIX);

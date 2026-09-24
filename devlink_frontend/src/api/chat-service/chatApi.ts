@@ -101,6 +101,11 @@ export const chatApi = {
         return response.data;
     },
 
+    pinConversation: async (conversationId: number): Promise<{ success: boolean; message: string }> => {
+        const response = await axiosInstance.put(`/api/chat/conversations/${conversationId}/pin`);
+        return response.data;
+    },
+
     // Pinned Message APIs
     pinMessage: async (messageId: number): Promise<{ success: boolean; message: string }> => {
         const response = await axiosInstance.post(`/api/chat/pinned-messages/${messageId}`);

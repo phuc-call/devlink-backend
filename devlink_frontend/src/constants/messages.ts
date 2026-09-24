@@ -61,5 +61,4 @@ export const POST_MESSAGES = {
   PROCESSING: 'Bài viết đang được xử lý và sẽ sớm hiển thị...',
   CREATE_SUCCESS: 'Đăng bài thành công!',
   CREATE_FAILED_PREFIX: 'Lỗi đăng bài: ',
-  TEMPLATE_CREATE_FAILED: 'Tạo template thất bại.',
 } as const;

@@ -13,7 +13,7 @@ import type {
     BadgeType,
 } from '../../../types/badge.types';
 import { BADGE_LABELS, BADGE_COLORS } from '../../../types/badge.types';
-import { getUserInfoById } from '../../../api/post-service/suggestionApi';
+import { getUserInfoById } from "../../../api/user-service/userProfileApi";
 import UserSearchSelect from '../components/UserSearchSelect';
 import UserMultiSearchSelect from '../components/UserMultiSearchSelect';
 

@@ -5,4 +5,6 @@ public class WsEventConstants {
     public static final String BLOCK_UPDATED = "BLOCK_UPDATED";
     public static final String NEW_REACTION = "NEW_REACTION";
     public static final String NEW_COMMENT = "NEW_COMMENT";
+    public static final String AVATAR_UPDATED = "AVATAR_UPDATED";
+    public static final String PROFILE_UPDATED = "PROFILE_UPDATED";
 }

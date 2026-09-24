@@ -118,7 +118,7 @@ public class ReactionServiceImpl implements ReactionService {
         Long receiverId = resolveReceiverId(request.getTargetId(), request.getTargetType());
         Long postId = resolvePostId(request.getTargetId(), request.getTargetType());
 
-        if (receiverId.equals(actorId)) {
+        if (receiverId == null || receiverId.equals(actorId)) {
             return;
         }
 
@@ -156,9 +156,7 @@ public class ReactionServiceImpl implements ReactionService {
                     .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND))
                     .getAuthorId();
 
-            case TEMPLATE,POST_FILE -> commentReplyRepository.findById(targetId)
-                    .orElseThrow(() -> new AppException(ErrorCode.TARGET_NOT_FOUND))
-                    .getAuthorId();
+            case POST_FILE -> null;
         };
     }
 

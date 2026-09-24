@@ -11,9 +11,9 @@ import styles from './Header.module.css';
 import { authApi } from "../../../../api/user-service/authApi.ts";
 import { UserPlus, Users } from 'lucide-react';
 import { JoinGroupModal } from '../../../../features/post/components/ExploreModals';
-
 import { ChangePasswordModal } from '../../../../features/auth/components/ChangePasswordModal.tsx';
 import { clearAllLocalData } from '../../../../utils/auth.ts';
+import { WS_EVENTS } from '../../../../constants/wsEvents';
 
 const NAV_TABS = [
     { label: 'Phổ biến', path: '/' },
@@ -37,6 +37,26 @@ export default function Header() {
         userProfileApi.getProfile()
             .then(res => setUser(res.data.data))
             .catch(() => setUser(null));
+    }, []);
+
+    // Lắng nghe WebSocket event khi avatar hoặc profile (tên) được đổi → cập nhật UI ngay không cần F5
+    useEffect(() => {
+        const avatarHandler = (e: Event) => {
+            const newAvatarUrl = (e as CustomEvent<string>).detail;
+            setUser(prev => prev ? { ...prev, avatarUrl: newAvatarUrl } : prev);
+        };
+        const profileHandler = (e: Event) => {
+            const newFullName = (e as CustomEvent<string>).detail;
+            setUser(prev => prev ? { ...prev, fullName: newFullName } : prev);
+        };
+        
+        window.addEventListener(WS_EVENTS.WINDOW_AVATAR_UPDATED, avatarHandler);
+        window.addEventListener(WS_EVENTS.WINDOW_PROFILE_UPDATED, profileHandler);
+        
+        return () => {
+            window.removeEventListener(WS_EVENTS.WINDOW_AVATAR_UPDATED, avatarHandler);
+            window.removeEventListener(WS_EVENTS.WINDOW_PROFILE_UPDATED, profileHandler);
+        };
     }, []);
 
     useEffect(() => {

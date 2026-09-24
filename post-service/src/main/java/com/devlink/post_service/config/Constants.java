@@ -1,8 +1,5 @@
 package com.devlink.post_service.config;
 
-import com.devlink.post_service.entity.enums.TemplateFileType;
-
-import java.util.Map;
 import java.util.Set;
 
 public final class Constants {
@@ -49,13 +46,7 @@ public final class Constants {
     public static final String LOG_REDIS_DESERIALIZE_FAILED = "[Comment] Redis read failed userId={}";
     public static final String LOG_REDIS_SERIALIZE_FAILED = "[Comment] Redis write failed userId={}";
 
-    public static final Map<TemplateFileType, Set<String>> TYPE_TO_EXT = Map.of(
-            TemplateFileType.PDF, Set.of(".pdf"),
-            TemplateFileType.DOCX, Set.of(".docx", ".doc"),
-            TemplateFileType.XLSX, Set.of(".xlsx", ".xls"),
-            TemplateFileType.VIDEO, Set.of(".mp4", ".mov", ".avi"),
-            TemplateFileType.CODE, Set.of()
-    );
+
     public static final String SUCCESS="Success";
 
     public static final long CACHE_TTL_HOURS = 24;

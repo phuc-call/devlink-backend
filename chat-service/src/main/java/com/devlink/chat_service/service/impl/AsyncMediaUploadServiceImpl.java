@@ -1,6 +1,7 @@
 package com.devlink.chat_service.service.impl;
 
 import com.devlink.chat_service.config.Constants;
+import com.devlink.chat_service.dto.reponse.MediaResponse;
 import com.devlink.chat_service.entity.*;
 import com.devlink.chat_service.entity.enums.MediaType;
 import com.devlink.chat_service.repository.MediaConfigRepository;
@@ -155,12 +156,25 @@ public class AsyncMediaUploadServiceImpl implements AsyncMediaUploadService {
                     .durationSeconds(0)
                     .build());
             log.info("Upload success [{}]: {}", type, fileUrl);
+            
+            // Map to MediaResponse to prevent LazyInitializationException during JSON serialization
+            MediaResponse mediaResponse = com.devlink.chat_service.dto.reponse.MediaResponse.builder()
+                .id(media.getId())
+                .mediaType(media.getMediaType())
+                .fileUrl(media.getFileUrl())
+                .thumbnailUrl(media.getThumbnailUrl())
+                .durationSeconds(media.getDurationSeconds())
+                .width(media.getWidth())
+                .height(media.getHeight())
+                .fileSize(media.getFileSize())
+                .build();
+
             // Notify qua WebSocket
             List<ConversationMember> members = conversationMemberRepository.findByConversationId(conversation.getId());
             for (ConversationMember member : members) {
                 messagingTemplate.convertAndSend(
                         Constants.WS_QUEUE_MESSAGES_MEDIA + "/" + member.getUser().getId(),
-                        media);
+                        mediaResponse);
             }
         } catch (Exception e) {
             log.error("Error processing file: {}", file.getOriginalFilename(), e);

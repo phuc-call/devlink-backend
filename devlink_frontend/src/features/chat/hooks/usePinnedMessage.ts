@@ -14,7 +14,7 @@ export function usePinnedMessage(conversationId: number | null) {
         .toArray();
     },
     [conversationId]
-  ) || [];
+  );
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.PINNED_MESSAGES, conversationId],
@@ -25,12 +25,6 @@ export function usePinnedMessage(conversationId: number | null) {
           if (res.data && Array.isArray(res.data)) {
              const pins = res.data;
              
-             // Xóa hết ghim cũ của conversation này
-             const existing = await db.pinnedMessages.where('conversationId').equals(String(conversationId)).toArray();
-             const existingIds = existing.map(e => e.id);
-             await db.pinnedMessages.bulkDelete(existingIds);
-             
-             // Thêm ghim mới
              const newPins = pins.map(pin => ({
                  id: String(pin.id),
                  messageId: String(pin.messageId),
@@ -38,12 +32,23 @@ export function usePinnedMessage(conversationId: number | null) {
                  content: pin.content,
                  senderName: pin.senderName,
                  senderAvatar: pin.senderAvatar,
-                 createdAt: pin.createdAt
+                 createdAt: pin.createdAt,
+                 media: pin.media,
+                 attachment: pin.attachment
              }));
+
+             await db.transaction('rw', db.pinnedMessages, async () => {
+                 // Clear previous pinned messages for the current conversation to avoid duplicates
+                 const existing = await db.pinnedMessages.where('conversationId').equals(String(conversationId)).toArray();
+                 const existingIds = existing.map(e => e.id);
+                 await db.pinnedMessages.bulkDelete(existingIds);
+                 
+                 // Store the newly fetched pinned messages
+                 if (newPins.length > 0) {
+                     await db.pinnedMessages.bulkPut(newPins);
+                 }
+             });
              
-             if (newPins.length > 0) {
-                 await db.pinnedMessages.bulkPut(newPins);
-             }
              return newPins;
           } else {
              // Không có thì xóa luôn
@@ -61,5 +66,7 @@ export function usePinnedMessage(conversationId: number | null) {
     enabled: !!conversationId,
   });
 
-  return { pinnedMessages: localPinnedMessages, refetch: query.refetch };
+  const pinnedMessages = localPinnedMessages !== undefined ? localPinnedMessages : (query.data || []);
+
+  return { pinnedMessages, refetch: query.refetch };
 }
